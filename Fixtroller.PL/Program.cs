@@ -1,8 +1,10 @@
 
 using Fixtroller.BLL.Services.AuthenticationServices;
+using Fixtroller.BLL.Services.ProblemTypesServices;
 using Fixtroller.BLL.Services.TCategoryServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
+using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
 using Fixtroller.DAL.Repositories.TCategoryRepositories;
 using Fixtroller.DAL.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
@@ -28,6 +30,8 @@ namespace Fixtroller.PL
 
             builder.Services.AddScoped<ITCategoryRepository, TCategorRepository>();
             builder.Services.AddScoped<ITCategoryService, TCategoryService>();
+            builder.Services.AddScoped<IProblemTypesService, ProblemTypesService>();
+            builder.Services.AddScoped<IProblemTypeRepository, ProblemTypeRepository>();
             builder.Services.AddScoped<ISeedData, SeedData>();
             builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
 

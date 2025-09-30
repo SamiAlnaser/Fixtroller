@@ -1,0 +1,38 @@
+﻿using Fixtroller.BLL.Services.ProblemTypesServices;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+
+namespace Fixtroller.PL.Areas.Employee
+{
+    [Route("api/[area]/[controller]")]
+    [ApiController]
+    [Area("Employee")]
+    [Authorize(Roles = "Employee , SpecialEmployee")]
+    public class ProblemTypesController : ControllerBase
+    {
+        private readonly IProblemTypesService _problemTypesService;
+
+        public ProblemTypesController(IProblemTypesService problemTypesService)
+        {
+            _problemTypesService = problemTypesService;
+        }
+        // GET: api/ProblemsTypes/active
+        [HttpGet("active")]
+        public async Task<IActionResult> GetActiveProblemsTypes()
+        {
+            var result = await _problemTypesService.GetActiveAsync();
+            return Ok(new { message = "Success", data = result });
+        }
+
+        // GET: api/ProblemsTypes/{id}
+        [HttpGet("{id}")]
+        public async Task<IActionResult> GetById([FromRoute] int id)
+        {
+            var result = await _problemTypesService.GetByIdAsync(id);
+            return result == null
+                ? NotFound(new { message = "Problem type not found" })
+                : Ok(result);
+        }
+    }
+}

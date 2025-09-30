@@ -1,4 +1,5 @@
-﻿using Fixtroller.DAL.Entities;
+﻿
+using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.GenericRepository;
 using Mapster;
 

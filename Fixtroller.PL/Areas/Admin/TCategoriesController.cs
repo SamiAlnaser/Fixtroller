@@ -1,16 +1,15 @@
 ﻿using Fixtroller.BLL.Services.TCategoryServices;
-using Fixtroller.DAL.DTOs.ProblemTypeDTOs.Requests;
 using Fixtroller.DAL.DTOs.TCategoryDTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 
-namespace Fixtroller.PL.Areas.MaintenanceManager
+namespace Fixtroller.PL.Areas.Admin
 {
     [Route("api/[area]/[controller]")]
     [ApiController]
-    [Area("MaintenanceManager")]
-    [Authorize(Roles = "MaintenanceManager")]
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
     public class TCategoriesController : ControllerBase
     {
         private readonly ITCategoryService _TcategoryService;

@@ -1,4 +1,5 @@
 ﻿using Fixtroller.DAL.Entities;
+using Fixtroller.DAL.Entities.ProblemType;
 using Fixtroller.DAL.Entities.TCategory;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
@@ -15,6 +16,7 @@ namespace Fixtroller.DAL.Data
     public class ApplicationDbContext : IdentityDbContext<ApplicationUser>
     {
         public DbSet<TechnicianCategory> Tcategories { get; set; }
+        public DbSet<ProblemType> PTypes { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
@@ -28,6 +30,12 @@ namespace Fixtroller.DAL.Data
             builder.Entity<TechnicianCategory>(e =>
             {
                 e.ToTable("TechnicianCategory");   // اسم الجدول = TechnicianCategory
+                e.HasKey(x => x.Id);
+            });
+
+            builder.Entity<ProblemType>(e =>
+            {
+                e.ToTable("ProblemType");   // اسم الجدول = TechnicianCategory
                 e.HasKey(x => x.Id);
             });
 
