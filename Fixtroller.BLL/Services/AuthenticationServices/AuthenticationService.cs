@@ -24,36 +24,39 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
             _userManager = userManager;
             _configuration = configuration;
         }
-        public async Task<UserResponseDTO> LoginAsync(LoginRequestDTO LoginRequest)
+        public async Task<(UserResponseDTO Response, string MessageKey)> LoginAsync(LoginRequestDTO loginRequest)
         {
-            var user = await _userManager.FindByEmailAsync(LoginRequest.Email);
+            var user = await _userManager.FindByEmailAsync(loginRequest.Email);
             if (user == null)
             {
-                return new UserResponseDTO
+                return (new UserResponseDTO
                 {
                     Token = null,
                     IsSuccess = false,
-                    Message = "Invalid email or Password."
-                };
+                    Message = null
+                }, "InvalidCredentials");
             }
-            return new UserResponseDTO
+
+
+            return (new UserResponseDTO
             {
                 Token = await CreateTokenAsync(user),
                 IsSuccess = true,
-                Message = "Login successful."
-            };
-            
+                Message = null
+            }, "LoginSuccess");
         }
-        public async Task<UserResponseDTO> RegisterAsync(RegisterRequestDTO RegisterRequest)
+
+
+        public async Task<(UserResponseDTO Response, string MessageKey)> RegisterAsync(RegisterRequestDTO RegisterRequest)
         {
             var existingUser = await _userManager.FindByEmailAsync(RegisterRequest.Email);
             if (existingUser != null)
             {
-                return new UserResponseDTO
+                return (new UserResponseDTO
                 {
                     IsSuccess = false,
-                    Message = "Email is already registered"
-                };
+                    Message = null
+                }, "EmailAlreadyExists");
             }
             var user = new ApplicationUser()
             {
@@ -68,20 +71,20 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
 
             if (!result.Succeeded)
             {
-                return new UserResponseDTO()
+                return (new UserResponseDTO
                 {
-                    Message = string.Join("; ", result.Errors.Select(e => e.Description)),
-                };
+                    IsSuccess = false,
+                    Message = string.Join("; ", result.Errors.Select(e => e.Description))
+                }, "RegisterFailed");
             }
 
             await _userManager.AddToRoleAsync(user, "Employee");
-
-            return new UserResponseDTO()
+            return (new UserResponseDTO
             {
                 Token = await CreateTokenAsync(user),
                 IsSuccess = true,
-                Message = "User registered successfully"
-            };
+                Message = null
+            }, "RegisterSuccess");
         }
 
         private async Task<string> CreateTokenAsync(ApplicationUser user)

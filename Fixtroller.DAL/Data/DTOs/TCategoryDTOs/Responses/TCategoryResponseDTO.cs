@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Responses;
+using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
@@ -9,6 +10,6 @@ namespace Fixtroller.DAL.DTOs.TCategoryDTOs.Responses
     public class TCategoryResponseDTO
     {
         public int Id { get; set; }
-        public string Name { get; set; }
+        public List<TCategoryTranslationsResponseDTO> TCategoryTranslations { get; set; }
     }
 }

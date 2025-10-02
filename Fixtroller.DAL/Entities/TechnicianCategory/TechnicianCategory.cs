@@ -4,11 +4,11 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Entities.TCategory
+namespace Fixtroller.DAL.Entities.TechnicianCategory
 {
     public class TechnicianCategory : BaseModel
     {
-        public string Name { get; set; }
+        public List<TechnicianCategoryTranslation> Translations { get; set; } = new List<TechnicianCategoryTranslation>();
 
     }
 }

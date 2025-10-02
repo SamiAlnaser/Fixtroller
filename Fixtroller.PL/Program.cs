@@ -9,10 +9,13 @@ using Fixtroller.DAL.Repositories.TCategoryRepositories;
 using Fixtroller.DAL.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
+using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Scalar;
 using Scalar.AspNetCore;
+using System.Globalization;
 using System.Text;
 
 
@@ -24,7 +27,23 @@ namespace Fixtroller.PL
         {
             var builder = WebApplication.CreateBuilder(args);
 
+            const string defaultCulture = "ar";
+            var supportedCultures = new[]
+            {
+                  new CultureInfo(defaultCulture),
+                  new CultureInfo("en")
+             };
+            builder.Services.Configure<RequestLocalizationOptions>(options => {
+                options.DefaultRequestCulture = new RequestCulture(defaultCulture);
+                options.SupportedCultures = supportedCultures;
+                options.SupportedUICultures = supportedCultures;
+            
+             });
+ 
+
+
             // Add services to the container.
+            builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
           options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
@@ -85,7 +104,7 @@ namespace Fixtroller.PL
             app.UseHttpsRedirection();
 
             app.UseAuthorization();
-
+            app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
 
             app.MapControllers();
 

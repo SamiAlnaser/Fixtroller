@@ -1,6 +1,6 @@
 ﻿using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Entities.ProblemType;
-using Fixtroller.DAL.Entities.TCategory;
+using Fixtroller.DAL.Entities.TechnicianCategory;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -29,13 +29,13 @@ namespace Fixtroller.DAL.Data
 
             builder.Entity<TechnicianCategory>(e =>
             {
-                e.ToTable("TechnicianCategory");   // اسم الجدول = TechnicianCategory
+                e.ToTable("TechnicianCategory");   
                 e.HasKey(x => x.Id);
             });
 
             builder.Entity<ProblemType>(e =>
             {
-                e.ToTable("ProblemType");   // اسم الجدول = TechnicianCategory
+                e.ToTable("ProblemType");   
                 e.HasKey(x => x.Id);
             });
 

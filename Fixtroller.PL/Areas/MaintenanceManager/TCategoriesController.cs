@@ -4,6 +4,7 @@ using Fixtroller.DAL.DTOs.TCategoryDTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 
 namespace Fixtroller.PL.Areas.MaintenanceManager
 {
@@ -14,17 +15,20 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
     public class TCategoriesController : ControllerBase
     {
         private readonly ITCategoryService _TcategoryService;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public TCategoriesController(ITCategoryService TcategoryService)
+        public TCategoriesController(ITCategoryService TcategoryService, IStringLocalizer<SharedResource> localizer)
         {
             _TcategoryService = TcategoryService;
+            _localizer = localizer;
         }
+
 
         // GET: api/Tcategories
         [HttpGet("")]
         public async Task<IActionResult> GetAll()
         {
-            var result = await _TcategoryService.GetAllAsync();
+            var result = await _TcategoryService.GetAllForUserAsync();
             return Ok(result);
         }
 
@@ -32,19 +36,17 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         [HttpGet("active")]
         public async Task<IActionResult> GetActiveTCategories()
         {
-            var result = await _TcategoryService.GetActiveAsync();
-            return Ok(new { message = "Success", data = result });
+            var result = await _TcategoryService.GetActiveForUserAsync();
+            return Ok(new { message = _localizer["Success"].Value, data = result });
         }
-
-
 
         // GET: api/Tcategories/{id}
         [HttpGet("{id}")]
         public async Task<IActionResult> GetById([FromRoute] int id)
         {
-            var result = await _TcategoryService.GetByIdAsync(id);
+            var result = await _TcategoryService.GetByIdForUserAsync(id);
             return result == null
-                ? NotFound(new { message = "Category not found" })
+                ? NotFound(new { message = _localizer["NotFound"].Value })
                 : Ok(result);
         }
 
@@ -56,7 +58,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                 return BadRequest(ModelState);
 
             var Id = await _TcategoryService.AddAsync(dto);
-            return CreatedAtAction(nameof(GetById), new { Id }, new { message = "Category added successfully", Id });
+            return CreatedAtAction(nameof(GetById), new { Id }, new { message = _localizer["Created"].Value, Id });
         }
 
         // PUT: api/Tcategories/{id}
@@ -68,8 +70,8 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
 
             var updated = await _TcategoryService.UpdateAsync(id, dto);
             return updated == 0
-                ? NotFound(new { message = "Category not found" })
-                : Ok(new { message = "Category updated successfully" });
+                ? NotFound(new { message = _localizer["NotFound"].Value })
+                : Ok(new { message = _localizer["Updated"].Value });
         }
 
         // DELETE: api/Tcategories/{id}
@@ -78,8 +80,8 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         {
             var removed = await _TcategoryService.RemoveAsync(id);
             return removed == 0
-                ? NotFound(new { message = "Category not found" })
-                : Ok(new { message = "Category deleted successfully" });
+                ? NotFound(new { message = _localizer["NotFound"].Value })
+                : Ok(new { message = _localizer["Deleted"].Value });
         }
 
         // PATCH: api/Tcategories/{id}/toggle-status
@@ -88,9 +90,8 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         {
             var toggled = await _TcategoryService.ToggleStatusAsync(id);
             return toggled == false
-                ? NotFound(new { message = "Category not found" })
-                : Ok(new { message = "Category status toggled successfully" });
+                ? NotFound(new { message = _localizer["NotFound"].Value })
+                : Ok(new { message = _localizer["StatusToggled"].Value });
         }
-
     }
 }

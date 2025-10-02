@@ -8,6 +8,6 @@ namespace Fixtroller.DAL.Entities.ProblemType
 {
     public class ProblemType : BaseModel
     {
-        public string Name {  get; set; }
+        public List<ProblemTypeTranslation> Translations {  get; set; } = new List<ProblemTypeTranslation>();
     }
 }

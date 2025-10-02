@@ -4,6 +4,7 @@ using Fixtroller.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fixtroller.DAL.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251002165616_AddLocalizationArAndEn")]
+    partial class AddLocalizationArAndEn
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -141,7 +144,7 @@ namespace Fixtroller.DAL.Data.Migrations
 
                     b.HasIndex("ProblemTypeId");
 
-                    b.ToTable("ProblemTypeTranslation", (string)null);
+                    b.ToTable("ProblemTypeTranslation");
                 });
 
             modelBuilder.Entity("Fixtroller.DAL.Entities.TechnicianCategory.TechnicianCategory", b =>
@@ -189,7 +192,7 @@ namespace Fixtroller.DAL.Data.Migrations
 
                     b.HasIndex("TechnicianCategoryId");
 
-                    b.ToTable("TechnicianCategoryTranslation", (string)null);
+                    b.ToTable("TechnicianCategoryTranslation");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

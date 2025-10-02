@@ -1,7 +1,7 @@
 ﻿using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Data.Migrations;
 using Fixtroller.DAL.Entities;
-using Fixtroller.DAL.Entities.TCategory;
+using Fixtroller.DAL.Entities.TechnicianCategory;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using System;

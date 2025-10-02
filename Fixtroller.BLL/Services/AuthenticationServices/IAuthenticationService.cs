@@ -10,7 +10,7 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
 {
     public interface IAuthenticationService
     {
-        Task<UserResponseDTO> RegisterAsync(RegisterRequestDTO RegisterRequest);
-        Task<UserResponseDTO> LoginAsync(LoginRequestDTO LoginRequest);
+        Task<(UserResponseDTO Response, string MessageKey)> RegisterAsync(RegisterRequestDTO RegisterRequest);
+        Task<(UserResponseDTO Response, string MessageKey)> LoginAsync(LoginRequestDTO LoginRequest);
     }
 }
