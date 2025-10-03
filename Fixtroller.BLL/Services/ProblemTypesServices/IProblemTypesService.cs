@@ -2,7 +2,7 @@
 using Fixtroller.DAL.Data.DTOs.ProblemTypeDTOs.Responses;
 using Fixtroller.DAL.DTOs.ProblemTypeDTOs.Requests;
 using Fixtroller.DAL.DTOs.ProblemTypeDTOs.Responses;
-using Fixtroller.DAL.Entities.ProblemType;
+using Fixtroller.DAL.Entities.ProblemTypeEntity;
 using System;
 using System.Collections.Generic;
 using System.Linq;

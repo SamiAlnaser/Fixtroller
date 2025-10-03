@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Entities.TechnicianCategory
+namespace Fixtroller.DAL.Entities.TechnicianCategoryEntity
 {
     public class TechnicianCategory : BaseModel
     {

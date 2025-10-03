@@ -1,6 +1,6 @@
 ﻿using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
-using Fixtroller.DAL.Entities.ProblemType;
+using Fixtroller.DAL.Entities.ProblemTypeEntity;
 using Fixtroller.DAL.Repositories.GenericRepository;
 using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
 using Microsoft.EntityFrameworkCore;

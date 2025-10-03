@@ -14,7 +14,7 @@ namespace Fixtroller.DAL.Entities
     public class BaseModel
     {
         public int Id { get; set; }
-        public DateTime Created { get; set; } = DateTime.Now;
+        public DateTime CreatedAt { get; set; } = DateTime.Now;
         public Status Status { get; set; } = Status.Active;
     }
 }

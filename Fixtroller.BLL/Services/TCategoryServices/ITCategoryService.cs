@@ -5,7 +5,7 @@ using Fixtroller.DAL.Data.DTOs.ProblemTypeDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Responses;
 using Fixtroller.DAL.DTOs.TCategoryDTOs.Requests;
 using Fixtroller.DAL.DTOs.TCategoryDTOs.Responses;
-using Fixtroller.DAL.Entities.TechnicianCategory;
+using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
 using System;
 using System.Collections.Generic;
 using System.Linq;

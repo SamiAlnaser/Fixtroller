@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Entities.ProblemType
+namespace Fixtroller.DAL.Entities.ProblemTypeEntity
 {
     public class ProblemTypeTranslation
     {

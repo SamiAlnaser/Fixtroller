@@ -4,6 +4,7 @@ using Fixtroller.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fixtroller.DAL.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251003152115_addMaintenanceRequest")]
+    partial class addMaintenanceRequest
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -114,7 +117,7 @@ namespace Fixtroller.DAL.Data.Migrations
                     b.Property<int>("CaseType")
                         .HasColumnType("int");
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("CreatedAtUtc")
                         .HasColumnType("datetime2");
 
                     b.Property<string>("Description")
@@ -122,6 +125,7 @@ namespace Fixtroller.DAL.Data.Migrations
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<string>("MainImage")
+                        .IsRequired()
                         .HasColumnType("nvarchar(max)");
 
                     b.Property<int>("Priority")
@@ -133,9 +137,6 @@ namespace Fixtroller.DAL.Data.Migrations
                     b.Property<int>("RequestNumber")
                         .HasColumnType("int");
 
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -144,7 +145,7 @@ namespace Fixtroller.DAL.Data.Migrations
 
                     b.HasIndex("ProblemTypeId");
 
-                    b.ToTable("MaintenanceRequests", (string)null);
+                    b.ToTable("MaintenanceRequests");
                 });
 
             modelBuilder.Entity("Fixtroller.DAL.Entities.ProblemTypeEntity.ProblemType", b =>
@@ -155,7 +156,7 @@ namespace Fixtroller.DAL.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
@@ -189,7 +190,7 @@ namespace Fixtroller.DAL.Data.Migrations
 
                     b.HasIndex("ProblemTypeId");
 
-                    b.ToTable("ProblemTypeTranslation", (string)null);
+                    b.ToTable("ProblemTypeTranslation");
                 });
 
             modelBuilder.Entity("Fixtroller.DAL.Entities.TechnicianCategoryEntity.TechnicianCategory", b =>
@@ -200,7 +201,7 @@ namespace Fixtroller.DAL.Data.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
-                    b.Property<DateTime>("CreatedAt")
+                    b.Property<DateTime>("Created")
                         .HasColumnType("datetime2");
 
                     b.Property<int>("Status")
@@ -237,7 +238,7 @@ namespace Fixtroller.DAL.Data.Migrations
 
                     b.HasIndex("TechnicianCategoryId");
 
-                    b.ToTable("TechnicianCategoryTranslation", (string)null);
+                    b.ToTable("TechnicianCategoryTranslation");
                 });
 
             modelBuilder.Entity("Microsoft.AspNetCore.Identity.IdentityRole", b =>

@@ -1,9 +1,12 @@
 
 using Fixtroller.BLL.Services.AuthenticationServices;
+using Fixtroller.BLL.Services.FileService;
+using Fixtroller.BLL.Services.MaintenanceRequestServices;
 using Fixtroller.BLL.Services.ProblemTypesServices;
 using Fixtroller.BLL.Services.TCategoryServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
+using Fixtroller.DAL.Repositories.MaintenanceRequestepository;
 using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
 using Fixtroller.DAL.Repositories.TCategoryRepositories;
 using Fixtroller.DAL.Utils;
@@ -49,6 +52,9 @@ namespace Fixtroller.PL
 
             builder.Services.AddScoped<ITCategoryRepository, TCategorRepository>();
             builder.Services.AddScoped<ITCategoryService, TCategoryService>();
+            builder.Services.AddScoped<IFileService, FileService>();
+            builder.Services.AddScoped<IMaintenanceRequestService, MaintenanceRequestService>();
+            builder.Services.AddScoped<IMaintenanceRequestRepository, MaintenanceRequestRepository>();
             builder.Services.AddScoped<IProblemTypesService, ProblemTypesService>();
             builder.Services.AddScoped<IProblemTypeRepository, ProblemTypeRepository>();
             builder.Services.AddScoped<ISeedData, SeedData>();
@@ -105,7 +111,7 @@ namespace Fixtroller.PL
 
             app.UseAuthorization();
             app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
-
+            app.UseStaticFiles();
             app.MapControllers();
 
             app.Run();

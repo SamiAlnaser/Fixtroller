@@ -1,6 +1,7 @@
 ﻿using Fixtroller.DAL.Entities;
-using Fixtroller.DAL.Entities.ProblemType;
-using Fixtroller.DAL.Entities.TechnicianCategory;
+using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
+using Fixtroller.DAL.Entities.ProblemTypeEntity;
+using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -17,6 +18,7 @@ namespace Fixtroller.DAL.Data
     {
         public DbSet<TechnicianCategory> Tcategories { get; set; }
         public DbSet<ProblemType> PTypes { get; set; }
+        public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {

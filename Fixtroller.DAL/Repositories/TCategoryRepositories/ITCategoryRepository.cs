@@ -1,5 +1,4 @@
-﻿using Fixtroller.DAL.Entities.ProblemType;
-using Fixtroller.DAL.Entities.TechnicianCategory;
+﻿using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
 using Fixtroller.DAL.Repositories.GenericRepository;
 
 namespace Fixtroller.DAL.Repositories.TCategoryRepositories

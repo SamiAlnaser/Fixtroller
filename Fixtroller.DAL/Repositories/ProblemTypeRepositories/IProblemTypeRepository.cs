@@ -1,5 +1,5 @@
 ﻿using Fixtroller.DAL.DTOs.ProblemTypeDTOs.Responses;
-using Fixtroller.DAL.Entities.ProblemType;
+using Fixtroller.DAL.Entities.ProblemTypeEntity;
 using Fixtroller.DAL.Repositories.GenericRepository;
 
 namespace Fixtroller.DAL.Repositories.ProblemTypeRepositories

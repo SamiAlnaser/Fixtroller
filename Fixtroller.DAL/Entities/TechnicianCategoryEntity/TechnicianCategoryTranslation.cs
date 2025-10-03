@@ -1,4 +1,4 @@
-﻿using Fixtroller.DAL.Entities.TechnicianCategory;
+﻿using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -6,7 +6,7 @@ using System.Text;
 using System.Threading.Tasks;
 
 
-namespace Fixtroller.DAL.Entities.TechnicianCategory
+namespace Fixtroller.DAL.Entities.TechnicianCategoryEntity
 {
     public class TechnicianCategoryTranslation
     {
