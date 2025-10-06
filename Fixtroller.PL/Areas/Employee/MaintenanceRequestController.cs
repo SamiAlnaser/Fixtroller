@@ -1,17 +1,19 @@
 ﻿using Fixtroller.BLL.Services.MaintenanceRequestServices;
-using Fixtroller.BLL.Services.ProblemTypesServices;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
-using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 
-namespace Fixtroller.PL.Controllers
+namespace Fixtroller.PL.Areas.Employee
 {
-    [Route("api/[controller]")]
+    [Route("api/[area]/[controller]")]
     [ApiController]
+    [Area("Employee")]
+    [Authorize(Roles = "Employee , SpecialEmployee")]
     public class MaintenanceRequestController : ControllerBase
     {
+
         private readonly IMaintenanceRequestService _maintenanceRequestService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
@@ -21,15 +23,14 @@ namespace Fixtroller.PL.Controllers
             _localizer = localizer;
         }
 
-        //[HttpGet("")]
-        //public async Task <IActionResult> GetAll() => Ok(await _maintenanceRequestService.GetAllAsync());
+        [HttpGet("")]
+        public async Task<IActionResult> GetAll() => Ok(await _maintenanceRequestService.GetAllAsync());
 
-        //[HttpPost("")]
-        //public async Task<IActionResult> Create([FromForm] MaintenanceRequestRequestDTO request)
-        //{
-        //    var result = await _maintenanceRequestService.CreateWithFile(request);
-        //    return Ok(result);
-        //}
+        [HttpPost("")]
+        public async Task<IActionResult> Create([FromForm] MaintenanceRequestRequestDTO request)
+        {
+            var result = await _maintenanceRequestService.CreateWithFile(request);
+            return Ok(result);
+        }
     }
-
 }
