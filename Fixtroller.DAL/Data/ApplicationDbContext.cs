@@ -41,6 +41,18 @@ namespace Fixtroller.DAL.Data
                 e.HasKey(x => x.Id);
             });
 
+            builder.Entity<MaintenanceRequest>(e =>
+            {
+                e.HasOne(m => m.CreatedByUser)
+                 .WithMany(u => u.SubmittedRequests)
+                 .HasForeignKey(m => m.CreatedByUserId)
+                 .OnDelete(DeleteBehavior.Restrict); //  NoAction
+
+                e.HasIndex(m => m.CreatedByUserId);
+                e.Property(m => m.Title).IsRequired().HasMaxLength(200);
+                e.Property(m => m.Address).IsRequired().HasMaxLength(300);
+            });
+
 
 
             // تغيير أسماء الجداول الافتراضية

@@ -12,6 +12,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 {
     public interface IMaintenanceRequestService : IGenericService<MaintenanceRequestRequestDTO, MaintenanceRequestResponseDTO , MaintenanceRequest>
     {
-        Task<int> CreateWithFile(MaintenanceRequestRequestDTO request);
+        Task<int> CreateWithFile(MaintenanceRequestRequestDTO request , string userId);
+        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(string userId);
+        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync(); // لإدارة
+        Task<MaintenanceRequestResponseDTO?> GetByIdAsync(int id);
     }
 }

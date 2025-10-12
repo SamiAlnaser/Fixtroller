@@ -21,7 +21,6 @@ using Scalar.AspNetCore;
 using System.Globalization;
 using System.Text;
 
-
 namespace Fixtroller.PL
 {
     public class Program

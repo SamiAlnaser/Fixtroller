@@ -91,11 +91,11 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
         {
             var Claims = new List<Claim>()
              {
-        new Claim("Email", user.Email),
-        new Claim("Name", user.UserName),//
-        new Claim("Id", user.Id.ToString()),
-        new Claim("PhoneNumber", user.PhoneNumber),
-        new Claim("Location", user.Location)
+                new Claim("Email", user.Email),
+                new Claim("Name", user.UserName),//
+                new Claim("Id", user.Id.ToString()),
+                new Claim("PhoneNumber", user.PhoneNumber),
+                new Claim("Location", user.Location)
              };
 
             var Roles = await _userManager.GetRolesAsync(user);

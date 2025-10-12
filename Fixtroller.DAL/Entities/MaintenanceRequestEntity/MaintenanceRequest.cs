@@ -34,6 +34,9 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         public string Address { get; set; }
         public Priority Priority { get; set; }
 
+        public string CreatedByUserId { get; set; }            
+        public ApplicationUser CreatedByUser { get; set; }
+
         public int ProblemTypeId { get; set; }
         public ProblemType ProblemType { get; set; }
     }

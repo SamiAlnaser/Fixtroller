@@ -17,6 +17,8 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public Priority Priority { get; set; }
         public CaseType CaseType { get; set; }
         public string Address { get; set; }
+        public string CreatedByUserId { get; set; }
+        public DateTime CreatedAt { get; set; }
 
         //ProblemTypeName
         [JsonIgnore]
