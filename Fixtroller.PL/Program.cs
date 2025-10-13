@@ -4,11 +4,13 @@ using Fixtroller.BLL.Services.FileService;
 using Fixtroller.BLL.Services.MaintenanceRequestServices;
 using Fixtroller.BLL.Services.ProblemTypesServices;
 using Fixtroller.BLL.Services.TCategoryServices;
+using Fixtroller.BLL.Services.TechnicianServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.MaintenanceRequestepository;
 using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
 using Fixtroller.DAL.Repositories.TCategoryRepositories;
+using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Fixtroller.DAL.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -48,16 +50,18 @@ namespace Fixtroller.PL
             builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
           options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
-
+            builder.Services.AddScoped<ITechnicianRepository, TechnicianRepository>();
+            builder.Services.AddScoped<IMaintenanceRequestRepository, MaintenanceRequestRepository>();
             builder.Services.AddScoped<ITCategoryRepository, TCategorRepository>();
             builder.Services.AddScoped<ITCategoryService, TCategoryService>();
             builder.Services.AddScoped<IFileService, FileService>();
             builder.Services.AddScoped<IMaintenanceRequestService, MaintenanceRequestService>();
-            builder.Services.AddScoped<IMaintenanceRequestRepository, MaintenanceRequestRepository>();
             builder.Services.AddScoped<IProblemTypesService, ProblemTypesService>();
             builder.Services.AddScoped<IProblemTypeRepository, ProblemTypeRepository>();
             builder.Services.AddScoped<ISeedData, SeedData>();
             builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
+            builder.Services.AddScoped<ITechnicianService, TechnicianService>();
+
 
 
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>()

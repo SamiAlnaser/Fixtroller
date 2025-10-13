@@ -11,6 +11,7 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
     {
         Submitted = 1, // تم تقديم الطلب
         Processing = 2, // قيد المعالجة
+        //NeedConfarm=3, // في طريقها الى المعالجة(بين الفني و المدير )
         Processed = 3,  // تمت المعالجة
         Completed = 4, // مكتمل
         ResourcesNeeded = 5, // يحتاج الى موارد او فني اخر
@@ -39,5 +40,9 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
 
         public int ProblemTypeId { get; set; }
         public ProblemType ProblemType { get; set; }
+
+        public string? AssignedTechnicianUserId { get; set; }
+        public ApplicationUser AssignedTechnician { get; set; }
+        public DateTime? AssignedAtUtc { get; set; }
     }
 }

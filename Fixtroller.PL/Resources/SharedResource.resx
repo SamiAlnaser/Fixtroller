@@ -120,9 +120,6 @@
   <data name="AccountLocked" xml:space="preserve">
     <value>الحساب مقفل مؤقتًا</value>
   </data>
-  <data name="BadRequest" xml:space="preserve">
-    <value>الطلب غير صالح</value>
-  </data>
   <data name="Created" xml:space="preserve">
     <value>تم الإنشاء بنجاح</value>
   </data>
@@ -155,5 +152,44 @@
   </data>
   <data name="Updated" xml:space="preserve">
     <value>تم التحديث بنجاح</value>
+  </data>
+  <data name="BadRequest" xml:space="preserve">
+    <value>الطلب غير صالح</value>
+  </data>
+  <data name="Request_NotFound" xml:space="preserve">
+    <value>الطلب غير موجود</value>
+  </data>
+  <data name="Technician_NotFound" xml:space="preserve">
+    <value>الفنّي غير موجود</value>
+  </data>
+  <data name="User_NotTechnician" xml:space="preserve">
+    <value>المستخدم ليس فنّيًا</value>
+  </data>
+  <data name="Technician_Assigned" xml:space="preserve">
+    <value>تم إسناد الفنّي للطلب</value>
+  </data>
+  <data name="Case_NoChange" xml:space="preserve">
+    <value>لا يوجد تغيير في حالة الطلب</value>
+  </data>
+  <data name="Case_AutoManaged" xml:space="preserve">
+    <value>حالتا Submitted و Processing تُداران تلقائيًا</value>
+  </data>
+  <data name="Case_NotAllowedForOwner" xml:space="preserve">
+    <value>هذه الحالة غير مسموحة للمالك</value>
+  </data>
+  <data name="Request_NotAssignedToYou" xml:space="preserve">
+    <value>الطلب غير مُسند لك</value>
+  </data>
+  <data name="Case_NotAllowedForTechnician" xml:space="preserve">
+    <value>هذه الحالة غير مسموحة للفنّي</value>
+  </data>
+  <data name="Case_NotAllowedForManager" xml:space="preserve">
+    <value>هذه الحالة غير مسموحة للمدير/الأدمن</value>
+  </data>
+  <data name="Case_Changed" xml:space="preserve">
+    <value>تم تغيير حالة الطلب بنجاح</value>
+  </data>
+  <data name="Forbidden" xml:space="preserve">
+    <value>غير مُصرّح لك بتنفيذ هذا الإجراء</value>
   </data>
 </root>

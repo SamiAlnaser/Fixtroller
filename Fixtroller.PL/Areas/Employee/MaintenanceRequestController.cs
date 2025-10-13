@@ -54,5 +54,20 @@ namespace Fixtroller.PL.Areas.Employee
             var list = await _maintenanceRequestService.GetMineAsync(userId);
             return Ok(list);
         }
+        [HttpPatch("{id:int}/caseMine")]
+        public async Task<IActionResult> ChangeCaseMine(int id, [FromBody] ChangeCaseTypeRequestDTO dto)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+            var role = User.FindFirst("role")?.Value ?? ""; // قد يكون Empty, service يتعامل بمنطق المالك
+
+            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto.NewCaseType, userId, role, language);
+
+            if (res is null)
+                return BadRequest(new { message = _localizer[key].Value });
+
+            return Ok(new { message = _localizer[key].Value, data = res });
+        }
     }
 }

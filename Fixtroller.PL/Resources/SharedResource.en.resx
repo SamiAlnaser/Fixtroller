@@ -120,9 +120,6 @@
   <data name="AccountLocked" xml:space="preserve">
     <value>Account is temporarily locked</value>
   </data>
-  <data name="BadRequest" xml:space="preserve">
-    <value>Bad request</value>
-  </data>
   <data name="Created" xml:space="preserve">
     <value>Created successfully</value>
   </data>
@@ -155,5 +152,44 @@
   </data>
   <data name="Updated" xml:space="preserve">
     <value>Updated successfully</value>
+  </data>
+  <data name="BadRequest" xml:space="preserve">
+    <value>Bad request, check the requirements</value>
+  </data>
+  <data name="Request_NotFound" xml:space="preserve">
+    <value>Request not found</value>
+  </data>
+  <data name="Technician_NotFound" xml:space="preserve">
+    <value>Technician not found</value>
+  </data>
+  <data name="User_NotTechnician" xml:space="preserve">
+    <value>User is not a technician</value>
+  </data>
+  <data name="Technician_Assigned" xml:space="preserve">
+    <value>Technician has been assigned to the request</value>
+  </data>
+  <data name="Case_NoChange" xml:space="preserve">
+    <value>No changes were made to the request state</value>
+  </data>
+  <data name="Case_AutoManaged" xml:space="preserve">
+    <value>Submitted and Processing are auto-managed</value>
+  </data>
+  <data name="Case_NotAllowedForOwner" xml:space="preserve">
+    <value>This state isn't allowed for the owner</value>
+  </data>
+  <data name="Request_NotAssignedToYou" xml:space="preserve">
+    <value>This request is not assigned to you</value>
+  </data>
+  <data name="Case_NotAllowedForTechnician" xml:space="preserve">
+    <value>This state isn't allowed for technicians</value>
+  </data>
+  <data name="Case_NotAllowedForManager" xml:space="preserve">
+    <value>This state isn't allowed for manager/admin</value>
+  </data>
+  <data name="Case_Changed" xml:space="preserve">
+    <value>Request state changed successfully</value>
+  </data>
+  <data name="Forbidden" xml:space="preserve">
+    <value>You are not authorized to perform this action</value>
   </data>
 </root>

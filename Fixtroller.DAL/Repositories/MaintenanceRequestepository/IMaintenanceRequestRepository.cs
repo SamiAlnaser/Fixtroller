@@ -15,5 +15,9 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
             bool asTracking = false,
             Func<IQueryable<MaintenanceRequest>, IQueryable<MaintenanceRequest>>? include = null,
             Expression<Func<MaintenanceRequest, bool>>? predicate = null);
+        IQueryable<MaintenanceRequest> QueryAssignedTo(string technicianUserId, bool asTracking = false);
+        Task<MaintenanceRequest?> GetForAssignmentAsync(int id);
+        Task<MaintenanceRequest?> GetForUpdateAsync(int id);
+        Task CommitAsync();
     }
 }

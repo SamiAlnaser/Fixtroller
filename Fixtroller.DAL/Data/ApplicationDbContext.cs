@@ -51,7 +51,20 @@ namespace Fixtroller.DAL.Data
                 e.HasIndex(m => m.CreatedByUserId);
                 e.Property(m => m.Title).IsRequired().HasMaxLength(200);
                 e.Property(m => m.Address).IsRequired().HasMaxLength(300);
+
+                  e.HasOne(m => m.AssignedTechnician)
+                 .WithMany()
+                 .HasForeignKey(m => m.AssignedTechnicianUserId)
+                 .OnDelete(DeleteBehavior.SetNull);
             });
+            builder.Entity<ApplicationUser>(u =>
+            {
+                u.HasOne(x => x.TechnicianCategory)
+                 .WithMany(c => c.Technicians)
+                 .HasForeignKey(x => x.TechnicianCategoryId)
+                 .OnDelete(DeleteBehavior.SetNull);
+            });
+
 
 
 

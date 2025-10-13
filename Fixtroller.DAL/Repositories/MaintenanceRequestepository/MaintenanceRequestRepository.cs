@@ -27,5 +27,32 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
             if (predicate is not null) q = q.Where(predicate);
             return q;
         }
+        public async Task<MaintenanceRequest?> GetForAssignmentAsync(int id)
+        {
+            return await _context.MaintenanceRequests
+                .Include(r => r.AssignedTechnician)
+                    .ThenInclude(t => t.TechnicianCategory)
+                        .ThenInclude(c => c.Translations)
+                .FirstOrDefaultAsync(r => r.Id == id);
+        }
+        public IQueryable<MaintenanceRequest> QueryAssignedTo(string technicianUserId, bool asTracking = false)
+        {
+            var q = asTracking ? _context.MaintenanceRequests
+                               : _context.MaintenanceRequests.AsNoTracking();
+
+            return q
+                .Include(r => r.ProblemType)
+                    .ThenInclude(pt => pt.Translations) // ← مهم
+                .Where(r => r.AssignedTechnicianUserId == technicianUserId)
+                .OrderByDescending(r => r.AssignedAtUtc)
+                .ThenByDescending(r => r.CreatedAt);
+        }
+        public async Task<MaintenanceRequest?> GetForUpdateAsync(int id)
+        {
+            return await _context.MaintenanceRequests
+                .FirstOrDefaultAsync(r => r.Id == id);
+        }
+
+        public Task CommitAsync() => _context.SaveChangesAsync();
     }
 }

@@ -9,6 +9,8 @@ namespace Fixtroller.DAL.Entities.TechnicianCategoryEntity
     public class TechnicianCategory : BaseModel
     {
         public List<TechnicianCategoryTranslation> Translations { get; set; } = new List<TechnicianCategoryTranslation>();
-
+        public ICollection<ApplicationUser> Technicians { get; set; } = new List<ApplicationUser>();
     }
+
 }
+

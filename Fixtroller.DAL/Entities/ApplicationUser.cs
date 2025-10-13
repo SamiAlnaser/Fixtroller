@@ -1,4 +1,5 @@
 ﻿using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
+using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -13,6 +14,8 @@ namespace Fixtroller.DAL.Entities
     {
         public string FullName { get; set; } // username رح يتغير عشان موضوع اللغات و رح يتغير تبعياته في السيرفر و التوكين و غيره مع  
         public string Location { get; set; }
+        public int? TechnicianCategoryId { get; set; }
+        public TechnicianCategory TechnicianCategory { get; set; }
         public ICollection<MaintenanceRequest> SubmittedRequests { get; set; } = new List<MaintenanceRequest>();
     }
 

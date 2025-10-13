@@ -1,4 +1,5 @@
 ﻿using Fixtroller.BLL.Services.MaintenanceRequestServices;
+using Fixtroller.BLL.Services.TechnicianServices;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -16,11 +17,13 @@ namespace Fixtroller.PL.Areas.Technician
     {
 
         private readonly IMaintenanceRequestService _maintenanceRequestService;
+        private readonly ITechnicianService _technicianService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public MaintenanceRequestController(IMaintenanceRequestService maintenanceRequestService, IStringLocalizer<SharedResource> localizer)
+        public MaintenanceRequestController(IMaintenanceRequestService maintenanceRequestService, ITechnicianService technicianService, IStringLocalizer<SharedResource> localizer)
         {
             _maintenanceRequestService = maintenanceRequestService;
+            _technicianService = technicianService;
             _localizer = localizer;
         }
 
@@ -54,5 +57,55 @@ namespace Fixtroller.PL.Areas.Technician
             var list = await _maintenanceRequestService.GetMineAsync(userId);
             return Ok(list);
         }
+
+        [HttpGet("assigned")]
+        public async Task<IActionResult> GetAssigned()
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? User.FindFirst("Id")?.Value;
+
+            if (string.IsNullOrWhiteSpace(userId))
+            {
+                return Unauthorized();
+            }
+
+            var data = await _technicianService.GetMyAssignedAsync(userId, language);
+            return Ok(data);
+        }
+
+        [HttpPatch("{id:int}/case")]
+        public async Task<IActionResult> ChangeCase(int id, [FromBody] ChangeCaseTypeRequestDTO dto)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+            var role = User.FindFirst(ClaimTypes.Role)?.Value;
+
+            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto.NewCaseType, userId, role, language);
+
+            if (res is null)
+                return BadRequest(new { message = _localizer[key].Value });
+
+            return Ok(new { message = _localizer[key].Value, data = res });
+        }
+
+        [HttpPatch("{id:int}/caseMine")]
+        public async Task<IActionResult> ChangeCaseMine(int id, [FromBody] ChangeCaseTypeRequestDTO dto)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+            var role = User.FindFirst("role")?.Value ?? ""; // قد يكون Empty, service يتعامل بمنطق المالك
+
+            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto.NewCaseType, userId, role, language);
+
+            if (res is null)
+                return BadRequest(new { message = _localizer[key].Value });
+
+            return Ok(new { message = _localizer[key].Value, data = res });
+        }
+
     }
 }
