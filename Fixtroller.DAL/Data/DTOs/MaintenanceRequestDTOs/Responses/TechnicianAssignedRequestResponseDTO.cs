@@ -9,7 +9,6 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
     public class TechnicianAssignedRequestResponseDTO
     {
         public int Id { get; set; }
-        public int RequestNumber { get; set; }
         public string Title { get; set; }
         public string Address { get; set; }
 

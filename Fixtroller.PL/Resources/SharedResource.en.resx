@@ -172,7 +172,7 @@
     <value>No changes were made to the request state</value>
   </data>
   <data name="Case_AutoManaged" xml:space="preserve">
-    <value>Submitted and Processing are auto-managed</value>
+    <value>The Submitted, Processing, and Modified states are auto-managed.</value>
   </data>
   <data name="Case_NotAllowedForOwner" xml:space="preserve">
     <value>This state isn't allowed for the owner</value>
@@ -191,5 +191,11 @@
   </data>
   <data name="Forbidden" xml:space="preserve">
     <value>You are not authorized to perform this action</value>
+  </data>
+  <data name="Request_Updated" xml:space="preserve">
+    <value>The request has been updated successfully</value>
+  </data>
+  <data name="Request_NotEditableInThisState" xml:space="preserve">
+    <value>The request cannot be modified in its current state.</value>
   </data>
 </root>

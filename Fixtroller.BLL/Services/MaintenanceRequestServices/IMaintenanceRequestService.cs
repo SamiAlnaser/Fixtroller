@@ -14,14 +14,16 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
     public interface IMaintenanceRequestService : IGenericService<MaintenanceRequestRequestDTO, MaintenanceRequestResponseDTO , MaintenanceRequest>
     {
         Task<int> CreateWithFile(MaintenanceRequestRequestDTO request , string userId);
-        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(string userId);
-        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync(); // لإدارة
-        Task<MaintenanceRequestResponseDTO?> GetByIdAsync(int id);
+        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(string userId, string role);
+        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync(string role); // لإدارة
+        Task<MaintenanceRequestResponseDTO?> GetByIdAsync(int id, string userId, string role, string language);
        
         Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(int requestId, string technicianUserId, string language = "ar");
-
-      
         Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> ChangeCaseAsync(int id, CaseType newCase, string userId, string userRole, string language = "ar");
+
+        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
+        UpdateMineAsync(int id, string userId, string role, MaintenanceRequestUpdateDTO dto, string language = "ar");
+
     }
 }
 

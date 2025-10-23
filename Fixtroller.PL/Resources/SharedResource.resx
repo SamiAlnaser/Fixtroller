@@ -172,7 +172,7 @@
     <value>لا يوجد تغيير في حالة الطلب</value>
   </data>
   <data name="Case_AutoManaged" xml:space="preserve">
-    <value>حالتا Submitted و Processing تُداران تلقائيًا</value>
+    <value>الحالات Submitted و Processing و Modified تُدار تلقائيًا.</value>
   </data>
   <data name="Case_NotAllowedForOwner" xml:space="preserve">
     <value>هذه الحالة غير مسموحة للمالك</value>
@@ -191,5 +191,11 @@
   </data>
   <data name="Forbidden" xml:space="preserve">
     <value>غير مُصرّح لك بتنفيذ هذا الإجراء</value>
+  </data>
+  <data name="Request_Updated" xml:space="preserve">
+    <value>تم تحديث الطلب بنجاح</value>
+  </data>
+  <data name="Request_NotEditableInThisState" xml:space="preserve">
+    <value>لا يمكن تعديل الطلب في حالته الحالية</value>
   </data>
 </root>

@@ -13,8 +13,7 @@ namespace Fixtroller.BLL.Mapping
     {
         public static MaintenanceRequest ToEntity(
             MaintenanceRequestRequestDTO request,
-            string createdByUserId,
-            string? mainImageSavedPath = null)
+            string createdByUserId)
         {
             return new MaintenanceRequest
             {
@@ -25,26 +24,99 @@ namespace Fixtroller.BLL.Mapping
                 ProblemTypeId = request.ProblemTypeId,
                 CaseType = CaseType.Submitted,
                 CreatedByUserId = createdByUserId,
-                CreatedAt = DateTime.UtcNow,
-                MainImage = mainImageSavedPath
+                CreatedAt = DateTime.UtcNow
             };
         }
 
-        public static MaintenanceRequestResponseDTO ToResponse(MaintenanceRequest e)
+        // 1) النسخة الافتراضية (تبني URL نسبي)
+        public static MaintenanceRequestResponseDTO ToResponse(MaintenanceRequest e, string role)
+            => ToResponse(e, role, fileName => $"/Images/{fileName}");
+
+        // 2) نسخة تقبل مولّد روابط مخصّص (اختياري)
+        public static MaintenanceRequestResponseDTO ToResponse(
+            MaintenanceRequest e,
+            string role,
+            Func<string, string> urlBuilder,
+            string language = "ar",
+            bool isOwner = false
+            )
         {
-            return new MaintenanceRequestResponseDTO
+            var effectiveCase =
+                (isOwner
+                 && role.Equals("Employee", StringComparison.OrdinalIgnoreCase)
+                 && e.CaseType == CaseType.ManagerReview)
+                    ? CaseType.Processing
+                    : e.CaseType;
+
+            var dto = new MaintenanceRequestResponseDTO
             {
                 Id = e.Id,
-                RequestNumber = e.RequestNumber,
                 Title = e.Title,
                 Description = e.Description,
                 Priority = e.Priority,
-                CaseType = e.CaseType,
+                CaseType = GetCaseTypeName(effectiveCase, language),
                 Address = e.Address,
                 CreatedByUserId = e.CreatedByUserId,
                 CreatedAt = e.CreatedAt,
-                MainImage = e.MainImage
+                LastModifiedAt = e.UpdatedAt
+            };
+
+            if (e.Images is not null && e.Images.Count > 0)
+            {
+                dto.Images = e.Images
+                    .OrderByDescending(i => i.IsPrimary)
+                    .Select(i => new MaintenanceRequestImageDTO
+                    {
+                        Id = i.Id,
+                        Url = urlBuilder(i.FileName),
+                        IsPrimary = i.IsPrimary
+                    })
+                    .ToList();
+            }
+            dto.AssignedTechnician = e.AssignedTechnician == null
+                ? null
+                : TechnicianMappings.ToTechnicianResponse(e.AssignedTechnician, language);
+
+            
+
+            return dto;
+        }
+        public static string GetCaseTypeName(CaseType c, string lang)
+        {
+            var isAr = string.Equals(lang, "ar", StringComparison.OrdinalIgnoreCase);
+
+            if (isAr)
+            {
+                return c switch
+                {
+                    CaseType.Submitted => "تم التقديم",
+                    CaseType.ManagerReview => "مراجعة المدير",
+                    CaseType.Processing => "قيد المعالجة",
+                    CaseType.ResourcesNeeded => "بحاجة موارد",
+                    CaseType.Processed => "تمت المعالجة",
+                    CaseType.Modified => "تم التعديل",
+                    CaseType.Reopened => "أعيد فتحه",
+                    CaseType.Completed => "مكتمل",
+                    CaseType.Cancelled => "ملغي",
+                    _ => c.ToString()
+                };
+            }
+
+            // English (default)
+            return c switch
+            {
+                CaseType.Submitted => "Submitted",
+                CaseType.ManagerReview => "Manager Review",
+                CaseType.Processing => "Processing",
+                CaseType.ResourcesNeeded => "Resources Needed",
+                CaseType.Processed => "Processed",
+                CaseType.Modified => "Modified",
+                CaseType.Reopened => "Reopened",
+                CaseType.Completed => "Completed",
+                CaseType.Cancelled => "Cancelled",
+                _ => c.ToString()
             };
         }
+
     }
 }

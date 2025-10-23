@@ -50,6 +50,7 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
         public async Task<MaintenanceRequest?> GetForUpdateAsync(int id)
         {
             return await _context.MaintenanceRequests
+                .Include(r => r.Images)
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
 

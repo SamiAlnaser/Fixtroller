@@ -51,9 +51,18 @@ namespace Fixtroller.BLL.Mapping
                 AssignedAtUtc = request.AssignedAtUtc ?? DateTime.UtcNow
             };
         }
+
+        // 1) النسخة الافتراضية: تبني URL نسبي للصورة الأولى (مع تفضيل IsPrimary)
         public static TechnicianAssignedRequestResponseDTO ToTechnicianAssigned(
-    MaintenanceRequest r,
-    string language = "ar")
+            MaintenanceRequest r,
+            string language = "ar")
+            => ToTechnicianAssigned(r, language, fileName => $"/Images/{fileName}");
+
+        // 2) نسخة تقبل مولّد روابط مخصّص (اختياري)
+        public static TechnicianAssignedRequestResponseDTO ToTechnicianAssigned(
+            MaintenanceRequest r,
+            string language,
+            Func<string, string> urlBuilder)
         {
             if (r == null) return null;
 
@@ -62,17 +71,25 @@ namespace Fixtroller.BLL.Mapping
                             .FirstOrDefault(t => t.Language == language)?.Name
                          ?? r.ProblemType?.Translations?.FirstOrDefault()?.Name;
 
+            // اختر أول ملف صورة مع تفضيل IsPrimary
+            string? firstImageFile = r.Images != null && r.Images.Count > 0
+                ? r.Images
+                    .OrderByDescending(i => i.IsPrimary)
+                    .Select(i => i.FileName)
+                    .FirstOrDefault()
+                : null;
+
             return new TechnicianAssignedRequestResponseDTO
             {
                 Id = r.Id,
-                RequestNumber = r.RequestNumber,
                 Title = r.Title,
                 Address = r.Address,
-                CaseType = r.CaseType.ToString(),
+                CaseType = MaintenanceRequestMapper.GetCaseTypeName(r.CaseType, language),
                 Priority = r.Priority.ToString(),
                 ProblemTypeId = r.ProblemTypeId,
                 ProblemTypeName = ptName,
-                MainImage = $"https://localhost:7127/Images/{r.MainImage}",
+                // كان سابقًا: $"https://localhost:7127/Images/{r.MainImage}"
+                MainImage = firstImageFile == null ? null : urlBuilder(firstImageFile),
                 CreatedAt = r.CreatedAt,
                 AssignedAtUtc = r.AssignedAtUtc
             };

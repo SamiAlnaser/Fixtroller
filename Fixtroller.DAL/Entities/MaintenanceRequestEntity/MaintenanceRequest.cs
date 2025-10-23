@@ -11,13 +11,13 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
     {
         Submitted = 1, // تم تقديم الطلب
         Processing = 2, // قيد المعالجة
-        //NeedConfarm=3, // في طريقها الى المعالجة(بين الفني و المدير )
-        Processed = 3,  // تمت المعالجة
-        Completed = 4, // مكتمل
-        ResourcesNeeded = 5, // يحتاج الى موارد او فني اخر
-        Cancelled = 6,  // ملغى
-        Reopened = 7, // تم اعادة فتح الطلب
-        Modified = 8  // معدل
+        ManagerReview = 3,
+        Processed = 4,  // تمت المعالجة
+        Completed = 5, // مكتمل
+        ResourcesNeeded = 6, // يحتاج الى موارد او فني اخر
+        Cancelled = 7,  // ملغى
+        Reopened = 8, // تم اعادة فتح الطلب
+        Modified = 9  // معدل
     }
     public enum Priority
     {
@@ -27,17 +27,18 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
     }
     public class MaintenanceRequest : BaseModel
     {
-        public int RequestNumber { get; set; }
         public string Title {  get; set; }
         public string Description { get; set; }
         public CaseType CaseType { get; set; } = CaseType.Submitted;
-        public string? MainImage { get; set; }
+        public ICollection<MaintenanceRequestImage> Images { get; set; } = new List<MaintenanceRequestImage>();
+        
+
         public string Address { get; set; }
         public Priority Priority { get; set; }
 
         public string CreatedByUserId { get; set; }            
         public ApplicationUser CreatedByUser { get; set; }
-
+        public DateTime? UpdatedAt { get; set; }
         public int ProblemTypeId { get; set; }
         public ProblemType ProblemType { get; set; }
 

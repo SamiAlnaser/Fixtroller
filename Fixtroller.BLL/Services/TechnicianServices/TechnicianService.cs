@@ -1,4 +1,5 @@
 ﻿using Fixtroller.BLL.Mapping;
+using Fixtroller.BLL.Services.FileService;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
@@ -13,15 +14,18 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.BLL.Services.TechnicianServices
 {
+    
     public class TechnicianService : ITechnicianService
     {
         private readonly ITechnicianRepository _repository;
         private readonly IMaintenanceRequestRepository _reqRepo;
+        private readonly IFileService _fileService;
 
-        public TechnicianService(ITechnicianRepository repository , IMaintenanceRequestRepository reqRepo)
+        public TechnicianService(ITechnicianRepository repository , IMaintenanceRequestRepository reqRepo, IFileService fileService)
         {
             _repository = repository;
             _reqRepo = reqRepo;
+            _fileService = fileService;
         }
 
         public async Task<IReadOnlyList<TechnicianResponseDTO>> GetAsync(TechniciansFilterRequestDTO filter)
@@ -38,12 +42,18 @@ namespace Fixtroller.BLL.Services.TechnicianServices
 
             return await _repository.UpdateCategoryAsync(dto.TechnicianUserId, dto.TechnicianCategoryId);
         }
-        public async Task<IReadOnlyList<TechnicianAssignedRequestResponseDTO>> GetMyAssignedAsync(string technicianUserId, string language = "ar")
+        public async Task<IReadOnlyList<TechnicianAssignedRequestResponseDTO>> GetMyAssignedAsync(
+            string technicianUserId, string language = "ar")
         {
-            var list = await _reqRepo.QueryAssignedTo(technicianUserId, asTracking: false).ToListAsync();
+            var list = await _reqRepo
+                .QueryAssignedTo(technicianUserId, asTracking: false)
+                .Include(r => r.Images)
+                .Include(r => r.ProblemType).ThenInclude(pt => pt.Translations)
+                .OrderByDescending(r => r.CreatedAt)
+                .ToListAsync();
 
             return list
-                .Select(r => TechnicianMappings.ToTechnicianAssigned(r, language))
+                .Select(r => TechnicianMappings.ToTechnicianAssigned(r, language, _fileService.GetPublicUrl))
                 .ToList()
                 .AsReadOnly();
         }

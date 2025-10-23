@@ -106,8 +106,8 @@ namespace Fixtroller.PL
 
             var scope = app.Services.CreateScope();
             var objectOfSeedData = scope.ServiceProvider.GetRequiredService<ISeedData>();
-            await objectOfSeedData.DataSeedingAsync();
             await objectOfSeedData.IdentityDataSeedingAsync();
+            await objectOfSeedData.DataSeedingAsync();
 
 
             app.UseHttpsRedirection();
@@ -118,6 +118,7 @@ namespace Fixtroller.PL
             app.MapControllers();
 
             app.Run();
+
         }
     }
 }

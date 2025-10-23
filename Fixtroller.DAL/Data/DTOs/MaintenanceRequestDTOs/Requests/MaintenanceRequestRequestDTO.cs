@@ -13,7 +13,7 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests
     {
         public string Title { get; set; }
         public string Description { get; set; }
-        public IFormFile? MainImage { get; set; }
+        public List<IFormFile>? Images { get; set; } // صور متعددة
         public string Address { get; set; }
         public Priority Priority { get; set; }
         public int ProblemTypeId { get; set; }

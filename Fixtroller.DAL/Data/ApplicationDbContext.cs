@@ -19,6 +19,7 @@ namespace Fixtroller.DAL.Data
         public DbSet<TechnicianCategory> Tcategories { get; set; }
         public DbSet<ProblemType> PTypes { get; set; }
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
+        public DbSet<MaintenanceRequestImage> MaintenanceRequestImages { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
@@ -82,6 +83,18 @@ namespace Fixtroller.DAL.Data
             builder.Entity<ApplicationUser>()
             .HasIndex(u => u.Email)
             .IsUnique();
+
+
+            builder.Entity<MaintenanceRequestImage>(e =>
+            {
+                e.ToTable("MaintenanceRequestImages");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.FileName).IsRequired().HasMaxLength(300);
+                e.HasOne(x => x.MaintenanceRequest)
+                 .WithMany(r => r.Images)
+                 .HasForeignKey(x => x.MaintenanceRequestId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
         }
 
 

@@ -30,48 +30,72 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
         public async Task<int> CreateWithFile(MaintenanceRequestRequestDTO request, string userId)
         {
-            string? savedPath = null;
-            if (request.MainImage is not null && request.MainImage.Length > 0)
+            var entity = MaintenanceRequestMapper.ToEntity(request, userId);
+
+            var fileNames = new List<string>();
+            if (request.Images != null)
             {
-                savedPath = await _fileService.UploadAsync(request.MainImage);
+                foreach (var f in request.Images)
+                {
+                    if (f != null && f.Length > 0)
+                        fileNames.Add(await _fileService.UploadAsync(f));
+                }
             }
 
-            var entity = MaintenanceRequestMapper.ToEntity(request, userId, savedPath);
+            for (int i = 0; i < fileNames.Count; i++)
+                entity.Images.Add(new MaintenanceRequestImage { FileName = fileNames[i], IsPrimary = (i == 0) });
 
-            entity.RequestNumber = (int)(DateTimeOffset.UtcNow.ToUnixTimeSeconds() % int.MaxValue);
+            if (entity.Images.Count > 0 && !entity.Images.Any(i => i.IsPrimary))
+                entity.Images.First().IsPrimary = true;
 
-            return await _repository.AddAsync(entity);
+            var id = await _repository.AddAsync(entity);
+            return id;
         }
-
-        public async Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(string userId)
+        public async Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(string userId, string role)
         {
             var data = await _repository.Query(
-                            asTracking: false,
-                            include: null,
-                            predicate: x => x.CreatedByUserId == userId)
-                        .OrderByDescending(x => x.CreatedAt)
-                        .ToListAsync();
+                                asTracking: false,
+                                predicate: x => x.CreatedByUserId == userId)
+                            .OrderByDescending(x => x.CreatedAt)
+                            .ToListAsync();
 
-            return data.Select(MaintenanceRequestMapper.ToResponse);
+            return data.Select(x => MaintenanceRequestMapper.ToResponse(x, role));
         }
 
-        public async Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync()
+        public async Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync(string role)
         {
             var data = await _repository.Query(asTracking: false)
                                   .OrderByDescending(x => x.CreatedAt)
                                   .ToListAsync();
 
-            return data.Select(MaintenanceRequestMapper.ToResponse);
+            return data.Select(x => MaintenanceRequestMapper.ToResponse(x, role));
         }
 
-        public async Task<MaintenanceRequestResponseDTO?> GetByIdAsync(int id)
+        public async Task<MaintenanceRequestResponseDTO?> GetByIdAsync(int id, string userId, string role, string language = "ar")
         {
             var e = await _repository.Query(
                             asTracking: false,
-                            predicate: x => x.Id == id)
-                        .FirstOrDefaultAsync();
+                            predicate: x =>
+                                x.Id == id &&
+                                (
+                                    role == "Admin" ||
+                                    role == "MaintenanceManager" ||
+                                    (role == "Employee" && (x.CreatedByUserId == userId)) ||
+                                    (role == "Technician" && (x.AssignedTechnicianUserId == userId || x.CreatedByUserId == userId))
+                                ),
+                                include: q => q.Include(r => r.Images)
+                                .Include(r => r.AssignedTechnician)
+                            .ThenInclude(t => t.TechnicianCategory)
+                                .ThenInclude(c => c.Translations)
+                                ).FirstOrDefaultAsync();
 
-            return e is null ? null : MaintenanceRequestMapper.ToResponse(e);
+
+            if (e is null) return null;
+
+
+            var isOwner = string.Equals(e.CreatedByUserId, userId, StringComparison.Ordinal);
+            return MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner);
+
         }
 
         public async Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(
@@ -108,10 +132,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (r is null) return (null, "Request_NotFound");
 
             if (r.CaseType == newCase)
-                return (MaintenanceRequestMapper.ToResponse(r), "Case_NoChange"); // لا تغيير
+                return (MaintenanceRequestMapper.ToResponse(r, userRole), "Case_Changed"); // لا تغيير
 
             // حالات تُدار تلقائياً
-            if (newCase is CaseType.Submitted or CaseType.Processing)
+            if (newCase is CaseType.Submitted or CaseType.Processing or CaseType.Modified)
                 return (null, "Case_AutoManaged");
 
             bool isManager = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
@@ -119,17 +143,17 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             bool isTechnician = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
             bool isOwner = r.CreatedByUserId == userId;
 
-            // المالك (بغض النظر عن دوره): Modified, Cancelled, Reopened, Completed
+            // المالك (بغض النظر عن دوره):  Cancelled, Reopened, Completed
             if (isOwner && !(isManager || isAdmin))
             {
-                var allowedOwner = new[] { CaseType.Modified, CaseType.Cancelled, CaseType.Reopened, CaseType.Completed };
+                var allowedOwner = new[] {  CaseType.Cancelled, CaseType.Reopened, CaseType.Completed };
                 if (!allowedOwner.Contains(newCase))
                     return (null, "Case_NotAllowedForOwner");
 
                 r.CaseType = newCase;
                 //r.UpdatedAt = DateTime.UtcNow;  ////////////////////////// لازم تنعمل من entity (مع باقي تفاصيل العرض و الاضافة و الملحفات)
                 await _repository.CommitAsync();
-                return (MaintenanceRequestMapper.ToResponse(r), "Case_Changed");
+                return (MaintenanceRequestMapper.ToResponse(r, userRole), "Case_Changed");
             }
 
 
@@ -138,14 +162,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 if (r.AssignedTechnicianUserId != userId)
                     return (null, "Request_NotAssignedToYou");
 
-                var allowedTech = new[] { CaseType.ResourcesNeeded, CaseType.Processed };
+                var allowedTech = new[] { CaseType.ResourcesNeeded, CaseType.ManagerReview };
                 if (!allowedTech.Contains(newCase))
                     return (null, "Case_NotAllowedForTechnician");
 
                 r.CaseType = newCase;
                 //r.UpdatedAt = DateTime.UtcNow;////////////////////////////
                 await _repository.CommitAsync();
-                return (MaintenanceRequestMapper.ToResponse(r), "Case_Changed");
+                return (MaintenanceRequestMapper.ToResponse(r, userRole), "Case_Changed");
             }
 
             if (isManager || isAdmin)
@@ -157,11 +181,78 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 r.CaseType = newCase;
                 //r.UpdatedAt = DateTime.UtcNow;////////////////////////////////////////
                 await _repository.CommitAsync();
-                return (MaintenanceRequestMapper.ToResponse(r), "Case_Changed");
+                return (MaintenanceRequestMapper.ToResponse(r, userRole), "Case_Changed");
             }
 
             return (null, "Forbidden");
         }
+
+        public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
+            UpdateMineAsync(int id, string userId, string role, MaintenanceRequestUpdateDTO dto, string language = "ar")
+        {
+            var r = await _repository.GetForUpdateAsync(id);
+            if (r is null) return (null, "Request_NotFound");
+
+            // المالك فقط (بغض النظر عن دوره)
+            if (!string.Equals(r.CreatedByUserId, userId, StringComparison.Ordinal))
+                throw new UnauthorizedAccessException("Forbidden");
+
+            // الحالات المسموح فيها التعديل
+            var editable = new HashSet<CaseType>
+    {
+        CaseType.Submitted,
+        CaseType.ManagerReview,
+        CaseType.Reopened,
+        CaseType.Modified
+    };
+            if (!editable.Contains(r.CaseType))
+                return (null, "Request_NotEditableInThisState");
+
+            // تعديل الحقول النصية
+            if (!string.IsNullOrWhiteSpace(dto.Title)) r.Title = dto.Title.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Description)) r.Description = dto.Description.Trim();
+            if (!string.IsNullOrWhiteSpace(dto.Address)) r.Address = dto.Address.Trim();
+            if (dto.Priority.HasValue) r.Priority = dto.Priority.Value;
+            if (dto.ProblemTypeId.HasValue) r.ProblemTypeId = dto.ProblemTypeId.Value;
+
+            // حذف صور
+            if (dto.RemoveImageIds != null && dto.RemoveImageIds.Count > 0 && r.Images.Count > 0)
+            {
+                var toRemove = r.Images.Where(i => dto.RemoveImageIds.Contains(i.Id)).ToList();
+                foreach (var img in toRemove)
+                {
+                    await _fileService.DeleteAsync(img.FileName);
+                    r.Images.Remove(img);
+                }
+            }
+
+            // إضافة صور
+            if (dto.NewImages != null && dto.NewImages.Count > 0)
+            {
+                foreach (var f in dto.NewImages)
+                {
+                    if (f != null && f.Length > 0)
+                    {
+                        var name = await _fileService.UploadAsync(f);
+                        r.Images.Add(new MaintenanceRequestImage { FileName = name, IsPrimary = false });
+                    }
+                }
+            }
+
+            // ضمان وجود صورة أساسية واحدة
+            if (r.Images.Count > 0 && !r.Images.Any(i => i.IsPrimary))
+                r.Images.First().IsPrimary = true;
+
+            // انتقال الحالة وتحديث الوقت
+            r.CaseType = CaseType.Modified;
+            r.UpdatedAt = DateTime.UtcNow; // أو UpdatedAtUtc حسب كيانك
+
+            await _repository.CommitAsync();
+            return (MaintenanceRequestMapper.ToResponse(r, role, _fileService.GetPublicUrl), "Request_Updated");
+
+        }
+
+
     }
 }
     
