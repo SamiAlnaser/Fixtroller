@@ -17,24 +17,44 @@ namespace Fixtroller.BLL.Services.FileService
             _publicBaseUrl = (configuration["App:PublicBaseUrl"] ?? string.Empty).TrimEnd('/');
         }
 
-        public async Task<string> UploadAsync(IFormFile file)
+        public async Task<string> UploadAsync(IFormFile file, CancellationToken ct = default)
         {
-            if (file == null || file.Length == 0) throw new InvalidOperationException("Empty file.");
+            if (file is null || file.Length == 0)
+                throw new InvalidOperationException("Empty file.");
 
-            var fileName = $"{Guid.NewGuid()}{Path.GetExtension(file.FileName)}";
-            var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", fileName);
+            ct.ThrowIfCancellationRequested();
 
-            Directory.CreateDirectory(Path.GetDirectoryName(path)!);
-            using var stream = File.Create(path);
-            await file.CopyToAsync(stream);
+            var ext = Path.GetExtension(file.FileName);
+            var fileName = $"{Guid.NewGuid()}{ext}";
 
+            var imagesDir = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images");
+            Directory.CreateDirectory(imagesDir);
+
+            var path = Path.Combine(imagesDir, fileName);
+
+            await using var stream = new FileStream(
+                path,
+                FileMode.CreateNew,
+                FileAccess.Write,
+                FileShare.None,
+                bufferSize: 81920,
+                useAsync: true);
+
+            await file.CopyToAsync(stream, ct);
             return fileName;
         }
 
-        public Task DeleteAsync(string fileName)
+        public Task DeleteAsync(string fileName, CancellationToken ct = default)
         {
+            if (string.IsNullOrWhiteSpace(fileName))
+                return Task.CompletedTask;
+
+            ct.ThrowIfCancellationRequested();
+
             var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", fileName);
-            if (File.Exists(path)) File.Delete(path);
+            if (File.Exists(path))
+                File.Delete(path);
+
             return Task.CompletedTask;
         }
 
@@ -42,13 +62,9 @@ namespace Fixtroller.BLL.Services.FileService
         {
             if (string.IsNullOrWhiteSpace(fileName)) return string.Empty;
 
-            // إن ما كان في BaseUrl، رجّع مسار نسبي (ينفع مع StaticFiles)
-            if (string.IsNullOrEmpty(_publicBaseUrl))
-                return $"/Images/{fileName}";
-
-            return $"{_publicBaseUrl}/Images/{fileName}";
+            return string.IsNullOrEmpty(_publicBaseUrl)
+                ? $"/Images/{fileName}"
+                : $"{_publicBaseUrl}/Images/{fileName}";
         }
     }
 }
-
-

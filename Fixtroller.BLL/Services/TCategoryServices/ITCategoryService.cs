@@ -14,10 +14,20 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.BLL.Services.TCategoryServices
 {
-    public interface ITCategoryService : IGenericService<TCategoryRequestDTO, TCategoryResponseDTO, TechnicianCategory>
+    public interface ITCategoryService
+     : IGenericService<TCategoryRequestDTO, TCategoryResponseDTO, TechnicianCategory>
     {
-        Task<IEnumerable<TCategoryUserResponseDTO>> GetAllForUserAsync();
-        Task<IEnumerable<TCategoryUserResponseDTO>> GetActiveForUserAsync();
-        Task<TCategoryUserResponseDTO?> GetByIdForUserAsync(int id);
+        Task<IEnumerable<TCategoryUserResponseDTO>> GetAllForUserAsync(
+            string language,
+            CancellationToken ct = default);
+
+        Task<IEnumerable<TCategoryUserResponseDTO>> GetActiveForUserAsync(
+            string language,
+            CancellationToken ct = default);
+
+        Task<TCategoryUserResponseDTO?> GetByIdForUserAsync(
+            int id,
+            string language,
+            CancellationToken ct = default);
     }
 }

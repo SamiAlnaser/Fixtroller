@@ -15,13 +15,15 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
 
         public TechnicianRepository(ApplicationDbContext context) => _dbcontext = context;
 
-        public async Task<IReadOnlyList<ApplicationUser>> GetAsync(int? technicianCategoryId, string? search)
+        public async Task<IReadOnlyList<ApplicationUser>> GetAsync(
+            int? technicianCategoryId,
+            string? search,
+            CancellationToken ct = default)
         {
             var q = _dbcontext.Users
                 .AsNoTracking()
                 .Include(u => u.TechnicianCategory)
                     .ThenInclude(c => c.Translations)
-              
                 .Where(u =>
                     _dbcontext.UserRoles
                         .Where(ur => ur.UserId == u.Id)
@@ -32,69 +34,67 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
                 );
 
             if (technicianCategoryId.HasValue)
-            {
                 q = q.Where(u => u.TechnicianCategoryId == technicianCategoryId.Value);
-            }
 
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim();
                 q = q.Where(u =>
                     (u.FullName != null && u.FullName.Contains(s)) ||
-                    (u.Email != null && u.Email.Contains(s))
-                );
+                    (u.Email != null && u.Email.Contains(s)));
             }
 
             return await q
                 .OrderBy(u => u.FullName)
-                .ToListAsync();
+                .ToListAsync(ct);
         }
 
-        public async Task<ApplicationUser?> GetByIdAsync(string userId)
+        public Task<ApplicationUser?> GetByIdAsync(string userId, CancellationToken ct = default)
         {
-            return await _dbcontext.Users
+            return _dbcontext.Users
                 .AsNoTracking()
                 .Include(u => u.TechnicianCategory)
                     .ThenInclude(c => c.Translations)
-                .FirstOrDefaultAsync(u => u.Id == userId);
+                .FirstOrDefaultAsync(u => u.Id == userId, ct);
         }
-        public async Task<bool> IsInRoleAsync(string userId, string roleName = "Technician")
+
+        public Task<bool> IsInRoleAsync(string userId, string roleName = "Technician", CancellationToken ct = default)
         {
-            return await _dbcontext.UserRoles
+            return _dbcontext.UserRoles
                 .AsNoTracking()
                 .Where(ur => ur.UserId == userId)
                 .Select(ur => ur.RoleId)
                 .AnyAsync(roleId =>
-                    _dbcontext.Roles
-                        .AsNoTracking()
-                        .Any(r => r.Id == roleId && r.Name == roleName));
+                    _dbcontext.Roles.AsNoTracking()
+                        .Any(r => r.Id == roleId && r.Name == roleName), ct);
         }
 
-        public async Task<bool> UpdateCategoryAsync(string userId, int technicianCategoryId)
+        public async Task<bool> UpdateCategoryAsync(string userId, int technicianCategoryId, CancellationToken ct = default)
         {
-            var user = await _dbcontext.Users.FirstOrDefaultAsync(u => u.Id == userId);
+            // لازم Tracking لأننا سنعدّل على الكيان
+            var user = await _dbcontext.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
             if (user is null) return false;
 
-            var exists = await _dbcontext.Tcategories.AnyAsync(c => c.Id == technicianCategoryId && c.Status == Status.Active);
+            var exists = await _dbcontext.Tcategories
+                .AnyAsync(c => c.Id == technicianCategoryId && c.Status == Status.Active, ct);
             if (!exists) return false;
 
             user.TechnicianCategoryId = technicianCategoryId;
-            await _dbcontext.SaveChangesAsync();
+            // لا حفظ هنا — UoW سيحفظ
             return true;
         }
-        public async Task<IReadOnlyList<ApplicationUser>> GetByCategoryAsync(int categoryId, string? search)
+
+        public async Task<IReadOnlyList<ApplicationUser>> GetByCategoryAsync(int categoryId, string? search, CancellationToken ct = default)
         {
             var q = _dbcontext.Users
                 .AsNoTracking()
                 .Include(u => u.TechnicianCategory)
                     .ThenInclude(c => c.Translations)
-                // فقط من يملكون دور Technician
                 .Where(u =>
                     _dbcontext.UserRoles
                         .Where(ur => ur.UserId == u.Id)
                         .Select(ur => ur.RoleId)
-                        .Any(roleId => _dbcontext.Roles.Any(r => r.Id == roleId && r.Name == "Technician"))
-                )
+                        .Any(roleId => _dbcontext.Roles.Any(r => r.Id == roleId && r.Name == "Technician")))
                 .Where(u => u.TechnicianCategoryId == categoryId);
 
             if (!string.IsNullOrWhiteSpace(search))
@@ -105,8 +105,8 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
                     (u.Email != null && u.Email.Contains(s)));
             }
 
-            return await q.OrderBy(u => u.FullName).ToListAsync();
+            return await q.OrderBy(u => u.FullName).ToListAsync(ct);
         }
     }
 
-    }
+}

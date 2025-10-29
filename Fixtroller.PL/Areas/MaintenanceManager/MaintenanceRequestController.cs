@@ -15,7 +15,6 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
     [Authorize(Roles = "MaintenanceManager")]
     public class MaintenanceRequestController : ControllerBase
     {
-
         private readonly IMaintenanceRequestService _maintenanceRequestService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
@@ -26,19 +25,19 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         [HttpPost("")]
-        public async Task<IActionResult> Create([FromForm] MaintenanceRequestRequestDTO dto)
+        public async Task<IActionResult> Create([FromForm] MaintenanceRequestRequestDTO dto, CancellationToken ct)
         {
             var userId = User.FindFirst("Id")?.Value
                       ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized();
 
-            var id = await _maintenanceRequestService.CreateWithFile(dto, userId);
+            var id = await _maintenanceRequestService.CreateWithFile(dto, userId, ct);
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id, [FromQuery] string language = "ar")
+        public async Task<IActionResult> GetById(int id, [FromQuery] string language = "ar", CancellationToken ct = default)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                          ?? User.FindFirst("Id")?.Value
@@ -49,7 +48,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
 
             try
             {
-                var res = await _maintenanceRequestService.GetByIdAsync(id, userId, role, language);
+                var res = await _maintenanceRequestService.GetByIdAsync(id, userId, role, language, ct);
 
                 return res is null
                     ? NotFound(new { message = _localizer["Request_NotFound"].Value })
@@ -62,40 +61,47 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         [HttpGet("mine")]
-        public async Task<IActionResult> GetMine()
+        public async Task<IActionResult> GetMine(CancellationToken ct)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
             var userId = User.FindFirst("Id")?.Value
                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized();
 
             var role = User.FindFirst("role")?.Value
-            ?? User.FindFirst(ClaimTypes.Role)?.Value
-            ?? string.Empty;
+                    ?? User.FindFirst(ClaimTypes.Role)?.Value
+                    ?? string.Empty;
 
-            var list = await _maintenanceRequestService.GetMineAsync(userId , role);
+            var list = await _maintenanceRequestService.GetMineAsync(userId, role, language, ct);
             return Ok(list);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(CancellationToken ct)
         {
-            var role = User.FindFirst("role")?.Value
-            ?? User.FindFirst(ClaimTypes.Role)?.Value
-            ?? string.Empty;
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var list = await _maintenanceRequestService.GetAllAsync(role);
+            var role = User.FindFirst("role")?.Value
+                    ?? User.FindFirst(ClaimTypes.Role)?.Value
+                    ?? string.Empty;
+
+            var list = await _maintenanceRequestService.GetAllAsync(role, language, null, ct);
             return Ok(list);
         }
+
         [HttpPatch("{id:int}/case")]
-        public async Task<IActionResult> ChangeCase(int id, [FromBody] ChangeCaseTypeRequestDTO dto)
+        public async Task<IActionResult> ChangeCase(int id, [FromBody] ChangeCaseTypeRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto, userId, role, preferOwnerPath: false, language);
+            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto, userId, role, preferOwnerPath: false, language, ct);
 
             if (res is null)
                 return BadRequest(new { message = _localizer[key].Value });
@@ -103,17 +109,15 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(new { message = _localizer[key].Value, data = res });
         }
 
-
-
         [HttpPatch("{id:int}/caseMine")]
-        public async Task<IActionResult> ChangeCaseMine(int id, [FromBody] ChangeCaseTypeRequestDTO dto)
+        public async Task<IActionResult> ChangeCaseMine(int id, [FromBody] ChangeCaseTypeRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
             var role = User.FindFirst("role")?.Value ?? ""; // قد يكون Empty, service يتعامل بمنطق المالك
 
-            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto, userId, role, preferOwnerPath: true, language);
+            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto, userId, role, preferOwnerPath: true, language, ct);
 
             if (res is null)
                 return BadRequest(new { message = _localizer[key].Value });
@@ -122,14 +126,14 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         [HttpPost("{id:int}/notes")]
-        public async Task<IActionResult> AddNote(int id, [FromBody] AddNoteRequestDTO dto)
+        public async Task<IActionResult> AddNote(int id, [FromBody] AddNoteRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
             var role = User.FindFirst("role")?.Value ?? "MaintenanceManager";
 
-            var (res, key) = await _maintenanceRequestService.AddNoteAsync(id, userId, role, dto, language);
+            var (res, key) = await _maintenanceRequestService.AddNoteAsync(id, userId, role, dto, language, ct);
 
             if (res is null)
                 return BadRequest(new { message = _localizer[key].Value });
@@ -138,7 +142,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         [HttpPut("{id:int}")]
-        public async Task<IActionResult> UpdateMine(int id, [FromForm] MaintenanceRequestUpdateDTO dto)
+        public async Task<IActionResult> UpdateMine(int id, [FromForm] MaintenanceRequestUpdateDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
@@ -152,7 +156,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
 
             try
             {
-                var (res, key) = await _maintenanceRequestService.UpdateMineAsync(id, userId, role, dto, language);
+                var (res, key) = await _maintenanceRequestService.UpdateMineAsync(id, userId, role, dto, language, ct);
                 if (res is null) return BadRequest(new { message = _localizer[key].Value });
                 return Ok(new { message = _localizer[key].Value, data = res });
             }

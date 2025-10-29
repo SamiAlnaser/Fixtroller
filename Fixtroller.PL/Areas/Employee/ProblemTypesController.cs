@@ -20,19 +20,26 @@ namespace Fixtroller.PL.Areas.Employee
             _problemTypesService = problemTypesService;
             _localizer = localizer;
         }
+
         // GET: api/ProblemsTypes/active
         [HttpGet("active")]
-        public async Task<IActionResult> GetActiveProblemsTypes()
+        public async Task<IActionResult> GetActiveProblemsTypes(CancellationToken ct)
         {
-            var result = await _problemTypesService.GetActiveForUserAsync();
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var result = await _problemTypesService.GetActiveForUserAsync(language, ct);
             return Ok(new { message = _localizer["Success"].Value, data = result });
         }
 
         // GET: api/ProblemsTypes/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById([FromRoute] int id)
+        public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
         {
-            var result = await _problemTypesService.GetByIdForUserAsync(id);
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var result = await _problemTypesService.GetByIdForUserAsync(id, language, ct);
             return result == null
                 ? NotFound(new { message = _localizer["NotFound"].Value })
                 : Ok(result);

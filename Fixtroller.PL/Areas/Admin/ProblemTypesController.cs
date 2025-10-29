@@ -16,7 +16,9 @@ namespace Fixtroller.PL.Areas.Admin
         private readonly IProblemTypesService _problemTypesService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public ProblemTypesController(IProblemTypesService problemTypesService, IStringLocalizer<SharedResource> localizer)
+        public ProblemTypesController(
+            IProblemTypesService problemTypesService,
+            IStringLocalizer<SharedResource> localizer)
         {
             _problemTypesService = problemTypesService;
             _localizer = localizer;
@@ -24,25 +26,34 @@ namespace Fixtroller.PL.Areas.Admin
 
         // GET: api/ProblemsTypes
         [HttpGet("")]
-        public async Task<IActionResult> GetAll()
+        public async Task<IActionResult> GetAll(CancellationToken ct)
         {
-            var result = await _problemTypesService.GetAllForUserAsync();
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var result = await _problemTypesService.GetAllForUserAsync(language, ct);
             return Ok(result);
         }
 
         // GET: api/ProblemsTypes/active
         [HttpGet("active")]
-        public async Task<IActionResult> GetActiveProblemsTypes()
+        public async Task<IActionResult> GetActiveProblemsTypes(CancellationToken ct)
         {
-            var result = await _problemTypesService.GetActiveForUserAsync();
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var result = await _problemTypesService.GetActiveForUserAsync(language, ct);
             return Ok(new { message = _localizer["Success"].Value, data = result });
         }
 
         // GET: api/ProblemsTypes/{id}
         [HttpGet("{id}")]
-        public async Task<IActionResult> GetById([FromRoute] int id)
+        public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
         {
-            var result = await _problemTypesService.GetByIdForUserAsync(id);
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var result = await _problemTypesService.GetByIdForUserAsync(id, language, ct);
             return result == null
                 ? NotFound(new { message = _localizer["NotFound"].Value })
                 : Ok(result);
@@ -50,23 +61,23 @@ namespace Fixtroller.PL.Areas.Admin
 
         // POST: api/ProblemsTypes
         [HttpPost]
-        public async Task<IActionResult> Add([FromBody] ProblemTypeRequestDTO dto)
+        public async Task<IActionResult> Add([FromBody] ProblemTypeRequestDTO dto, CancellationToken ct)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var id = await _problemTypesService.AddAsync(dto);
+            var id = await _problemTypesService.AddAsync(dto, ct);
             return CreatedAtAction(nameof(GetById), new { id }, new { message = _localizer["Created"].Value, id });
         }
 
         // PUT: api/ProblemsTypes/{id}
         [HttpPut("{id}")]
-        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProblemTypeRequestDTO dto)
+        public async Task<IActionResult> Update([FromRoute] int id, [FromBody] ProblemTypeRequestDTO dto, CancellationToken ct)
         {
             if (!ModelState.IsValid)
                 return BadRequest(ModelState);
 
-            var updated = await _problemTypesService.UpdateAsync(id, dto);
+            var updated = await _problemTypesService.UpdateAsync(id, dto, ct);
             return updated == 0
                 ? NotFound(new { message = _localizer["NotFound"].Value })
                 : Ok(new { message = _localizer["Updated"].Value });
@@ -74,9 +85,9 @@ namespace Fixtroller.PL.Areas.Admin
 
         // DELETE: api/ProblemsTypes/{id}
         [HttpDelete("{id}")]
-        public async Task<IActionResult> Delete([FromRoute] int id)
+        public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
         {
-            var removed = await _problemTypesService.RemoveAsync(id);
+            var removed = await _problemTypesService.RemoveAsync(id, ct);
             return removed == 0
                 ? NotFound(new { message = _localizer["NotFound"].Value })
                 : Ok(new { message = _localizer["Deleted"].Value });
@@ -84,9 +95,9 @@ namespace Fixtroller.PL.Areas.Admin
 
         // PATCH: api/ProblemsTypes/{id}/toggle-status
         [HttpPatch("{id}/toggle-status")]
-        public async Task<IActionResult> ToggleStatus([FromRoute] int id)
+        public async Task<IActionResult> ToggleStatus([FromRoute] int id, CancellationToken ct)
         {
-            var toggled = await _problemTypesService.ToggleStatusAsync(id);
+            var toggled = await _problemTypesService.ToggleStatusAsync(id, ct);
             return toggled == false
                 ? NotFound(new { message = _localizer["NotFound"].Value })
                 : Ok(new { message = _localizer["StatusToggled"].Value });

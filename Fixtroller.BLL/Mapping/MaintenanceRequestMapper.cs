@@ -93,7 +93,7 @@ namespace Fixtroller.BLL.Mapping
                 ? null
                 : TechnicianMappings.ToTechnicianResponse(e.AssignedTechnician, language);
 
-            
+
 
             return dto;
         }

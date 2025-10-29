@@ -13,7 +13,7 @@ namespace Fixtroller.DAL.UnitOfWork
         private readonly ApplicationDbContext _dbcontext;
         private IDbContextTransaction? _tx;
 
-        public UnitOfWork(ApplicationDbContext db) => _dbcontext = db;
+        public UnitOfWork(ApplicationDbContext dbcontext) => _dbcontext = dbcontext;
 
         public async Task BeginTransactionAsync(CancellationToken ct = default)
         {

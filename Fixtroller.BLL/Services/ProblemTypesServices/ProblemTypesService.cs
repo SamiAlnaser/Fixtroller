@@ -5,6 +5,7 @@ using Fixtroller.DAL.DTOs.ProblemTypeDTOs.Responses;
 using Fixtroller.DAL.DTOs.TCategoryDTOs.Responses;
 using Fixtroller.DAL.Entities.ProblemTypeEntity;
 using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
+using Fixtroller.DAL.UnitOfWork;
 using Mapster;
 using System;
 using System.Collections.Generic;
@@ -15,62 +16,65 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.BLL.Services.ProblemTypesServices
 {
-    public class ProblemTypesService : GenericService<ProblemTypeRequestDTO, ProblemTypeResponseDTO, ProblemType> , IProblemTypesService
+    public class ProblemTypesService
+    : GenericService<ProblemTypeRequestDTO, ProblemTypeResponseDTO, ProblemType>,
+      IProblemTypesService
     {
         private readonly IProblemTypeRepository _repository;
-        public ProblemTypesService(IProblemTypeRepository repository) : base(repository)
+
+        public ProblemTypesService(IProblemTypeRepository repository , IUnitOfWork uow)
+            : base(repository , uow)
         {
             _repository = repository;
         }
 
-        public async Task<IEnumerable<ProblemTypeUserResponseDTO>> GetAllForUserAsync()
+        public async Task<IEnumerable<ProblemTypeUserResponseDTO>> GetAllForUserAsync(
+            string language,
+            CancellationToken ct = default)
         {
-            var lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-
-            var list = await _repository.GetAllForUserAsync();
-
+            var list = await _repository.GetAllForUserAsync(asTracking: false, ct);
 
             return list.Select(e => new ProblemTypeUserResponseDTO
             {
                 Id = e.Id,
                 Name = e.Translations
-                            .FirstOrDefault(t => t.Language == lang)?.Name
-                         ?? e.Translations
-                            .FirstOrDefault(t => t.Language == "ar")?.Name
+                         .FirstOrDefault(t => t.Language == language)?.Name
+                      ?? e.Translations
+                         .FirstOrDefault(t => t.Language == "ar")?.Name
             });
         }
 
-        public async Task<IEnumerable<ProblemTypeUserResponseDTO>> GetActiveForUserAsync()
+        public async Task<IEnumerable<ProblemTypeUserResponseDTO>> GetActiveForUserAsync(
+            string language,
+            CancellationToken ct = default)
         {
-            var lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-
-            var list = await _repository.GetActiveForUserAsync();
+            var list = await _repository.GetActiveForUserAsync(asTracking: false, ct);
 
             return list.Select(e => new ProblemTypeUserResponseDTO
             {
                 Id = e.Id,
                 Name = e.Translations
-                        .FirstOrDefault(t => t.Language == lang)?.Name
-                     ?? e.Translations
-                        .FirstOrDefault(t => t.Language == "ar")?.Name
+                         .FirstOrDefault(t => t.Language == language)?.Name
+                      ?? e.Translations
+                         .FirstOrDefault(t => t.Language == "ar")?.Name
             });
         }
 
-
-        public async Task<ProblemTypeUserResponseDTO?> GetByIdForUserAsync(int id)
+        public async Task<ProblemTypeUserResponseDTO?> GetByIdForUserAsync(
+            int id,
+            string language,
+            CancellationToken ct = default)
         {
-            var lang = CultureInfo.CurrentUICulture.TwoLetterISOLanguageName;
-
-            var e = await _repository.GetByIdForUserAsync(id);
+            var e = await _repository.GetByIdForUserAsync(id, ct);
             if (e is null) return null;
 
             return new ProblemTypeUserResponseDTO
             {
                 Id = e.Id,
                 Name = e.Translations
-                     .FirstOrDefault(t => t.Language == lang)?.Name
-                  ?? e.Translations
-                     .FirstOrDefault(t => t.Language == "ar")?.Name
+                         .FirstOrDefault(t => t.Language == language)?.Name
+                      ?? e.Translations
+                         .FirstOrDefault(t => t.Language == "ar")?.Name
             };
         }
     }

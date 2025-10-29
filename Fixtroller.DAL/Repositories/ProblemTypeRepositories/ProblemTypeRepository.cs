@@ -16,33 +16,44 @@ namespace Fixtroller.DAL.Repositories.ProblemTypeRepositories
     {
         private readonly ApplicationDbContext _dbcontext;
 
-
         public ProblemTypeRepository(ApplicationDbContext context) : base(context)
         {
             _dbcontext = context;
         }
 
-        public async Task<IEnumerable<ProblemType>> GetActiveForUserAsync(bool asTracking = false)
+        public async Task<IEnumerable<ProblemType>> GetActiveForUserAsync(
+            bool asTracking = false,
+            CancellationToken ct = default)
         {
-            if (asTracking)
-                return await _dbcontext.PTypes.Include(p => p.Translations)
-                      .Where(c => c.Status == Status.Active)
-                      .ToListAsync();
+            IQueryable<ProblemType> q = _dbcontext.PTypes
+                .Include(p => p.Translations)
+                .Where(c => c.Status == Status.Active);
 
-            return await _dbcontext.Set<ProblemType>().Include(p => p.Translations)
-                      .Where(c => c.Status == Status.Active)
-                      .AsNoTracking().ToListAsync();
+            if (!asTracking) q = q.AsNoTracking();
+
+            return await q.ToListAsync(ct);
         }
 
-        public async Task<IEnumerable<ProblemType>> GetAllForUserAsync(bool asTracking = false)
+        public async Task<IEnumerable<ProblemType>> GetAllForUserAsync(
+            bool asTracking = false,
+            CancellationToken ct = default)
         {
-            if (asTracking)
-                return await _dbcontext.PTypes.Include(p => p.Translations).ToListAsync();
+            IQueryable<ProblemType> q = _dbcontext.PTypes
+                .Include(p => p.Translations);
 
-            return await _dbcontext.Set<ProblemType>().Include(p => p.Translations).AsNoTracking().ToListAsync();
+            if (!asTracking) q = q.AsNoTracking();
+
+            return await q.ToListAsync(ct);
         }
 
-        public async Task<ProblemType>? GetByIdForUserAsync(int id) => await _dbcontext.Set<ProblemType>().Include(p => p.Translations).FirstOrDefaultAsync(c => c.Id == id);
-
+        public Task<ProblemType?> GetByIdForUserAsync(
+            int id,
+            CancellationToken ct = default)
+        {
+            return _dbcontext.PTypes
+                .AsNoTracking()
+                .Include(p => p.Translations)
+                .FirstOrDefaultAsync(c => c.Id == id, ct);
+        }
     }
 }

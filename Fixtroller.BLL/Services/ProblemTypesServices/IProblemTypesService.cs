@@ -11,10 +11,20 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.BLL.Services.ProblemTypesServices
 {
-    public interface IProblemTypesService : IGenericService<ProblemTypeRequestDTO, ProblemTypeResponseDTO, ProblemType>
+    public interface IProblemTypesService
+    : IGenericService<ProblemTypeRequestDTO, ProblemTypeResponseDTO, ProblemType>
     {
-        Task<IEnumerable<ProblemTypeUserResponseDTO>> GetAllForUserAsync();
-        Task<IEnumerable<ProblemTypeUserResponseDTO>> GetActiveForUserAsync();
-        Task<ProblemTypeUserResponseDTO?> GetByIdForUserAsync(int id);
+        Task<IEnumerable<ProblemTypeUserResponseDTO>> GetAllForUserAsync(
+            string language,
+            CancellationToken ct = default);
+
+        Task<IEnumerable<ProblemTypeUserResponseDTO>> GetActiveForUserAsync(
+            string language,
+            CancellationToken ct = default);
+
+        Task<ProblemTypeUserResponseDTO?> GetByIdForUserAsync(
+            int id,
+            string language,
+            CancellationToken ct = default);
     }
 }

@@ -18,7 +18,10 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         private readonly IMaintenanceRequestService _requestService;
         private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public TechniciansController(ITechnicianService TechnicianService, IMaintenanceRequestService RequestService, IStringLocalizer<SharedResource> localizer)
+        public TechniciansController(
+            ITechnicianService TechnicianService,
+            IMaintenanceRequestService RequestService,
+            IStringLocalizer<SharedResource> localizer)
         {
             _TechnicianService = TechnicianService;
             _requestService = RequestService;
@@ -26,37 +29,40 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         [HttpGet]
-        public async Task<IActionResult> Get([FromQuery] TechniciansFilterRequestDTO filter)
+        public async Task<IActionResult> Get([FromQuery] TechniciansFilterRequestDTO filter, CancellationToken ct)
         {
-            var list = await _TechnicianService.GetAsync(filter);
+            var list = await _TechnicianService.GetAsync(filter, ct);
             return Ok(list);
         }
 
         [HttpPost("{id:int}/assign")]
-        public async Task<IActionResult> Assign(int id, [FromBody] AssignTechnicianRequestDTO dto)
+        public async Task<IActionResult> Assign(int id, [FromBody] AssignTechnicianRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
-            var (res, key) = await _requestService.AssignTechnicianAsync(id, dto.TechnicianUserId, language);
+
+            var (res, key) = await _requestService.AssignTechnicianAsync(id, dto.TechnicianUserId, language, ct);
 
             if (res is null)
                 return BadRequest(new { message = _localizer[key].Value });
 
             return Ok(new { message = _localizer[key].Value, data = res });
         }
+
         [HttpPatch("category")]
-        public async Task<IActionResult> UpdateCategory([FromBody] UpdateTechnicianCategoryRequestDTO dto)
+        public async Task<IActionResult> UpdateCategory([FromBody] UpdateTechnicianCategoryRequestDTO dto, CancellationToken ct)
         {
-            var ok = await _TechnicianService.UpdateTechnicianCategoryAsync(dto);
+            var ok = await _TechnicianService.UpdateTechnicianCategoryAsync(dto, ct);
             return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
         }
 
         [HttpGet("by-category/{categoryId:int}")]
-        public async Task<IActionResult> GetByCategory(int categoryId, [FromQuery] string? search)
+        public async Task<IActionResult> GetByCategory(int categoryId, [FromQuery] string? search, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
-            var data = await _TechnicianService.GetByCategoryAsync(categoryId, search, language);
+
+            var data = await _TechnicianService.GetByCategoryAsync(categoryId, search, language, ct);
             return Ok(data);
         }
     }
