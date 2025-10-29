@@ -11,6 +11,7 @@ using Fixtroller.DAL.Repositories.MaintenanceRequestepository;
 using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
 using Fixtroller.DAL.Repositories.TCategoryRepositories;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
+using Fixtroller.DAL.UnitOfWork;
 using Fixtroller.DAL.Utils;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
@@ -62,6 +63,7 @@ namespace Fixtroller.PL
             builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
             builder.Services.AddScoped<ITechnicianService, TechnicianService>();
             builder.Services.AddScoped<IMaintenanceNoteRepository, MaintenanceNoteRepository>();
+            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
 
 

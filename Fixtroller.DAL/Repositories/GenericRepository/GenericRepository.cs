@@ -9,77 +9,67 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.DAL.Repositories.GenericRepository
 {
-    public class GenericRepository<T> : IGenericRepository<T> where T : BaseModel
-    {
-        private readonly ApplicationDbContext _dbcontext;
 
-        public GenericRepository(ApplicationDbContext context)
+        public class GenericRepository<T> : IGenericRepository<T> where T : BaseModel
         {
-            _dbcontext = context;
-        }
+            private readonly ApplicationDbContext _dbcontext;
 
-        public async Task<int> AddAsync(T entity)
-        {
-            await _dbcontext.Set<T>().AddAsync(entity);
-            await _dbcontext.SaveChangesAsync();
-            return entity.Id;
-        }
-
-        public async Task<IEnumerable<T>> GetActiveAsync(bool asTracking = false)
-        {
-            IQueryable<T> q = _dbcontext.Set<T>().Where(c => c.Status == Status.Active);
-            q = ApplyTranslationsInclude(q);
-
-            if (!asTracking) q = q.AsNoTracking();
-            return await q.ToListAsync();
-        }
-
-        public async Task<IEnumerable<T>> GetAllAsync(bool asTracking = false)
-        {
-            IQueryable<T> q = _dbcontext.Set<T>();
-            q = ApplyTranslationsInclude(q);
-
-            if (!asTracking) q = q.AsNoTracking();
-            return await q.ToListAsync();
-        }
-
-        public async Task<T?> GetByIdAsync(int id)
-        {
-            IQueryable<T> q = _dbcontext.Set<T>();
-            q = ApplyTranslationsInclude(q);
-
-            return await q.FirstOrDefaultAsync(c => c.Id == id);
-        }
-
-        public async Task<int> RemoveAsync(T entity)
-        {
-            _dbcontext.Set<T>().Remove(entity);
-            return await _dbcontext.SaveChangesAsync();
-        }
-
-        public async Task<int> UpdateAsync(T entity)
-        {
-            _dbcontext.Set<T>().Update(entity);
-            await _dbcontext.SaveChangesAsync();
-            return entity.Id;
-        }
-
-        // === helper ===
-        private IQueryable<T> ApplyTranslationsInclude(IQueryable<T> query)
-        {
-            var entityType = _dbcontext.Model.FindEntityType(typeof(T));
-            if (entityType is null) return query;
-
-            
-            foreach (var nav in entityType.GetNavigations())
+            public GenericRepository(ApplicationDbContext context)
             {
-                if (nav.IsCollection &&
-                    nav.Name.EndsWith("Translations", StringComparison.OrdinalIgnoreCase))
-                {
-                    query = query.Include(nav.Name);
-                }
+                _dbcontext = context;
             }
-            return query;
+
+            public Task AddAsync(T entity)
+                => _dbcontext.Set<T>().AddAsync(entity).AsTask(); // لا Save هنا
+
+            public async Task<IEnumerable<T>> GetActiveAsync(bool asTracking = false)
+            {
+                IQueryable<T> q = _dbcontext.Set<T>().Where(c => c.Status == Status.Active);
+                q = ApplyTranslationsInclude(q);
+                if (!asTracking) q = q.AsNoTracking();
+                return await q.ToListAsync();
+            }
+
+            public async Task<IEnumerable<T>> GetAllAsync(bool asTracking = false)
+            {
+                IQueryable<T> q = _dbcontext.Set<T>();
+                q = ApplyTranslationsInclude(q);
+                if (!asTracking) q = q.AsNoTracking();
+                return await q.ToListAsync();
+            }
+
+            public Task<T?> GetByIdAsync(int id, bool asTracking = false)
+            {
+                IQueryable<T> q = _dbcontext.Set<T>();
+                q = ApplyTranslationsInclude(q);
+                if (!asTracking) q = q.AsNoTracking();
+                return q.FirstOrDefaultAsync(c => c.Id == id);
+            }
+
+            public Task RemoveAsync(T entity)
+            {
+                _dbcontext.Set<T>().Remove(entity);
+                return Task.CompletedTask;
+            }
+
+            public Task UpdateAsync(T entity)
+            {
+                _dbcontext.Set<T>().Update(entity);
+                return Task.CompletedTask;
+            }
+
+            private IQueryable<T> ApplyTranslationsInclude(IQueryable<T> query)
+            {
+                var entityType = _dbcontext.Model.FindEntityType(typeof(T));
+                if (entityType is null) return query;
+
+                foreach (var nav in entityType.GetNavigations())
+                {
+                    if (nav.IsCollection && nav.Name.EndsWith("Translations", StringComparison.OrdinalIgnoreCase))
+                        query = query.Include(nav.Name);
+                }
+                return query;
+            }
         }
     }
-}
+

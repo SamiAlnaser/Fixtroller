@@ -11,25 +11,64 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 {
-    public interface IMaintenanceRequestService : IGenericService<MaintenanceRequestRequestDTO, MaintenanceRequestResponseDTO , MaintenanceRequest>
+    public interface IMaintenanceRequestService
+         : IGenericService<MaintenanceRequestRequestDTO, MaintenanceRequestResponseDTO, MaintenanceRequest>
     {
-        Task<int> CreateWithFile(MaintenanceRequestRequestDTO request , string userId);
-        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(string userId, string role);
-        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync(string role); // لإدارة
-        Task<MaintenanceRequestResponseDTO?> GetByIdAsync(int id, string userId, string role, string language);
-       
-        Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(int requestId, string technicianUserId, string language = "ar");
+        Task<int> CreateWithFile(
+            MaintenanceRequestRequestDTO request,
+            string userId,
+            CancellationToken ct = default);
 
-        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
-            ChangeCaseAsync(int requestId, ChangeCaseTypeRequestDTO dto, string userId, string userRole, bool preferOwnerPath = false, string language = "ar");
+        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(
+            string userId,
+            string role,
+            string language,
+            CancellationToken ct = default);
 
-        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
-        UpdateMineAsync(int id, string userId, string role, MaintenanceRequestUpdateDTO dto, string language = "ar");
+        // للإدارة (ولو بدك تحدد المالك لإظهار isOwner صح مرّر currentUserId)
+        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync(
+            string role,
+            string language,
+            string? currentUserId = null,
+            CancellationToken ct = default);
 
-        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
-            AddNoteAsync(int requestId, string userId, string userRole, AddNoteRequestDTO dto, string language = "ar");
+        Task<MaintenanceRequestResponseDTO?> GetByIdAsync(
+            int id,
+            string userId,
+            string role,
+            string language,
+            CancellationToken ct = default);
 
+        Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(
+            int requestId,
+            string technicianUserId,
+            string language = "ar",
+            CancellationToken ct = default);
 
+        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> ChangeCaseAsync(
+            int requestId,
+            ChangeCaseTypeRequestDTO dto,
+            string userId,
+            string userRole,
+            bool preferOwnerPath = false,
+            string language = "ar",
+            CancellationToken ct = default);
+
+        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> UpdateMineAsync(
+            int id,
+            string userId,
+            string role,
+            MaintenanceRequestUpdateDTO dto,
+            string language = "ar",
+            CancellationToken ct = default);
+
+        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> AddNoteAsync(
+            int requestId,
+            string userId,
+            string userRole,
+            AddNoteRequestDTO dto,
+            string language = "ar",
+            CancellationToken ct = default);
     }
 }
 
