@@ -31,7 +31,8 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         public string Description { get; set; }
         public CaseType CaseType { get; set; } = CaseType.Submitted;
         public ICollection<MaintenanceRequestImage> Images { get; set; } = new List<MaintenanceRequestImage>();
-        
+        public ICollection<MaintenanceNote> Notes { get; set; } = new List<MaintenanceNote>();
+
 
         public string Address { get; set; }
         public Priority Priority { get; set; }

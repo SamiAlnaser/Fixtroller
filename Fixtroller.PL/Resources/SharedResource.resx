@@ -198,4 +198,16 @@
   <data name="Request_NotEditableInThisState" xml:space="preserve">
     <value>لا يمكن تعديل الطلب في حالته الحالية</value>
   </data>
+  <data name="Note_Text_Required" xml:space="preserve">
+    <value>نص الملاحظة مطلوب</value>
+  </data>
+  <data name="Note_Required_For_This_Case" xml:space="preserve">
+    <value>إرفاق ملاحظة مطلوب لهذه الحالة</value>
+  </data>
+  <data name="Notes_Disabled_For_Manager_In_FinalState" xml:space="preserve">
+    <value>لا يمكن للمدير إضافة ملاحظات بعد إنهاء الطلب</value>
+  </data>
+  <data name="Note_Added" xml:space="preserve">
+    <value>تمت إضافة الملاحظة بنجاح</value>
+  </data>
 </root>

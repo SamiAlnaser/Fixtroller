@@ -84,6 +84,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                                     (role == "Technician" && (x.AssignedTechnicianUserId == userId || x.CreatedByUserId == userId))
                                 ),
                                 include: q => q.Include(r => r.Images)
+                                .Include(r => r.Notes)
                                 .Include(r => r.AssignedTechnician)
                             .ThenInclude(t => t.TechnicianCategory)
                                 .ThenInclude(c => c.Translations)
@@ -122,41 +123,74 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             return (TechnicianMappings.ToAssignTechnicianResponse(loaded!, language), "Technician_Assigned");
         }
         public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> ChangeCaseAsync(
-           int requestId,
-           CaseType newCase,
-           string userId,
-           string userRole,
-           string language = "ar")
+            int requestId,
+            ChangeCaseTypeRequestDTO dto,
+            string userId,
+            string userRole,
+            bool preferOwnerPath,
+            string language = "ar")
         {
             var r = await _repository.GetForUpdateAsync(requestId);
             if (r is null) return (null, "Request_NotFound");
 
-            if (r.CaseType == newCase)
-                return (MaintenanceRequestMapper.ToResponse(r, userRole), "Case_Changed"); // لا تغيير
-
-            // حالات تُدار تلقائياً
-            if (newCase is CaseType.Submitted or CaseType.Processing or CaseType.Modified)
-                return (null, "Case_AutoManaged");
+            var newCase = dto.NewCaseType;
 
             bool isManager = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
             bool isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
             bool isTechnician = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
             bool isOwner = r.CreatedByUserId == userId;
 
-            // المالك (بغض النظر عن دوره):  Cancelled, Reopened, Completed
-            if (isOwner && !(isManager || isAdmin))
+            var useOwnerPath = isOwner && (preferOwnerPath || !(isManager || isAdmin || isTechnician));
+
+            var author = InferAuthor(isOwner, isTechnician, isManager, isAdmin);
+
+            if (r.CaseType == newCase)
             {
-                var allowedOwner = new[] {  CaseType.Cancelled, CaseType.Reopened, CaseType.Completed };
+                var respNoChange = MaintenanceRequestMapper.ToResponse(
+                    r, userRole, _fileService.GetPublicUrl, language, isOwner);
+                return (respNoChange, "Case_Changed"); // لا تغيير
+            }
+
+            // حالات تُدار تلقائيًا
+            if (newCase is CaseType.Submitted or CaseType.Processing or CaseType.Modified)
+                return (null, "Case_AutoManaged");
+
+            // تحضير إلزام الملاحظة
+            bool needNote = newCase is CaseType.Reopened or CaseType.ResourcesNeeded;
+            if (needNote && string.IsNullOrWhiteSpace(dto.NoteText))
+                return (null, "Note_Required_For_This_Case");
+
+            NoteType inferredType = newCase switch
+            {
+                CaseType.Reopened => NoteType.ReopenReason,
+                CaseType.ResourcesNeeded => NoteType.HelpRequest,
+                _ => dto.NoteType ?? NoteType.General
+            };
+
+            // المالك
+            if (useOwnerPath)
+                {
+                var allowedOwner = new[] { CaseType.Cancelled, CaseType.Reopened, CaseType.Completed };
                 if (!allowedOwner.Contains(newCase))
                     return (null, "Case_NotAllowedForOwner");
 
                 r.CaseType = newCase;
-                //r.UpdatedAt = DateTime.UtcNow;  ////////////////////////// لازم تنعمل من entity (مع باقي تفاصيل العرض و الاضافة و الملحفات)
+
+                if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
+                {
+                    r.Notes.Add(MaintenanceRequestMapper.ToNote(
+                        dto.NoteText!, inferredType, author, userId, r.Id));
+                }
+
+                r.UpdatedAt = DateTime.UtcNow;
                 await _repository.CommitAsync();
-                return (MaintenanceRequestMapper.ToResponse(r, userRole), "Case_Changed");
+
+                var resp = MaintenanceRequestMapper.ToResponse(
+                    r, userRole, _fileService.GetPublicUrl, language, isOwner);
+                return (resp, "Case_Changed");
             }
 
-
+            // الفني
             if (isTechnician)
             {
                 if (r.AssignedTechnicianUserId != userId)
@@ -167,11 +201,22 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     return (null, "Case_NotAllowedForTechnician");
 
                 r.CaseType = newCase;
-                //r.UpdatedAt = DateTime.UtcNow;////////////////////////////
+
+                if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
+                {
+                    r.Notes.Add(MaintenanceRequestMapper.ToNote(
+                        dto.NoteText!, inferredType, author, userId, r.Id));
+                }
+
+                r.UpdatedAt = DateTime.UtcNow;
                 await _repository.CommitAsync();
-                return (MaintenanceRequestMapper.ToResponse(r, userRole), "Case_Changed");
+
+                var resp = MaintenanceRequestMapper.ToResponse(
+                    r, userRole, _fileService.GetPublicUrl, language, isOwner);
+                return (resp, "Case_Changed");
             }
 
+            // المدير أو الأدمن
             if (isManager || isAdmin)
             {
                 var allowedMgr = new[] { CaseType.ResourcesNeeded, CaseType.Processed, CaseType.Completed };
@@ -179,13 +224,73 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     return (null, "Case_NotAllowedForManager");
 
                 r.CaseType = newCase;
-                //r.UpdatedAt = DateTime.UtcNow;////////////////////////////////////////
+
+                if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
+                {
+                    r.Notes.Add(MaintenanceRequestMapper.ToNote(
+                        dto.NoteText!, inferredType, author, userId, r.Id));
+                }
+
+                r.UpdatedAt = DateTime.UtcNow;
                 await _repository.CommitAsync();
-                return (MaintenanceRequestMapper.ToResponse(r, userRole), "Case_Changed");
+
+                var resp = MaintenanceRequestMapper.ToResponse(
+                    r, userRole, _fileService.GetPublicUrl, language, isOwner);
+                return (resp, "Case_Changed");
             }
 
             return (null, "Forbidden");
         }
+
+
+        public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
+    AddNoteAsync(int requestId, string userId, string userRole, AddNoteRequestDTO dto, string language = "ar")
+        {
+            var r = await _repository.GetForUpdateAsync(requestId);
+            if (r is null) return (null, "Request_NotFound");
+
+            var isOwner = string.Equals(r.CreatedByUserId, userId, StringComparison.Ordinal);
+            var isTech = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+            var isMgr = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+
+            var author = InferAuthor(isOwner, isTech, isMgr, isAdmin);
+
+            var lockedForManager = r.CaseType == CaseType.Completed || r.CaseType == CaseType.Cancelled;
+
+            if (isMgr && lockedForManager && !isAdmin)
+                return (null, "Notes_Disabled_For_Manager_In_FinalState");
+
+            if (isTech && r.AssignedTechnicianUserId != userId)
+                return (null, "Request_NotAssignedToYou");
+
+            if (!isOwner && !isTech && !isMgr && !isAdmin)
+                return (null, "Forbidden");
+
+            if (string.IsNullOrWhiteSpace(dto.Text))
+                return (null, "Note_Text_Required");
+
+
+            var noteType = dto.Type ?? NoteType.General;
+            
+
+            var note = MaintenanceRequestMapper.ToNote(
+               dto.Text!,
+               noteType,
+                author,
+               userId,
+               r.Id
+           );
+
+            r.Notes.Add(note);
+            r.UpdatedAt = DateTime.UtcNow;
+            await _repository.CommitAsync();
+
+            // رجّع الطلب مع الملاحظات
+            var role = userRole;
+            return (MaintenanceRequestMapper.ToResponse(r, role, _fileService.GetPublicUrl, language,isOwner), "Note_Added");
+        }
+
 
         public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
             UpdateMineAsync(int id, string userId, string role, MaintenanceRequestUpdateDTO dto, string language = "ar")
@@ -250,6 +355,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             await _repository.CommitAsync();
             return (MaintenanceRequestMapper.ToResponse(r, role, _fileService.GetPublicUrl), "Request_Updated");
 
+        }
+
+        private static NoteAuthor InferAuthor(bool isOwner, bool isTech, bool isMgr, bool isAdmin)
+        {
+            if (isAdmin) return NoteAuthor.Admin;
+            if (isMgr) return NoteAuthor.Manager;
+            if (isTech) return NoteAuthor.Technician;
+            return NoteAuthor.Owner;
         }
 
 

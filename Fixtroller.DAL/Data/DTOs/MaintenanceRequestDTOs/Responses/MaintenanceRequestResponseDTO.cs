@@ -31,5 +31,6 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
 
         // فقط الصور المتعددة
         public List<MaintenanceRequestImageDTO> Images { get; set; } = new();
+        public List<MaintenanceNoteDTO> Notes { get; set; } = new();
     }
 }

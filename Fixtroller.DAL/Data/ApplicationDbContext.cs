@@ -20,6 +20,7 @@ namespace Fixtroller.DAL.Data
         public DbSet<ProblemType> PTypes { get; set; }
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public DbSet<MaintenanceRequestImage> MaintenanceRequestImages { get; set; }
+        public DbSet<MaintenanceNote> MaintenanceNotes { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
@@ -66,7 +67,35 @@ namespace Fixtroller.DAL.Data
                  .OnDelete(DeleteBehavior.SetNull);
             });
 
+            builder.Entity<MaintenanceNote>(e =>
+            {
+                e.ToTable("MaintenanceNotes");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.Text).IsRequired().HasMaxLength(2000);
+                e.Property(x => x.Type).IsRequired();
+                e.Property(x => x.Author).IsRequired();
 
+                e.HasOne(x => x.MaintenanceRequest)
+                 .WithMany(r => r.Notes)
+                 .HasForeignKey(x => x.MaintenanceRequestId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.HasOne(x => x.CreatedByUser)
+                 .WithMany()
+                 .HasForeignKey(x => x.CreatedByUserId)
+                 .OnDelete(DeleteBehavior.Restrict);
+            });
+
+            builder.Entity<MaintenanceRequestImage>(e =>
+            {
+                e.ToTable("MaintenanceRequestImages");
+                e.HasKey(x => x.Id);
+                e.Property(x => x.FileName).IsRequired().HasMaxLength(300);
+                e.HasOne(x => x.MaintenanceRequest)
+                 .WithMany(r => r.Images)
+                 .HasForeignKey(x => x.MaintenanceRequestId)
+                 .OnDelete(DeleteBehavior.Cascade);
+            });
 
 
             // تغيير أسماء الجداول الافتراضية
@@ -85,16 +114,6 @@ namespace Fixtroller.DAL.Data
             .IsUnique();
 
 
-            builder.Entity<MaintenanceRequestImage>(e =>
-            {
-                e.ToTable("MaintenanceRequestImages");
-                e.HasKey(x => x.Id);
-                e.Property(x => x.FileName).IsRequired().HasMaxLength(300);
-                e.HasOne(x => x.MaintenanceRequest)
-                 .WithMany(r => r.Images)
-                 .HasForeignKey(x => x.MaintenanceRequestId)
-                 .OnDelete(DeleteBehavior.Cascade);
-            });
         }
 
 

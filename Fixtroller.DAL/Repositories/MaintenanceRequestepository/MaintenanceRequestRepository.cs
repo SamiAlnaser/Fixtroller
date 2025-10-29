@@ -51,6 +51,7 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
         {
             return await _context.MaintenanceRequests
                 .Include(r => r.Images)
+                .Include(r => r.Notes)
                 .FirstOrDefaultAsync(r => r.Id == id);
         }
 

@@ -198,4 +198,16 @@
   <data name="Request_NotEditableInThisState" xml:space="preserve">
     <value>The request cannot be modified in its current state.</value>
   </data>
+  <data name="Note_Text_Required" xml:space="preserve">
+    <value>Note text is required</value>
+  </data>
+  <data name="Note_Required_For_This_Case" xml:space="preserve">
+    <value>A note is required for this state change</value>
+  </data>
+  <data name="Notes_Disabled_For_Manager_In_FinalState" xml:space="preserve">
+    <value>Manager cannot add notes after the request is finished.</value>
+  </data>
+  <data name="Note_Added" xml:space="preserve">
+    <value>Note added successfully</value>
+  </data>
 </root>

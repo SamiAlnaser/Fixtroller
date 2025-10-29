@@ -7,10 +7,9 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests
 {
-    public class ChangeCaseTypeRequestDTO
+    public class AddNoteRequestDTO
     {
-        public CaseType NewCaseType { get; set; }
-        public string? NoteText { get; set; }      // مطلوب لـ Reopened/ResourcesNeeded
-        public NoteType? NoteType { get; set; }
+        public string Text { get; set; } = default!;
+        public NoteType? Type { get; set; } 
     }
 }

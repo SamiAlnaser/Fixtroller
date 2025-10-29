@@ -61,6 +61,7 @@ namespace Fixtroller.PL
             builder.Services.AddScoped<ISeedData, SeedData>();
             builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
             builder.Services.AddScoped<ITechnicianService, TechnicianService>();
+            builder.Services.AddScoped<IMaintenanceNoteRepository, MaintenanceNoteRepository>();
 
 
 

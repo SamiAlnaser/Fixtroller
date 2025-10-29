@@ -19,10 +19,16 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         Task<MaintenanceRequestResponseDTO?> GetByIdAsync(int id, string userId, string role, string language);
        
         Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(int requestId, string technicianUserId, string language = "ar");
-        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> ChangeCaseAsync(int id, CaseType newCase, string userId, string userRole, string language = "ar");
+
+        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
+            ChangeCaseAsync(int requestId, ChangeCaseTypeRequestDTO dto, string userId, string userRole, bool preferOwnerPath = false, string language = "ar");
 
         Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
         UpdateMineAsync(int id, string userId, string role, MaintenanceRequestUpdateDTO dto, string language = "ar");
+
+        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)>
+            AddNoteAsync(int requestId, string userId, string userRole, AddNoteRequestDTO dto, string language = "ar");
+
 
     }
 }

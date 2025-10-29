@@ -106,13 +106,15 @@ namespace Fixtroller.PL.Areas.Technician
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
             var role = User.FindFirst(ClaimTypes.Role)?.Value;
 
-            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto.NewCaseType, userId, role, language);
+            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto, userId, role, preferOwnerPath: false, language);
 
             if (res is null)
                 return BadRequest(new { message = _localizer[key].Value });
 
             return Ok(new { message = _localizer[key].Value, data = res });
         }
+
+
 
         [HttpPatch("{id:int}/caseMine")]
         public async Task<IActionResult> ChangeCaseMine(int id, [FromBody] ChangeCaseTypeRequestDTO dto)
@@ -122,13 +124,30 @@ namespace Fixtroller.PL.Areas.Technician
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
             var role = User.FindFirst("role")?.Value ?? ""; // قد يكون Empty, service يتعامل بمنطق المالك
 
-            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto.NewCaseType, userId, role, language);
+            var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto, userId, role, preferOwnerPath: true, language);
 
             if (res is null)
                 return BadRequest(new { message = _localizer[key].Value });
 
             return Ok(new { message = _localizer[key].Value, data = res });
         }
+
+        [HttpPost("{id:int}/notes")]
+        public async Task<IActionResult> AddNote(int id, [FromBody] AddNoteRequestDTO dto)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+            var role = User.FindFirst("role")?.Value ?? "Technician";
+
+            var (res, key) = await _maintenanceRequestService.AddNoteAsync(id, userId, role, dto, language);
+
+            if (res is null)
+                return BadRequest(new { message = _localizer[key].Value });
+
+            return Ok(new { message = _localizer[key].Value, data = res });
+        }
+
 
         [HttpPut("{id:int}")]
         public async Task<IActionResult> UpdateMine(int id, [FromForm] MaintenanceRequestUpdateDTO dto)

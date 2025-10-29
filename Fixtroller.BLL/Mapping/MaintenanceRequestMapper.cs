@@ -73,6 +73,22 @@ namespace Fixtroller.BLL.Mapping
                     })
                     .ToList();
             }
+            if (e.Notes is not null && e.Notes.Count > 0)
+            {
+                dto.Notes = e.Notes
+                    .OrderByDescending(n => n.CreatedAt)
+                    .Select(n => new MaintenanceNoteDTO
+                    {
+                        Id = n.Id,
+                        Text = n.Text,
+                        Type = GetNoteTypeName(n.Type, language),
+                        Author = GetNoteAuthorName(n.Author, language),
+                        CreatedByUserId = n.CreatedByUserId,
+                        CreatedAt = n.CreatedAt
+                    })
+                    .ToList();
+            }
+
             dto.AssignedTechnician = e.AssignedTechnician == null
                 ? null
                 : TechnicianMappings.ToTechnicianResponse(e.AssignedTechnician, language);
@@ -80,6 +96,21 @@ namespace Fixtroller.BLL.Mapping
             
 
             return dto;
+        }
+        public static MaintenanceNote ToNote(string text, NoteType type, NoteAuthor author, string createdByUserId, int requestId)
+        {
+            if (string.IsNullOrWhiteSpace(text))
+                throw new ArgumentException("Note text cannot be empty.", nameof(text));
+
+            return new MaintenanceNote
+            {
+                MaintenanceRequestId = requestId,
+                Text = text.Trim(),
+                Type = type,
+                Author = author,
+                CreatedByUserId = createdByUserId,
+                CreatedAt = DateTime.UtcNow
+            };
         }
         public static string GetCaseTypeName(CaseType c, string lang)
         {
@@ -117,6 +148,38 @@ namespace Fixtroller.BLL.Mapping
                 _ => c.ToString()
             };
         }
+
+        private static string GetNoteTypeName(NoteType type, string language = "ar")
+        {
+            // لو حاب تحوّلها إلى Resource لاحقًا، سهّلها هنا
+            return language.Equals("ar", StringComparison.OrdinalIgnoreCase) ? type switch
+            {
+                NoteType.General => "ملاحظة",
+                NoteType.ReopenReason => "سبب إعادة الفتح",
+                NoteType.HelpRequest => "طلب مساعدة",
+                _ => "ملاحظة"
+            } : type switch
+            {
+                NoteType.General => "Note",
+                NoteType.ReopenReason => "Reopen reason",
+                NoteType.HelpRequest => "Help request",
+                _ => "Note"
+            };
+        }
+        private static string GetNoteAuthorName(NoteAuthor author, string language = "ar") =>
+        language.Equals("ar", StringComparison.OrdinalIgnoreCase) ? author switch
+        {
+            NoteAuthor.Owner => "مالك الطلب",
+            NoteAuthor.Technician => "الفني",
+            NoteAuthor.Manager => "المدير",
+            NoteAuthor.Admin => "المدير (أدمن)",
+        } : author switch
+        {
+            NoteAuthor.Owner => "Owner",
+            NoteAuthor.Technician => "Technician",
+            NoteAuthor.Manager => "Manager",
+            NoteAuthor.Admin => "Admin",
+        };
 
     }
 }
