@@ -89,9 +89,16 @@ namespace Fixtroller.BLL.Mapping
                     .ToList();
             }
 
-            dto.AssignedTechnician = e.AssignedTechnician == null
-                ? null
-                : TechnicianMappings.ToTechnicianResponse(e.AssignedTechnician, language);
+            dto.AssignedTechnicians = (e.Technicians ?? Enumerable.Empty<MaintenanceRequestTechnician>())
+                .Where(t => t.UnassignedAtUtc == null)
+                .OrderByDescending(t => t.AssignedAtUtc)
+                .Select(t => new AssignedTechnicianDTO
+                {
+                    AssignedAtUtc = t.AssignedAtUtc.Kind == DateTimeKind.Utc
+                        ? t.AssignedAtUtc
+                        : DateTime.SpecifyKind(t.AssignedAtUtc, DateTimeKind.Utc)
+                })
+                .ToList();
 
 
 

@@ -4,6 +4,7 @@ using Fixtroller.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fixtroller.DAL.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20251031141613_addWorkTime")]
+    partial class addWorkTime
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -158,6 +161,12 @@ namespace Fixtroller.DAL.Data.Migrations
                         .HasMaxLength(300)
                         .HasColumnType("nvarchar(300)");
 
+                    b.Property<DateTime?>("AssignedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("AssignedTechnicianUserId")
+                        .HasColumnType("nvarchar(450)");
+
                     b.Property<int>("CaseType")
                         .HasColumnType("int");
 
@@ -190,6 +199,8 @@ namespace Fixtroller.DAL.Data.Migrations
                         .HasColumnType("datetime2");
 
                     b.HasKey("Id");
+
+                    b.HasIndex("AssignedTechnicianUserId");
 
                     b.HasIndex("CreatedByUserId");
 
@@ -228,42 +239,6 @@ namespace Fixtroller.DAL.Data.Migrations
                     b.HasIndex("MaintenanceRequestId");
 
                     b.ToTable("MaintenanceRequestImages", (string)null);
-                });
-
-            modelBuilder.Entity("Fixtroller.DAL.Entities.MaintenanceRequestEntity.MaintenanceRequestTechnician", b =>
-                {
-                    b.Property<int>("Id")
-                        .ValueGeneratedOnAdd()
-                        .HasColumnType("int");
-
-                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
-
-                    b.Property<DateTime>("AssignedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.Property<DateTime>("CreatedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<int>("RequestId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TechnicianUserId")
-                        .IsRequired()
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<DateTime?>("UnassignedAtUtc")
-                        .HasColumnType("datetime2");
-
-                    b.HasKey("Id");
-
-                    b.HasIndex("RequestId", "TechnicianUserId")
-                        .IsUnique()
-                        .HasFilter("[UnassignedAtUtc] IS NULL");
-
-                    b.ToTable("MaintenanceRequestTechnician", (string)null);
                 });
 
             modelBuilder.Entity("Fixtroller.DAL.Entities.MaintenanceRequestEntity.WorkTimeEntry", b =>
@@ -468,6 +443,11 @@ namespace Fixtroller.DAL.Data.Migrations
 
             modelBuilder.Entity("Fixtroller.DAL.Entities.MaintenanceRequestEntity.MaintenanceRequest", b =>
                 {
+                    b.HasOne("Fixtroller.DAL.Entities.ApplicationUser", "AssignedTechnician")
+                        .WithMany()
+                        .HasForeignKey("AssignedTechnicianUserId")
+                        .OnDelete(DeleteBehavior.SetNull);
+
                     b.HasOne("Fixtroller.DAL.Entities.ApplicationUser", "CreatedByUser")
                         .WithMany("SubmittedRequests")
                         .HasForeignKey("CreatedByUserId")
@@ -479,6 +459,8 @@ namespace Fixtroller.DAL.Data.Migrations
                         .HasForeignKey("ProblemTypeId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("AssignedTechnician");
 
                     b.Navigation("CreatedByUser");
 
@@ -494,17 +476,6 @@ namespace Fixtroller.DAL.Data.Migrations
                         .IsRequired();
 
                     b.Navigation("MaintenanceRequest");
-                });
-
-            modelBuilder.Entity("Fixtroller.DAL.Entities.MaintenanceRequestEntity.MaintenanceRequestTechnician", b =>
-                {
-                    b.HasOne("Fixtroller.DAL.Entities.MaintenanceRequestEntity.MaintenanceRequest", "Request")
-                        .WithMany("Technicians")
-                        .HasForeignKey("RequestId")
-                        .OnDelete(DeleteBehavior.Cascade)
-                        .IsRequired();
-
-                    b.Navigation("Request");
                 });
 
             modelBuilder.Entity("Fixtroller.DAL.Entities.MaintenanceRequestEntity.WorkTimeEntry", b =>
@@ -565,8 +536,6 @@ namespace Fixtroller.DAL.Data.Migrations
                     b.Navigation("Images");
 
                     b.Navigation("Notes");
-
-                    b.Navigation("Technicians");
                 });
 
             modelBuilder.Entity("Fixtroller.DAL.Entities.ProblemTypeEntity.ProblemType", b =>

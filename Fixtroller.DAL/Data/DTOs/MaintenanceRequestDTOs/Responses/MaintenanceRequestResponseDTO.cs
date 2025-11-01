@@ -27,7 +27,7 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public string CreatedByUserId { get; set; } = default!;
         public DateTime CreatedAt { get; set; }
         public DateTime? LastModifiedAt { get; set; }
-        public TechnicianResponseDTO? AssignedTechnician { get; set; }
+        public List<AssignedTechnicianDTO> AssignedTechnicians { get; set; } = new();
 
         // فقط الصور المتعددة
         public List<MaintenanceRequestImageDTO> Images { get; set; } = new();

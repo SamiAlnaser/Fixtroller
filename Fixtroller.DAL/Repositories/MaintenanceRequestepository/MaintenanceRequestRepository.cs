@@ -40,17 +40,21 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
             return q
                 .Include(r => r.ProblemType)
                     .ThenInclude(pt => pt.Translations)
-                .Where(r => r.AssignedTechnicianUserId == technicianUserId)
-                .OrderByDescending(r => r.AssignedAtUtc)
+                .Include(r => r.Technicians.Where(t => t.UnassignedAtUtc == null)) // حمّل التعيينات النشطة
+                .Where(r => r.Technicians.Any(t =>
+                    t.UnassignedAtUtc == null &&
+                    t.TechnicianUserId == technicianUserId))
+                .OrderByDescending(r => r.Technicians
+                    .Where(t => t.UnassignedAtUtc == null && t.TechnicianUserId == technicianUserId)
+                    .Select(t => t.AssignedAtUtc)
+                    .Max()) // أحدث تاريخ تعيين لهذا الفني على هذا الطلب
                 .ThenByDescending(r => r.CreatedAt);
         }
 
         public Task<MaintenanceRequest?> GetForAssignmentAsync(int id, CancellationToken ct = default)
         {
             return _context.MaintenanceRequests
-                .Include(r => r.AssignedTechnician)
-                    .ThenInclude(t => t.TechnicianCategory)
-                        .ThenInclude(c => c.Translations)
+                .Include(r => r.Technicians.Where(t => t.UnassignedAtUtc == null))
                 .FirstOrDefaultAsync(r => r.Id == id, ct);
         }
 

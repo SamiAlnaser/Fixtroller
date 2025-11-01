@@ -210,4 +210,31 @@
   <data name="Note_Added" xml:space="preserve">
     <value>تمت إضافة الملاحظة بنجاح</value>
   </data>
+  <data name="Work_Started" xml:space="preserve">
+    <value>تم بدء احتساب وقت العمل</value>
+  </data>
+  <data name="Work_AlreadyStarted" xml:space="preserve">
+    <value>وقت العمل قيد الاحتساب بالفعل</value>
+  </data>
+  <data name="Technician_NotAssigned" xml:space="preserve">
+    <value>لا يوجد فني معيَّن لهذا الطلب</value>
+  </data>
+  <data name="Technicians_Assigned" xml:space="preserve">
+    <value>تم تحديث الفنيين المعيّنين</value>
+  </data>
+  <data name="Technician_ListEmpty" xml:space="preserve">
+    <value>قائمة الفنيين فارغة</value>
+  </data>
+  <data name="Technician_Removed" xml:space="preserve">
+    <value>تم إزالة الفني من الطلب</value>
+  </data>
+  <data name="Technician_NotAssignedToRequest" xml:space="preserve">
+    <value>هذا الفني غير معيّن لهذا الطلب</value>
+  </data>
+  <data name="TechnicianId_Required" xml:space="preserve">
+    <value>مُعرّف الفني مطلوب</value>
+  </data>
+  <data name="Work_Stopped" xml:space="preserve">
+    <value>تم إيقاف وقت العمل</value>
+  </data>
 </root>

@@ -43,8 +43,6 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         public int ProblemTypeId { get; set; }
         public ProblemType ProblemType { get; set; }
 
-        public string? AssignedTechnicianUserId { get; set; }
-        public ApplicationUser AssignedTechnician { get; set; }
-        public DateTime? AssignedAtUtc { get; set; }
+        public ICollection<MaintenanceRequestTechnician> Technicians { get; set; } = new List<MaintenanceRequestTechnician>();
     }
 }

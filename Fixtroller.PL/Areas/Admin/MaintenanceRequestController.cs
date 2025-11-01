@@ -129,6 +129,31 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(new { message = _localizer[key].Value, data = res });
         }
 
+        [HttpPost("{id:int}/work/start/{techId}")]
+        public async Task<IActionResult> StartWorkForTech(int id, string techId, CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+            var role = User.FindFirst(ClaimTypes.Role)?.Value ?? User.FindFirst("role")?.Value ?? "";
+
+            var trimmed = techId?.Trim();
+            if (string.IsNullOrWhiteSpace(trimmed))
+                return BadRequest(new { message = _localizer["TechnicianId_Required"].Value });
+
+            var (ok, key) = await _maintenanceRequestService.StartWorkAsync(
+                requestId: id,
+                technicianUserId: trimmed!,
+                callerUserId: userId,
+                callerRole: role,
+                ct: ct);
+
+            if (!ok) return BadRequest(new { message = _localizer[key].Value });
+
+            return Ok(new { message = _localizer[key].Value });
+        }
+
         [HttpPost("{id:int}/notes")]
         public async Task<IActionResult> AddNote(int id, [FromBody] AddNoteRequestDTO dto, CancellationToken ct)
         {

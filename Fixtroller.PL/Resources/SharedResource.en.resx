@@ -210,4 +210,31 @@
   <data name="Note_Added" xml:space="preserve">
     <value>Note added successfully</value>
   </data>
+  <data name="Work_Started" xml:space="preserve">
+    <value>Work timer started</value>
+  </data>
+  <data name="Work_AlreadyStarted" xml:space="preserve">
+    <value>Work timer is already running</value>
+  </data>
+  <data name="Technician_NotAssigned" xml:space="preserve">
+    <value>No technician is assigned to this request</value>
+  </data>
+  <data name="Technicians_Assigned" xml:space="preserve">
+    <value>Assigned technicians updated</value>
+  </data>
+  <data name="Technician_ListEmpty" xml:space="preserve">
+    <value>Technician list is empty</value>
+  </data>
+  <data name="Technician_Removed" xml:space="preserve">
+    <value>Technician removed from the request</value>
+  </data>
+  <data name="Technician_NotAssignedToRequest" xml:space="preserve">
+    <value>This technician is not assigned to the request</value>
+  </data>
+  <data name="TechnicianId_Required" xml:space="preserve">
+    <value>Technician id is required</value>
+  </data>
+  <data name="Work_Stopped" xml:space="preserve">
+    <value>Work timer stopped</value>
+  </data>
 </root>

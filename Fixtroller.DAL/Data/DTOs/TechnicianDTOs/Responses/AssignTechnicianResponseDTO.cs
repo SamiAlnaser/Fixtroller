@@ -11,5 +11,6 @@ namespace Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses
         public int MaintenanceRequestId { get; set; }
         public TechnicianResponseDTO Technician { get; set; }
         public DateTime AssignedAtUtc { get; set; }
+        public List<TechnicianResponseDTO> ActiveTechnicians { get; set; } = new();
     }
 }

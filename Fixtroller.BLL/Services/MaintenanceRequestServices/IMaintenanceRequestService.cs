@@ -12,7 +12,7 @@ using System.Threading.Tasks;
 namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 {
     public interface IMaintenanceRequestService
-         : IGenericService<MaintenanceRequestRequestDTO, MaintenanceRequestResponseDTO, MaintenanceRequest>
+        : IGenericService<MaintenanceRequestRequestDTO, MaintenanceRequestResponseDTO, MaintenanceRequest>
     {
         Task<int> CreateWithFile(
             MaintenanceRequestRequestDTO request,
@@ -39,10 +39,24 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             string language,
             CancellationToken ct = default);
 
+        // تعيين فني مفرد (توافق خلفي) — يلتف على AssignTechniciansAsync
         Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(
             int requestId,
             string technicianUserId,
             string language = "ar",
+            CancellationToken ct = default);
+
+        // NEW: تعيين قائمة فنيين دفعة واحدة (يُضيف/يزيل مقارنةً بالحالي)
+        Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechniciansAsync(
+            int requestId,
+            IEnumerable<string> technicianUserIds,
+            string language = "ar",
+            CancellationToken ct = default);
+
+        // NEW: إزالة فني واحد من الطلب (+ سيُوقف مؤقّته النشط لهذا الطلب)
+        Task<(bool ok, string messageKey)> RemoveTechnicianAsync(
+            int requestId,
+            string technicianUserId,
             CancellationToken ct = default);
 
         Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> ChangeCaseAsync(
@@ -68,6 +82,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             string userRole,
             AddNoteRequestDTO dto,
             string language = "ar",
+            CancellationToken ct = default);
+
+        // CHANGED: صار يطلب technicianUserId صراحةً
+        Task<(bool ok, string messageKey)> StartWorkAsync(
+            int requestId,
+            string technicianUserId,
+            string callerUserId,
+            string callerRole,
             CancellationToken ct = default);
     }
 }

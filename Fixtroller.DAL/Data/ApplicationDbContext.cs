@@ -21,6 +21,8 @@ namespace Fixtroller.DAL.Data
         public DbSet<MaintenanceRequest> MaintenanceRequests { get; set; }
         public DbSet<MaintenanceRequestImage> MaintenanceRequestImages { get; set; }
         public DbSet<MaintenanceNote> MaintenanceNotes { get; set; }
+        public DbSet<WorkTimeEntry> WorkTimeEntries { get; set; }
+        public DbSet<MaintenanceRequestTechnician> MaintenanceRequestTechnicians { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {
@@ -54,10 +56,10 @@ namespace Fixtroller.DAL.Data
                 e.Property(m => m.Title).IsRequired().HasMaxLength(200);
                 e.Property(m => m.Address).IsRequired().HasMaxLength(300);
 
-                  e.HasOne(m => m.AssignedTechnician)
-                 .WithMany()
-                 .HasForeignKey(m => m.AssignedTechnicianUserId)
-                 .OnDelete(DeleteBehavior.SetNull);
+                 // e.HasOne(m => m.AssignedTechnician)
+                 //.WithMany()
+                 //.HasForeignKey(m => m.AssignedTechnicianUserId)
+                 //.OnDelete(DeleteBehavior.SetNull);
             });
             builder.Entity<ApplicationUser>(u =>
             {
@@ -95,6 +97,45 @@ namespace Fixtroller.DAL.Data
                  .WithMany(r => r.Images)
                  .HasForeignKey(x => x.MaintenanceRequestId)
                  .OnDelete(DeleteBehavior.Cascade);
+            });
+
+
+            builder.Entity<WorkTimeEntry>(e =>
+            {
+                e.ToTable("WorkTimeEntry");
+                e.HasKey(x => x.Id);
+
+                e.HasOne(x => x.Request)
+                 .WithMany()
+                 .HasForeignKey(x => x.RequestId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.Property(x => x.TechnicianUserId).IsRequired();
+                e.Property(x => x.StartedAt).IsRequired();
+
+                // عدّاد واحد نشط لكل (Request, Technician)
+                e.HasIndex(x => new { x.RequestId, x.TechnicianUserId })
+                 .IsUnique()
+                 .HasFilter("[StoppedAt] IS NULL");
+            });
+
+            builder.Entity<MaintenanceRequestTechnician>(e =>
+            {
+                e.ToTable("MaintenanceRequestTechnician");
+                e.HasKey(x => x.Id);
+
+                e.HasOne(x => x.Request)
+                 .WithMany(r => r.Technicians)
+                 .HasForeignKey(x => x.RequestId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                e.Property(x => x.TechnicianUserId).IsRequired();
+                e.Property(x => x.AssignedAtUtc).IsRequired();
+
+                // منع تكرار تعيين نشط لنفس (Request, Technician)
+                e.HasIndex(x => new { x.RequestId, x.TechnicianUserId })
+                 .IsUnique()
+                 .HasFilter("[UnassignedAtUtc] IS NULL");
             });
 
 

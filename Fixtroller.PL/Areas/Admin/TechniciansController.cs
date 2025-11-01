@@ -48,6 +48,28 @@ namespace Fixtroller.PL.Areas.Admin
 
             return Ok(new { message = _localizer[key].Value, data = res });
         }
+        [HttpPost("{id:int}/assign-list")]
+        public async Task<IActionResult> AssignList(int id, [FromBody] AssignTechniciansRequestDTO dto, CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var (res, key) = await _requestService
+                .AssignTechniciansAsync(id, dto.TechnicianUserIds, language, ct);
+
+            if (res is null) return BadRequest(new { message = _localizer[key].Value });
+            return Ok(new { message = _localizer[key].Value, data = res });
+        }
+
+        [HttpDelete("{id:int}/technicians/{techId}")]
+        public async Task<IActionResult> RemoveTechnician(int id, string techId, CancellationToken ct)
+        {
+            var (ok, key) = await _requestService
+                .RemoveTechnicianAsync(id, techId, ct);
+
+            if (!ok) return BadRequest(new { message = _localizer[key].Value });
+            return Ok(new { message = _localizer[key].Value });
+        }
 
         [HttpPatch("category")]
         public async Task<IActionResult> UpdateCategory([FromBody] UpdateTechnicianCategoryRequestDTO dto, CancellationToken ct)

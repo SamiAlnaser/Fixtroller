@@ -12,5 +12,6 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests
         public CaseType NewCaseType { get; set; }
         public string? NoteText { get; set; }      // مطلوب لـ Reopened/ResourcesNeeded
         public NoteType? NoteType { get; set; }
+        public Priority? Priority { get; set; }
     }
 }
