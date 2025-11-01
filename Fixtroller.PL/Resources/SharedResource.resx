@@ -237,4 +237,19 @@
   <data name="Work_Stopped" xml:space="preserve">
     <value>تم إيقاف وقت العمل</value>
   </data>
+  <data name="Images_Added" xml:space="preserve">
+    <value>تمت إضافة الصور بنجاح</value>
+  </data>
+  <data name="Images_Empty" xml:space="preserve">
+    <value>الرجاء اختيار صور</value>
+  </data>
+  <data name="Images_InvalidFile" xml:space="preserve">
+    <value>أحد الملفات غير صالح</value>
+  </data>
+  <data name="Images_TooLarge" xml:space="preserve">
+    <value>حجم الصورة أكبر من الحد المسموح</value>
+  </data>
+  <data name="Images_Disabled_In_FinalState" xml:space="preserve">
+    <value>لا يمكن إضافة صور بعد إنهاء أو إلغاء الطلب</value>
+  </data>
 </root>

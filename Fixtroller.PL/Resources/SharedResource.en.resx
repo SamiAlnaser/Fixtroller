@@ -237,4 +237,19 @@
   <data name="Work_Stopped" xml:space="preserve">
     <value>Work timer stopped</value>
   </data>
+  <data name="Images_Added" xml:space="preserve">
+    <value>Images added successfully</value>
+  </data>
+  <data name="Images_Empty" xml:space="preserve">
+    <value>Please attach images</value>
+  </data>
+  <data name="Images_InvalidFile" xml:space="preserve">
+    <value>One of the files is invalid</value>
+  </data>
+  <data name="Images_TooLarge" xml:space="preserve">
+    <value>Image exceeds the maximum allowed</value>
+  </data>
+  <data name="Images_Disabled_In_FinalState" xml:space="preserve">
+    <value>Images cannot be added after the request is finalized</value>
+  </data>
 </root>

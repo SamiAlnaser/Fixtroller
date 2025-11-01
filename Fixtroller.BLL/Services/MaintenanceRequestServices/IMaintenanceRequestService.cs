@@ -91,6 +91,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             string callerUserId,
             string callerRole,
             CancellationToken ct = default);
+
+        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> AddImagesAsync(
+    int requestId,
+    string userId,
+    string userRole,
+    AddImagesRequestDTO dto,
+    string language = "ar",
+    CancellationToken ct = default);
     }
 }
+
 

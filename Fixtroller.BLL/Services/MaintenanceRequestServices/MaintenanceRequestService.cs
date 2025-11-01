@@ -680,6 +680,112 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (isTech) return NoteAuthor.Technician;
             return NoteAuthor.Owner;
         }
+
+        public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> AddImagesAsync(
+    int requestId,
+    string userId,
+    string userRole,
+    AddImagesRequestDTO dto,
+    string language = "ar",
+    CancellationToken ct = default)
+        {
+            // 1) تحقّقات أولية
+            var r = await _repository.GetForUpdateAsync(requestId, ct);
+            if (r is null) return (null, "Request_NotFound");
+
+            var isOwner = string.Equals(r.CreatedByUserId, userId, StringComparison.Ordinal);
+            var isTech = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+            var isMgr = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+
+            // نمنع إضافة صور بعد الإنهاء/الإلغاء (يسمح فقط للأدمن لو أردت)
+            var lockedFinal = r.CaseType == CaseType.Completed || r.CaseType == CaseType.Cancelled;
+            if (lockedFinal && !isAdmin)
+                return (null, "Images_Disabled_In_FinalState");
+
+            // الفني يجب أن يكون مُعيَّن تعيينًا نشطًا
+            if (isTech)
+            {
+                var activeAssigned = await _reqTechRepo.IsActiveAssignedAsync(requestId, userId, ct);
+                if (!activeAssigned) return (null, "Request_NotAssignedToYou");
+            }
+
+            // السماح: صاحب الطلب، الفني (لو مُعيّن)، المدير، الأدمن
+            if (!isOwner && !isTech && !isMgr && !isAdmin)
+                return (null, "Forbidden");
+
+            // 2) تحقق من وجود ملفات
+            if (dto?.Images is null || dto.Images.Count == 0)
+                return (null, "Images_Empty");
+
+            // (اختياري) تحقق النوع/الحجم
+            // مثال بسيط: رفض > 10MB للصورة الواحدة
+            const long maxSize = 10 * 1024 * 1024;
+            foreach (var f in dto.Images)
+            {
+                if (f == null || f.Length <= 0) return (null, "Images_InvalidFile");
+                if (f.Length > maxSize) return (null, "Images_TooLarge");
+                // بإمكانك فحص ContentType إن رغبت: image/jpeg, image/png ...
+            }
+
+            // 3) ارفع وألصق
+            var uploaded = new List<string>();
+
+            await _uow.BeginTransactionAsync(ct);
+            try
+            {
+                // ارفع أولًا
+                foreach (var file in dto.Images)
+                    uploaded.Add(await _fileService.UploadAsync(file, ct));
+
+                // اربط بالطلب
+                var hadPrimaryBefore = r.Images?.Any(i => i.IsPrimary) == true;
+                for (int i = 0; i < uploaded.Count; i++)
+                {
+                    var isPrimary = false;
+                    if (!hadPrimaryBefore && dto.MakePrimaryFirst && i == 0)
+                        isPrimary = true;
+
+                    r.Images.Add(new MaintenanceRequestImage
+                    {
+                        FileName = uploaded[i],
+                        IsPrimary = isPrimary
+                    });
+                }
+
+                r.UpdatedAt = DateTime.UtcNow;
+
+                await _uow.SaveAndCommitAsync(ct);
+            }
+            catch
+            {
+                await _uow.RollbackAsync(ct);
+                // نظّف الصور المرفوعة إذا فشل الحفظ
+                foreach (var name in uploaded)
+                {
+                    try { await _fileService.DeleteAsync(name, ct); } catch { }
+                }
+                throw;
+            }
+
+            // 4) رجّع الردّ مع الروابط العامة
+            var withIncludes = await _repository.Query(
+                    asTracking: false,
+                    include: q => q
+                        .Include(x => x.Images)
+                        .Include(x => x.Notes)
+                        .Include(x => x.ProblemType).ThenInclude(pt => pt.Translations),
+                    predicate: x => x.Id == requestId)
+                .FirstOrDefaultAsync(ct);
+
+            var dtoRes = withIncludes is null
+                ? null
+                : MaintenanceRequestMapper.ToResponse(withIncludes, userRole, _fileService.GetPublicUrl, language,
+                      isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
+
+            return (dtoRes, "Images_Added");
+        }
+
     }
 }
 

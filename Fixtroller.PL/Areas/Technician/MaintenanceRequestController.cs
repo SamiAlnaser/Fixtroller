@@ -203,5 +203,25 @@ namespace Fixtroller.PL.Areas.Technician
                 return Forbid(ex.Message);
             }
         }
+
+        [HttpPost("{id:int}/images")]
+        public async Task<IActionResult> AddImages(int id, [FromForm] AddImagesRequestDTO dto, CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier)
+                      ?? string.Empty;
+
+            var role = User.FindFirst("role")?.Value ?? "Technician";
+
+            var (res, key) = await _maintenanceRequestService.AddImagesAsync(id, userId, role, dto, language, ct);
+            if (res is null)
+                return BadRequest(new { message = _localizer[key].Value });
+
+            return Ok(new { message = _localizer[key].Value, data = res });
+        }
+
     }
 }
