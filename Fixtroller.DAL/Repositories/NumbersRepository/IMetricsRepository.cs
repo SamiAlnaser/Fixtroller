@@ -48,6 +48,13 @@ namespace Fixtroller.DAL.Repositories.NumbersRepository
             DateTimeOffset? toUtc = null,
             CancellationToken ct = default);
 
-    }
-}
 
+        Task<List<(string TechnicianUserId, int AssignedCount, int CompletedCount)>>
+        GetRequestStatsPerTechnicianAsync(IEnumerable<string> technicianIds, CancellationToken ct = default);
+
+        // إرجاع (TechId, AvgMinutes)
+        Task<List<(string TechnicianUserId, int AvgCompletionMinutes)>>
+            GetAvgCompletionMinutesPerTechnicianAsync(IEnumerable<string> technicianIds, CancellationToken ct = default);
+    }
+
+}

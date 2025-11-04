@@ -136,6 +136,9 @@ namespace Fixtroller.DAL.Data
                 e.HasIndex(x => new { x.RequestId, x.TechnicianUserId })
                  .IsUnique()
                  .HasFilter("[UnassignedAtUtc] IS NULL");
+
+    
+
             });
 
 

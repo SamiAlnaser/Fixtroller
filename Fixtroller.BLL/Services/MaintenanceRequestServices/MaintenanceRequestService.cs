@@ -4,6 +4,7 @@ using Fixtroller.BLL.Services.GenericService;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
+using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Fixtroller.DAL.Repositories.MaintenanceRequestepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
@@ -85,45 +86,82 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
-        public async Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(
-            string userId,
-            string role,
-            string language,
-            CancellationToken ct = default)
+        public async Task<IEnumerable<MaintenanceRequestListMineDTO>> GetMineAsync(
+            string userId, string role, string language, CancellationToken ct = default)
         {
-            var data = await _repository.Query(
-                                asTracking: false,
-                                predicate: x => x.CreatedByUserId == userId)
-                            .OrderByDescending(x => x.CreatedAt)
-                            .ToListAsync(ct);
+            var isEmployee = role.Equals("Employee", StringComparison.OrdinalIgnoreCase);
+            var isTechnician = role.Equals("Technician", StringComparison.OrdinalIgnoreCase);
 
-            return data.Select(x =>
-                MaintenanceRequestMapper.ToResponse(
-                    x,
-                    role,
-                    _fileService.GetPublicUrl,
-                    language,
-                    isOwner: true));
+            var q = _repository.Query(asTracking: false, predicate: x => x.Status == Status.Active);
+
+            if (isEmployee)
+            {
+                q = q.Where(x => x.CreatedByUserId == userId);
+            }
+            else if (isTechnician)
+            {
+                q = q.Where(x => x.Technicians.Any(t =>
+                    t.TechnicianUserId == userId && t.UnassignedAtUtc == null));
+            }
+            // المدير/الأدمن: يشوف الكل
+
+            var rows = await q
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new
+                {
+                    Light = new MaintenanceRequest
+                    {
+                        Id = x.Id,
+                        Title = x.Title,
+                        CaseType = x.CaseType,
+                        Priority = x.Priority,
+                        CreatedAt = x.CreatedAt,
+                        UpdatedAt = x.UpdatedAt,
+                        CreatedByUserId = x.CreatedByUserId
+                    },
+                    IsOwner = x.CreatedByUserId == userId
+                })
+                .ToListAsync(ct);
+
+            return rows.Select(r =>
+                MaintenanceRequestMapper.ToMineListItem(r.Light, role, r.IsOwner, language));
         }
 
-        public async Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync(
-            string role,
-            string language,
-            string? currentUserId = null,
-            CancellationToken ct = default)
+        public async Task<IEnumerable<MaintenanceRequestListAllDTO>> GetAllAsync(
+     string role, string language, CancellationToken ct = default)
         {
-            var data = await _repository.Query(asTracking: false)
-                                        .OrderByDescending(x => x.CreatedAt)
-                                        .ToListAsync(ct);
+            var isManager = role.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = role.Equals("Admin", StringComparison.OrdinalIgnoreCase);
 
-            return data.Select(x =>
-                MaintenanceRequestMapper.ToResponse(
-                    x,
-                    role,
-                    _fileService.GetPublicUrl,
-                    language,
-                    isOwner: currentUserId != null && x.CreatedByUserId == currentUserId));
+            if (!isManager && !isAdmin)
+                return Enumerable.Empty<MaintenanceRequestListAllDTO>();
+
+            var rows = await _repository.Query(asTracking: false, predicate: x => x.Status == Status.Active)
+                .OrderByDescending(x => x.CreatedAt)
+                .Select(x => new
+                {
+                    Light = new MaintenanceRequest
+                    {
+                        Id = x.Id,
+                        Description = x.Description,
+                        CaseType = x.CaseType,
+                        Priority = x.Priority,
+                        CreatedAt = x.CreatedAt
+                    },
+                    ProblemTypeName = x.ProblemType != null
+                        ? x.ProblemType.Translations
+                            .OrderBy(t => t.Language == language ? 0 :
+                                          t.Language == "ar" ? 1 : 2)
+                            .Select(t => t.Name)
+                            .FirstOrDefault()
+                        : null
+                })
+                .ToListAsync(ct);
+
+            return rows.Select(r =>
+                MaintenanceRequestMapper.ToAllListItem(r.Light, r.ProblemTypeName, language));
         }
+
 
         public async Task<MaintenanceRequestResponseDTO?> GetByIdAsync(
             int id,
@@ -673,13 +711,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
-        private static NoteAuthor InferAuthor(bool isOwner, bool isTech, bool isMgr, bool isAdmin)
-        {
-            if (isAdmin) return NoteAuthor.Admin;
-            if (isMgr) return NoteAuthor.Manager;
-            if (isTech) return NoteAuthor.Technician;
-            return NoteAuthor.Owner;
-        }
+
+
+ 
+
+
 
         public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> AddImagesAsync(
     int requestId,
@@ -784,6 +820,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                       isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
 
             return (dtoRes, "Images_Added");
+        }
+
+
+        private static NoteAuthor InferAuthor(bool isOwner, bool isTech, bool isMgr, bool isAdmin)
+        {
+            if (isAdmin) return NoteAuthor.Admin;
+            if (isMgr) return NoteAuthor.Manager;
+            if (isTech) return NoteAuthor.Technician;
+            return NoteAuthor.Owner;
         }
 
     }

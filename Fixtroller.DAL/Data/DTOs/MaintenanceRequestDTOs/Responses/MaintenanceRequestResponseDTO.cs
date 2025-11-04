@@ -22,6 +22,7 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public string Title { get; set; } = default!;
         public string? Description { get; set; }
         public Priority Priority { get; set; }
+        public string PriorityName { get; set; } = "";
         public string CaseType { get; set; } = default!;
         public string? Address { get; set; }
         public string CreatedByUserId { get; set; } = default!;

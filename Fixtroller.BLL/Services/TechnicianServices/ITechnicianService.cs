@@ -11,18 +11,20 @@ namespace Fixtroller.BLL.Services.TechnicianServices
 {
     public interface ITechnicianService
     {
-        Task<IReadOnlyList<TechnicianResponseDTO>> GetAsync(
-            TechniciansFilterRequestDTO filter,
-            CancellationToken ct = default);
+
+        Task<IEnumerable<TechnicianListItemDTO>> GetWithMetricsAsync(
+    string language,
+    int? technicianCategoryId,
+    string? search,
+    CancellationToken ct = default);
 
         Task<bool> UpdateTechnicianCategoryAsync(
             UpdateTechnicianCategoryRequestDTO dto,
             CancellationToken ct = default);
 
-        Task<IReadOnlyList<TechnicianAssignedRequestResponseDTO>> GetMyAssignedAsync(
-            string technicianUserId,
-            string language = "ar",
-            CancellationToken ct = default);
+        Task<TechnicianBoardDTO> GetMyAssignedAsync(
+            string technicianUserId, string language, CancellationToken ct = default);
+
 
         Task<IReadOnlyList<TechnicianResponseDTO>> GetByCategoryAsync(
             int categoryId,

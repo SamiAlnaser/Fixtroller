@@ -1,5 +1,6 @@
 ﻿using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
+using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using System;
 using System.Collections.Generic;
@@ -54,6 +55,7 @@ namespace Fixtroller.BLL.Mapping
                 Title = e.Title,
                 Description = e.Description,
                 Priority = e.Priority,
+                PriorityName = GetPriorityName(e.Priority, language),
                 CaseType = GetCaseTypeName(effectiveCase, language),
                 Address = e.Address,
                 CreatedByUserId = e.CreatedByUserId,
@@ -156,6 +158,63 @@ namespace Fixtroller.BLL.Mapping
             };
         }
 
+        public static MaintenanceRequestListMineDTO ToMineListItem(
+          MaintenanceRequest e, string role, bool isOwner, string language = "ar")
+        {
+
+            var effectiveCase =
+                (isOwner
+                 && role.Equals("Employee", StringComparison.OrdinalIgnoreCase)
+                 && e.CaseType == CaseType.ManagerReview)
+                    ? CaseType.Processing
+                    : e.CaseType;
+
+            return new MaintenanceRequestListMineDTO
+            {
+                Id = e.Id,
+                Title = e.Title,
+                CaseType = GetCaseTypeName(effectiveCase, language),
+                Priority = GetPriorityName(e.Priority, language),
+                CreatedAt = e.CreatedAt,
+                LastModifiedAt = e.UpdatedAt
+            };
+        }
+
+
+        public static MaintenanceRequestListMineDTO ToMineListItem(
+            MaintenanceRequest e, string language = "ar")
+            => ToMineListItem(e, role: "Employee", isOwner: false, language);
+
+  
+        public static MaintenanceRequestListAllDTO ToAllListItem(
+            MaintenanceRequest e, string? problemTypeName, string language = "ar")
+        {
+            return new MaintenanceRequestListAllDTO
+            {
+                Id = e.Id,
+                Description = e.Description,
+                CaseType = GetCaseTypeName(e.CaseType, language),
+                Priority = GetPriorityName(e.Priority, language),
+                CreatedAt = e.CreatedAt,
+                ProblemTypeName = problemTypeName
+            };
+        }
+
+
+        public static TechnicianTaskCardDTO ToTechnicianCard(
+    MaintenanceRequest e, string language = "ar")
+        {
+            return new TechnicianTaskCardDTO
+            {
+                Id = e.Id,
+                Title = e.Title ?? string.Empty,
+                Description = e.Description,
+                Priority = GetPriorityName(e.Priority, language),
+                CaseType = GetCaseTypeName(e.CaseType, language),
+                CreatedAt = e.CreatedAt
+            };
+        }
+
         private static string GetNoteTypeName(NoteType type, string language = "ar")
         {
             // لو حاب تحوّلها إلى Resource لاحقًا، سهّلها هنا
@@ -187,6 +246,31 @@ namespace Fixtroller.BLL.Mapping
             NoteAuthor.Manager => "Manager",
             NoteAuthor.Admin => "Admin",
         };
+
+        public static string GetPriorityName(Priority p, string lang)
+        {
+            var isAr = string.Equals(lang, "ar", StringComparison.OrdinalIgnoreCase);
+
+            if (isAr)
+            {
+                return p switch
+                {
+                    Priority.High => "عالية",
+                    Priority.Medium => "متوسطة",
+                    Priority.Low => "منخفضة",
+                    _ => p.ToString()
+                };
+            }
+
+            // English 
+            return p switch
+            {
+                Priority.High => "High",
+                Priority.Medium => "Medium",
+                Priority.Low => "Low",
+                _ => p.ToString()
+            };
+        }
 
     }
 }

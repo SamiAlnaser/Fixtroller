@@ -91,7 +91,7 @@ namespace Fixtroller.PL.Areas.Admin
                     ?? User.FindFirst(ClaimTypes.Role)?.Value
                     ?? string.Empty;
 
-            var list = await _maintenanceRequestService.GetAllAsync(role, language, null, ct);
+            var list = await _maintenanceRequestService.GetAllAsync(role, language, ct);
             return Ok(list);
         }
 

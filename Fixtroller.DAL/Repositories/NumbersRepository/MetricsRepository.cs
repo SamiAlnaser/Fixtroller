@@ -229,5 +229,67 @@ namespace Fixtroller.DAL.Repositories.NumbersRepository
             return rows.Select(x => (x.Case, x.Count)).ToList();
         }
 
+        public async Task<List<(string TechnicianUserId, int AssignedCount, int CompletedCount)>>
+       GetRequestStatsPerTechnicianAsync(IEnumerable<string> technicianIds, CancellationToken ct = default)
+        {
+            var ids = technicianIds.Distinct().ToList();
+            if (ids.Count == 0) return new();
+
+            var rows = await _context.MaintenanceRequests
+                .AsNoTracking()
+                .SelectMany(r => r.Technicians.Select(t => new
+                {
+                    t.TechnicianUserId,
+                    IsActiveAssign = (t.UnassignedAtUtc == null),
+                    r.CaseType
+                }))
+                .Where(x => ids.Contains(x.TechnicianUserId))
+                .GroupBy(x => x.TechnicianUserId)
+                .Select(g => new
+                {
+                    TechnicianUserId = g.Key,
+                    AssignedCount = g.Count(x => x.IsActiveAssign),
+                    CompletedCount = g.Count(x => x.CaseType == CaseType.Completed)
+                })
+                .ToListAsync(ct);
+
+            return rows.Select(r => (r.TechnicianUserId, r.AssignedCount, r.CompletedCount)).ToList();
+        }
+
+        public async Task<List<(string TechnicianUserId, int AvgCompletionMinutes)>>
+            GetAvgCompletionMinutesPerTechnicianAsync(IEnumerable<string> technicianIds, CancellationToken ct = default)
+        {
+            var ids = technicianIds.Distinct().ToList();
+            if (ids.Count == 0) return new();
+
+            var perRequest = _context.WorkTimeEntries
+                .AsNoTracking()
+                .Where(w => w.StoppedAt != null && ids.Contains(w.TechnicianUserId))
+                .GroupBy(w => new { w.TechnicianUserId, w.RequestId })
+                .Select(g => new
+                {
+                    g.Key.TechnicianUserId,
+                    g.Key.RequestId,
+                    TotalSeconds = g.Sum(w => EF.Functions.DateDiffSecond(w.StartedAt, w.StoppedAt!.Value))
+                });
+
+            var rows = await perRequest
+                .Join(_context.MaintenanceRequests.AsNoTracking(),
+                      x => x.RequestId,
+                      r => r.Id,
+                      (x, r) => new { x.TechnicianUserId, x.TotalSeconds, r.CaseType })
+                .Where(z => z.CaseType == CaseType.Completed)
+                .GroupBy(z => z.TechnicianUserId)
+                .Select(g => new
+                {
+                    TechnicianUserId = g.Key,
+                    AvgMinutes = (int)Math.Round(g.Average(z => z.TotalSeconds) / 60.0)
+                })
+                .ToListAsync(ct);
+
+            return rows.Select(r => (r.TechnicianUserId, r.AvgMinutes)).ToList();
+        }
+
+
     }
 }

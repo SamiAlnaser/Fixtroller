@@ -19,18 +19,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             string userId,
             CancellationToken ct = default);
 
-        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetMineAsync(
-            string userId,
-            string role,
-            string language,
-            CancellationToken ct = default);
 
-        // للإدارة (ولو بدك تحدد المالك لإظهار isOwner صح مرّر currentUserId)
-        Task<IEnumerable<MaintenanceRequestResponseDTO>> GetAllAsync(
-            string role,
-            string language,
-            string? currentUserId = null,
-            CancellationToken ct = default);
+        Task<IEnumerable<MaintenanceRequestListMineDTO>> GetMineAsync(
+            string userId, string role, string language, CancellationToken ct = default);
+
+        Task<IEnumerable<MaintenanceRequestListAllDTO>> GetAllAsync(
+            string role, string language, CancellationToken ct = default);
 
         Task<MaintenanceRequestResponseDTO?> GetByIdAsync(
             int id,
@@ -99,7 +93,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
     AddImagesRequestDTO dto,
     string language = "ar",
     CancellationToken ct = default);
+
+
+
+
     }
+
 }
 
 
