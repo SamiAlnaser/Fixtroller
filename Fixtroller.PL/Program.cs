@@ -81,6 +81,17 @@ namespace Fixtroller.PL
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
             builder.Services.AddOpenApi();
+            var userPolicy = "UserPolicy";
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddPolicy(name: userPolicy, policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
 
 
 
@@ -118,8 +129,12 @@ namespace Fixtroller.PL
             await objectOfSeedData.IdentityDataSeedingAsync();
             await objectOfSeedData.DataSeedingAsync();
 
+            app.UseDeveloperExceptionPage();
+
 
             app.UseHttpsRedirection();
+            app.UseAuthentication();
+            app.UseCors(userPolicy);
 
             app.UseAuthorization();
             app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
