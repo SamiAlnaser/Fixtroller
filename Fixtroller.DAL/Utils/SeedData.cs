@@ -367,47 +367,52 @@ namespace Fixtroller.DAL.Utils
                 // تعيينات الفنيين (بدل AssignedTechnicianUserId/AssignedAtUtc القديمة)
                 // نفس الفنيين ونفس التواريخ:
                 var links = new List<MaintenanceRequestTechnician>
+{
+    // r3: Tech(1) قبل 3 أيام + 2 ساعات — مدة متوقعة 6 ساعات
+    new MaintenanceRequestTechnician
     {
-        // r3: Tech(1) قبل 3 أيام + 2 ساعات
-        new MaintenanceRequestTechnician
-        {
-            RequestId = r3.Id,
-            TechnicianUserId = Tech(1),
-            AssignedAtUtc = now.AddDays(-3).AddHours(2)
-        },
+        RequestId = r3.Id,
+        TechnicianUserId = Tech(1),
+        AssignedAtUtc = now.AddDays(-3).AddHours(2),
+        ExpectedDuration = 6
+    },
 
-        // r4: Tech(2) قبل 7 أيام + 1 ساعة
-        new MaintenanceRequestTechnician
-        {
-            RequestId = r4.Id,
-            TechnicianUserId = Tech(2),
-            AssignedAtUtc = now.AddDays(-7).AddHours(1)
-        },
+    // r4: Tech(2) قبل 7 أيام + 1 ساعة — مدة متوقعة 4 ساعات
+    new MaintenanceRequestTechnician
+    {
+        RequestId = r4.Id,
+        TechnicianUserId = Tech(2),
+        AssignedAtUtc = now.AddDays(-7).AddHours(1),
+        ExpectedDuration = 4
+    },
 
-        // r5: Tech(3) قبل 10 أيام + 3 ساعات
-        new MaintenanceRequestTechnician
-        {
-            RequestId = r5.Id,
-            TechnicianUserId = Tech(3),
-            AssignedAtUtc = now.AddDays(-10).AddHours(3)
-        },
+    // r5: Tech(3) قبل 10 أيام + 3 ساعات — مدة متوقعة 5 ساعات
+    new MaintenanceRequestTechnician
+    {
+        RequestId = r5.Id,
+        TechnicianUserId = Tech(3),
+        AssignedAtUtc = now.AddDays(-10).AddHours(3),
+        ExpectedDuration = 5
+    },
 
-        // r7: Tech(1) قبل يوم + 1 ساعة
-        new MaintenanceRequestTechnician
-        {
-            RequestId = r7.Id,
-            TechnicianUserId = Tech(1),
-            AssignedAtUtc = now.AddDays(-1).AddHours(1)
-        },
+    // r7: Tech(1) قبل يوم + 1 ساعة — مدة متوقعة 3 ساعات
+    new MaintenanceRequestTechnician
+    {
+        RequestId = r7.Id,
+        TechnicianUserId = Tech(1),
+        AssignedAtUtc = now.AddDays(-1).AddHours(1),
+        ExpectedDuration = 3
+    },
 
-        // r8: Tech(4) قبل 12 يوم + 2 ساعات
-        new MaintenanceRequestTechnician
-        {
-            RequestId = r8.Id,
-            TechnicianUserId = Tech(4),
-            AssignedAtUtc = now.AddDays(-12).AddHours(2)
-        }
-    };
+    // r8: Tech(4) قبل 12 يوم + 2 ساعات — مدة متوقعة 2 ساعتين
+    new MaintenanceRequestTechnician
+    {
+        RequestId = r8.Id,
+        TechnicianUserId = Tech(4),
+        AssignedAtUtc = now.AddDays(-12).AddHours(2),
+        ExpectedDuration = 2
+    }
+};
 
                 await _context.Set<MaintenanceRequestTechnician>().AddRangeAsync(links);
                 await _context.SaveChangesAsync();
