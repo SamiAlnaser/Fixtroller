@@ -45,7 +45,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var (res, key) = await _requestService.AssignTechnicianAsync(id, dto.TechnicianUserId, language, ct);
+            var (res, key) = await _requestService.AssignTechnicianAsync(id, dto.TechnicianUserId, dto.ExpectedDuration, language, ct);
 
             if (res is null)
                 return BadRequest(new { message = _localizer[key].Value });
@@ -59,7 +59,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
             var (res, key) = await _requestService
-                .AssignTechniciansAsync(id, dto.TechnicianUserIds, language, ct);
+                .AssignTechniciansAsync(id, dto.TechnicianUserIds, dto.ExpectedDuration, language, ct);
 
             if (res is null) return BadRequest(new { message = _localizer[key].Value });
             return Ok(new { message = _localizer[key].Value, data = res });

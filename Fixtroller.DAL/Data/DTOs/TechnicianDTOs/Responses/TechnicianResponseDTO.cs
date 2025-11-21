@@ -14,6 +14,7 @@ namespace Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses
         public string Email { get; set; }
 
         public DateTime AssignedAtUtc { get; set; }
+        public int? ExpectedDuration { get; set; }
         public TCategoryUserResponseDTO TechnicianCategory { get; set; }
     }
 }

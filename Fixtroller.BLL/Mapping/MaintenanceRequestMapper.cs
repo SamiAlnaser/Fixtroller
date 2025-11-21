@@ -98,7 +98,8 @@ namespace Fixtroller.BLL.Mapping
                 {
                     AssignedAtUtc = t.AssignedAtUtc.Kind == DateTimeKind.Utc
                         ? t.AssignedAtUtc
-                        : DateTime.SpecifyKind(t.AssignedAtUtc, DateTimeKind.Utc)
+                        : DateTime.SpecifyKind(t.AssignedAtUtc, DateTimeKind.Utc),
+                    ExpectedDuration = t.ExpectedDuration
                 })
                 .ToList();
 

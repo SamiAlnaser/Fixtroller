@@ -195,7 +195,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
 
         public async Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechniciansAsync(
-            int requestId, IEnumerable<string> technicianUserIds, string language = "ar", CancellationToken ct = default)
+            int requestId, IEnumerable<string> technicianUserIds, int? expectedDuration, string language = "ar", CancellationToken ct = default)
         {
             var request = await _repository.GetForAssignmentAsync(requestId, ct);
             if (request is null) return (null, "Request_NotFound");
@@ -227,7 +227,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var removed = current.Except(list, StringComparer.Ordinal).ToList();
 
                 // مزامنة التعيينات: إضافة الجديد وشطب غير الموجود
-                await _reqTechRepo.SetActiveListAsync(requestId, list, ct);
+                await _reqTechRepo.SetActiveListAsync(requestId, list, expectedDuration, ct);
 
                 // أوقف مؤقّتات الفنيين الذين أُزيلوا من التعيين
                 foreach (var tid in removed)
@@ -252,7 +252,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
 
         public async Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(
-            int requestId, string technicianUserId, string language = "ar", CancellationToken ct = default)
+            int requestId, string technicianUserId, int? expectedDuration, string language = "ar", CancellationToken ct = default)
         {
             var request = await _repository.GetForAssignmentAsync(requestId, ct);
             if (request is null) return (null, "Request_NotFound");
@@ -274,7 +274,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             await _uow.BeginTransactionAsync(ct);
             try
             {
-                await _reqTechRepo.AddActiveAsync(requestId, technicianUserId, ct);
+                await _reqTechRepo.AddActiveAsync(requestId, technicianUserId, expectedDuration, ct);
 
                 if (request.CaseType == CaseType.Submitted)
                     request.CaseType = CaseType.Processing;

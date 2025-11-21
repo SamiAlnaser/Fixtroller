@@ -37,19 +37,24 @@ namespace Fixtroller.PL.Areas.Admin
             var data = await _TechnicianService.GetWithMetricsAsync(language, categoryId, search, ct);
             return Ok(data);
         }
+
+
+
         [HttpPost("{id:int}/assign")]
         public async Task<IActionResult> Assign(int id, [FromBody] AssignTechnicianRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var (res, key) = await _requestService.AssignTechnicianAsync(id, dto.TechnicianUserId, language, ct);
+            var (res, key) = await _requestService.AssignTechnicianAsync(id, dto.TechnicianUserId, dto.ExpectedDuration, language, ct);
 
             if (res is null)
                 return BadRequest(new { message = _localizer[key].Value });
 
             return Ok(new { message = _localizer[key].Value, data = res });
         }
+
+
         [HttpPost("{id:int}/assign-list")]
         public async Task<IActionResult> AssignList(int id, [FromBody] AssignTechniciansRequestDTO dto, CancellationToken ct)
         {
@@ -57,7 +62,7 @@ namespace Fixtroller.PL.Areas.Admin
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
             var (res, key) = await _requestService
-                .AssignTechniciansAsync(id, dto.TechnicianUserIds, language, ct);
+                .AssignTechniciansAsync(id, dto.TechnicianUserIds, dto.ExpectedDuration, language, ct);
 
             if (res is null) return BadRequest(new { message = _localizer[key].Value });
             return Ok(new { message = _localizer[key].Value, data = res });

@@ -10,5 +10,6 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
     {
         public string UserId { get; set; } = default!;
         public DateTime AssignedAtUtc { get; set; }
+        public int? ExpectedDuration { get; set; }
     }
 }

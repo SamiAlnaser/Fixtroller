@@ -37,6 +37,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(
             int requestId,
             string technicianUserId,
+            int? expectedDuration,
             string language = "ar",
             CancellationToken ct = default);
 
@@ -44,6 +45,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechniciansAsync(
             int requestId,
             IEnumerable<string> technicianUserIds,
+            int? expectedDuration,
             string language = "ar",
             CancellationToken ct = default);
 

@@ -12,6 +12,8 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         public MaintenanceRequest Request { get; set; } = default!;
 
         public string TechnicianUserId { get; set; } = default!;
+        public int? ExpectedDuration { get; set; }
+
         public DateTime AssignedAtUtc { get; set; }
         public DateTime? UnassignedAtUtc { get; set; } // null = تعيين نشط
 

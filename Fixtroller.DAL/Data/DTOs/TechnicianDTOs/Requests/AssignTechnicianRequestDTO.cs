@@ -9,5 +9,7 @@ namespace Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Requests
     public class AssignTechnicianRequestDTO
     {
         public string TechnicianUserId { get; set; }
+
+        public int? ExpectedDuration { get; set; }
     }
 }

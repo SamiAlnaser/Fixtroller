@@ -28,8 +28,8 @@ namespace Fixtroller.BLL.Mapping
                 .Select(t => new TechnicianResponseDTO
                 {
                     Id = t.TechnicianUserId,
-                    // إن كان عندك DateTimeOffset بدّل للسطر: AssignedAtUtc = t.AssignedAtUtc.UtcDateTime
-                    AssignedAtUtc = t.AssignedAtUtc
+                    AssignedAtUtc = t.AssignedAtUtc,
+                    ExpectedDuration = t.ExpectedDuration
                 })
                 .ToList();
 

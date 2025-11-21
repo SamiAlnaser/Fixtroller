@@ -30,7 +30,7 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
                   .Distinct()
                   .ToListAsync(ct);
 
-        public async Task AddActiveAsync(int requestId, string technicianUserId, CancellationToken ct = default)
+        public async Task AddActiveAsync(int requestId, string technicianUserId, int? expectedDuration, CancellationToken ct = default)
         {
             var exists = await IsActiveAssignedAsync(requestId, technicianUserId, ct);
             if (exists) return;
@@ -40,6 +40,7 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
                 RequestId = requestId,
                 TechnicianUserId = technicianUserId,
                 AssignedAtUtc = System.DateTime.UtcNow,
+                ExpectedDuration = expectedDuration,
                 UnassignedAtUtc = null
             });
         }
@@ -59,7 +60,7 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
                 t.UnassignedAtUtc = now;
         }
 
-        public async Task SetActiveListAsync(int requestId, IEnumerable<string> technicianUserIds, CancellationToken ct = default)
+        public async Task SetActiveListAsync(int requestId, IEnumerable<string> technicianUserIds, int? expectedDuration, CancellationToken ct = default)
         {
             var target = technicianUserIds.Distinct().ToHashSet();
             var current = await _context.Set<MaintenanceRequestTechnician>()
@@ -80,7 +81,8 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
                 {
                     RequestId = requestId,
                     TechnicianUserId = toAdd,
-                    AssignedAtUtc = now
+                    AssignedAtUtc = now,
+                    ExpectedDuration = expectedDuration
                 });
         }
     }
