@@ -89,21 +89,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         public async Task<IEnumerable<MaintenanceRequestListMineDTO>> GetMineAsync(
             string userId, string role, string language, CancellationToken ct = default)
         {
-            var isEmployee = role.Equals("Employee", StringComparison.OrdinalIgnoreCase);
-            var isTechnician = role.Equals("Technician", StringComparison.OrdinalIgnoreCase);
-
-            var q = _repository.Query(asTracking: false, predicate: x => x.Status == Status.Active);
-
-            if (isEmployee)
-            {
-                q = q.Where(x => x.CreatedByUserId == userId);
-            }
-            else if (isTechnician)
-            {
-                q = q.Where(x => x.Technicians.Any(t =>
-                    t.TechnicianUserId == userId && t.UnassignedAtUtc == null));
-            }
-            // المدير/الأدمن: يشوف الكل
+            // "طلباتي" = الطلبات اللي أنا مالكها، بغض النظر عن الرول
+            var q = _repository.Query(
+                asTracking: false,
+                predicate: x => x.Status == Status.Active
+                            && x.CreatedByUserId == userId);
 
             var rows = await q
                 .OrderByDescending(x => x.CreatedAt)
@@ -119,12 +109,16 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         UpdatedAt = x.UpdatedAt,
                         CreatedByUserId = x.CreatedByUserId
                     },
-                    IsOwner = x.CreatedByUserId == userId
+                    IsOwner = true
                 })
                 .ToListAsync(ct);
 
             return rows.Select(r =>
-                MaintenanceRequestMapper.ToMineListItem(r.Light, role, r.IsOwner, language));
+                MaintenanceRequestMapper.ToMineListItem(
+                    r.Light,
+                    role,
+                    r.IsOwner,   // = true
+                    language));
         }
 
         public async Task<IEnumerable<MaintenanceRequestListAllDTO>> GetAllAsync(
