@@ -647,7 +647,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 CaseType.ManagerReview,
                 CaseType.Reopened,
                 CaseType.Modified
-            };
+            } ;
                 if (!editable.Contains(r.CaseType))
                     return (null, "Request_NotEditableInThisState");
 
@@ -830,7 +830,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (isTech) return NoteAuthor.Technician;
             return NoteAuthor.Owner;
         }
-
+         
     }
 }
 

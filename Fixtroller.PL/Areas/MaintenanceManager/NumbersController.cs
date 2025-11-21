@@ -36,11 +36,12 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
 
         [HttpGet("requests/overview")]
         public async Task<IActionResult> RequestsOverview(
-        [FromQuery] string language = "ar",
         [FromQuery] DateTimeOffset? fromUtc = null,
         [FromQuery] DateTimeOffset? toUtc = null,
         CancellationToken ct = default)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var dto = await _metricsService.GetManagerChartsAsync(language, fromUtc, toUtc, ct);
             return Ok(dto);
         }

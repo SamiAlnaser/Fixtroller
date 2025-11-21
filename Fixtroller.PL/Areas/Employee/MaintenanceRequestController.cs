@@ -38,8 +38,10 @@ namespace Fixtroller.PL.Areas.Employee
         }
 
         [HttpGet("{id:int}")]
-        public async Task<IActionResult> GetById(int id, [FromQuery] string language = "ar", CancellationToken ct = default)
+        public async Task<IActionResult> GetById(int id,  CancellationToken ct = default)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
                          ?? User.FindFirst("Id")?.Value
                          ?? string.Empty;

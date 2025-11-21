@@ -49,10 +49,15 @@ namespace Fixtroller.PL
  
 
 
+
             // Add services to the container.
             builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
+            var connectionStringName = builder.Environment.IsDevelopment()
+                ? "DevConnection"
+                : "DefaultConnection";
+
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
-          options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
+                options.UseSqlServer(builder.Configuration.GetConnectionString(connectionStringName)));
             builder.Services.AddScoped<ITechnicianRepository, TechnicianRepository>();
             builder.Services.AddScoped<IMaintenanceRequestRepository, MaintenanceRequestRepository>();
             builder.Services.AddScoped<ITCategoryRepository, TCategorRepository>();
