@@ -1,6 +1,7 @@
 ﻿using Fixtroller.BLL.Mapping;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
+using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
 using Fixtroller.DAL.Entities;
@@ -42,20 +43,42 @@ namespace Fixtroller.BLL.Services.TechnicianServices
         }
 
 
-        public async Task<IEnumerable<TechnicianListItemDTO>> GetWithMetricsAsync(
-    string language, int? technicianCategoryId, string? search, CancellationToken ct = default)
+        public async Task<PagedResultDTO<TechnicianListItemDTO>> GetWithMetricsAsync(
+      string language,
+      int? technicianCategoryId,
+      string? search,
+      int pageNumber = 1,
+      int pageSize = 10,
+      CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
 
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+
             var techs = await _repository.GetAsync(technicianCategoryId, search, ct);
             var techIds = techs.Select(t => t.Id).ToList();
-            if (techIds.Count == 0) return Array.Empty<TechnicianListItemDTO>();
+
+            if (techIds.Count == 0)
+            {
+                return new PagedResultDTO<TechnicianListItemDTO>
+                {
+                    TotalPages = 0,
+                    CurrentPage = pageNumber,
+                    Data = new List<TechnicianListItemDTO>()
+                };
+            }
 
             var reqStatsTuples = await _metricsrepo.GetRequestStatsPerTechnicianAsync(techIds, ct);
             var avgTuples = await _metricsrepo.GetAvgCompletionMinutesPerTechnicianAsync(techIds, ct);
 
-            var reqDict = reqStatsTuples.ToDictionary(x => x.TechnicianUserId, x => (x.AssignedCount, x.CompletedCount));
-            var avgDict = avgTuples.ToDictionary(x => x.TechnicianUserId, x => x.AvgCompletionMinutes);
+            var reqDict = reqStatsTuples.ToDictionary(
+                x => x.TechnicianUserId,
+                x => (x.AssignedCount, x.CompletedCount));
+
+            var avgDict = avgTuples.ToDictionary(
+                x => x.TechnicianUserId,
+                x => x.AvgCompletionMinutes);
 
             var list = techs.Select(t =>
             {
@@ -83,8 +106,25 @@ namespace Fixtroller.BLL.Services.TechnicianServices
             .OrderBy(x => x.TechnicianName)
             .ToList();
 
-            return list;
+            // 👇 هنا فقط الباجينيشن
+            var totalCount = list.Count;
+            var totalPages = totalCount == 0
+                ? 0
+                : (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var pageData = list
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new PagedResultDTO<TechnicianListItemDTO>
+            {
+                TotalPages = totalPages,
+                CurrentPage = pageNumber,
+                Data = pageData
+            };
         }
+
 
 
         public async Task<bool> UpdateTechnicianCategoryAsync(
@@ -103,11 +143,18 @@ namespace Fixtroller.BLL.Services.TechnicianServices
             return true;
         }
 
-        public async Task<TechnicianBoardDTO> GetMyAssignedAsync(
-            string technicianUserId,
-            string language,
-            CancellationToken ct = default)
+        public async Task<PagedResultDTO<TechnicianBoardDTO>> GetMyAssignedAsync(
+     string technicianUserId,
+     string language,
+     int pageNumber = 1,
+     int pageSize = 10,
+     CancellationToken ct = default)
         {
+            language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
+
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+
             var q = _reqRepo.Query(
                 asTracking: false,
                 predicate: x => x.Status == Status.Active &&
@@ -115,9 +162,17 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                                     t.TechnicianUserId == technicianUserId &&
                                     t.UnassignedAtUtc == null));
 
-            // نسحب حقول خفيفة فقط
+            // إجمالي عدد الطلبات المسندة (لأجل عدد الصفحات)
+            var totalCount = await q.CountAsync(ct);
+            var totalPages = totalCount == 0
+                ? 0
+                : (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            // نسحب حقول خفيفة فقط مع الباجينيشن
             var rows = await q
                 .OrderByDescending(x => x.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Select(x => new MaintenanceRequest
                 {
                     Id = x.Id,
@@ -145,7 +200,7 @@ namespace Fixtroller.BLL.Services.TechnicianServices
             var progressAll = rows.Where(r => IsInProgress(r.CaseType)).OrderByDescending(r => r.CreatedAt).ToList();
             var completedAll = rows.Where(r => IsCompleted(r.CaseType)).OrderByDescending(r => r.CreatedAt).ToList();
 
-            return new TechnicianBoardDTO
+            var board = new TechnicianBoardDTO
             {
                 New = new TechnicianBoardColumnDTO
                 {
@@ -166,16 +221,50 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                     Items = completedAll.Select(r => MaintenanceRequestMapper.ToTechnicianCard(r, language)).ToList()
                 }
             };
+
+            // 👇 تغليف في PagedResultDTO (Data فيها عنصر واحد: البورد)
+            return new PagedResultDTO<TechnicianBoardDTO>
+            {
+                TotalPages = totalPages,
+                CurrentPage = pageNumber,
+                Data = new List<TechnicianBoardDTO> { board }
+            };
         }
-        public async Task<IReadOnlyList<TechnicianResponseDTO>> GetByCategoryAsync(
-            int categoryId,
-            string? search,
-            string language,
-            CancellationToken ct = default)
+        public async Task<PagedResultDTO<TechnicianResponseDTO>> GetByCategoryAsync(
+    int categoryId,
+    string? search,
+    string language,
+    int pageNumber = 1,
+    int pageSize = 10,
+    CancellationToken ct = default)
         {
+            language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
+
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+
             var users = await _repository.GetByCategoryAsync(categoryId, search, ct);
-            var list = users.Select(u => TechnicianMappings.ToTechnicianResponse(u, language)).ToList();
-            return list.AsReadOnly();
+            var list = users
+                .Select(u => TechnicianMappings.ToTechnicianResponse(u, language))
+                .ToList();
+
+            var totalCount = list.Count;
+            var totalPages = totalCount == 0
+                ? 0
+                : (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var pageData = list
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new PagedResultDTO<TechnicianResponseDTO>
+            {
+                TotalPages = totalPages,
+                CurrentPage = pageNumber,
+                Data = pageData
+            };
         }
+
     }
 }

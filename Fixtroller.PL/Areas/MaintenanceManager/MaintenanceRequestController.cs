@@ -63,7 +63,10 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         [HttpGet("mine")]
-        public async Task<IActionResult> GetMine(CancellationToken ct)
+        public async Task<IActionResult> GetMine(
+     int pageNumber = 1,
+     int pageSize = 10,
+     CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
@@ -77,12 +80,17 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                     ?? User.FindFirst(ClaimTypes.Role)?.Value
                     ?? string.Empty;
 
-            var list = await _maintenanceRequestService.GetMineAsync(userId, role, language, ct);
+            var list = await _maintenanceRequestService.GetMineAsync(
+                userId, role, language, pageNumber, pageSize, ct);
+
             return Ok(list);
         }
 
         [HttpGet]
-        public async Task<IActionResult> GetAll(CancellationToken ct)
+        public async Task<IActionResult> GetAll(
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
@@ -91,7 +99,9 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                     ?? User.FindFirst(ClaimTypes.Role)?.Value
                     ?? string.Empty;
 
-            var list = await _maintenanceRequestService.GetAllAsync(role, language, ct);
+            var list = await _maintenanceRequestService.GetAllAsync(
+                role, language, pageNumber, pageSize, ct);
+
             return Ok(list);
         }
 

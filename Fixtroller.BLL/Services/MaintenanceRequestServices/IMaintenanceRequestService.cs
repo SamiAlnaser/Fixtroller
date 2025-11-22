@@ -1,6 +1,7 @@
 ﻿using Fixtroller.BLL.Services.GenericService;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
+using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using System;
@@ -20,11 +21,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             CancellationToken ct = default);
 
 
-        Task<IEnumerable<MaintenanceRequestListMineDTO>> GetMineAsync(
-            string userId, string role, string language, CancellationToken ct = default);
+        Task<PagedResultDTO<MaintenanceRequestListMineDTO>> GetMineAsync(string userId,string role,string language,
+        int pageNumber = 1,
+        int pageSize = 10,
+        CancellationToken ct = default);
 
-        Task<IEnumerable<MaintenanceRequestListAllDTO>> GetAllAsync(
-            string role, string language, CancellationToken ct = default);
+        Task<PagedResultDTO<MaintenanceRequestListAllDTO>> GetAllAsync(string role,string language,int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default);
 
         Task<MaintenanceRequestResponseDTO?> GetByIdAsync(
             int id,

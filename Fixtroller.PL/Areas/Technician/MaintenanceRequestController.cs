@@ -69,7 +69,10 @@ namespace Fixtroller.PL.Areas.Technician
         }
 
         [HttpGet("mine")]
-        public async Task<IActionResult> GetMine(CancellationToken ct)
+        public async Task<IActionResult> GetMine(
+      int pageNumber = 1,
+      int pageSize = 10,
+      CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
@@ -83,25 +86,34 @@ namespace Fixtroller.PL.Areas.Technician
                     ?? User.FindFirst(ClaimTypes.Role)?.Value
                     ?? string.Empty;
 
-            var list = await _maintenanceRequestService.GetMineAsync(userId, role, language, ct);
+            var list = await _maintenanceRequestService.GetMineAsync(
+                userId, role, language, pageNumber, pageSize, ct);
+
             return Ok(list);
         }
 
         [HttpGet("assigned")]
-        public async Task<IActionResult> GetAssigned(CancellationToken ct)
+        public async Task<IActionResult> GetAssigned(
+        int pageNumber = 1,
+        int pageSize = 10,
+        CancellationToken ct = default)
         {
+            // اللغة
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
-                      ?? User.FindFirst("Id")?.Value;
+            // ايد الفني من التوكن
+            var technicianUserId = User.FindFirst("Id")?.Value
+                               ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
 
-            if (string.IsNullOrWhiteSpace(userId))
+            if (string.IsNullOrWhiteSpace(technicianUserId))
                 return Unauthorized();
 
-            var data = await _technicianService.GetMyAssignedAsync(userId, language, ct);
-            return Ok(data);
+            var result = await _technicianService.GetMyAssignedAsync(technicianUserId,language,pageNumber,pageSize,ct);
+
+            return Ok(result);
         }
+
 
         [HttpPatch("{id:int}/case")]
         public async Task<IActionResult> ChangeCase(int id, [FromBody] ChangeCaseTypeRequestDTO dto, CancellationToken ct)

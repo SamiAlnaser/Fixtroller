@@ -3,6 +3,7 @@ using Fixtroller.BLL.Services.FileService;
 using Fixtroller.BLL.Services.GenericService;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
+using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
@@ -86,17 +87,40 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
-        public async Task<IEnumerable<MaintenanceRequestListMineDTO>> GetMineAsync(
-            string userId, string role, string language, CancellationToken ct = default)
+        public async Task<PagedResultDTO<MaintenanceRequestListMineDTO>> GetMineAsync(
+     string userId,
+     string role,
+     string language,
+     int pageNumber = 1,
+     int pageSize = 10,
+     CancellationToken ct = default)
         {
-            // "طلباتي" = الطلبات اللي أنا مالكها، بغض النظر عن الرول
+            language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
+
+            // تأمين القيم
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            // 1) أساس الكويري
             var q = _repository.Query(
                 asTracking: false,
-                predicate: x => x.Status == Status.Active
-                            && x.CreatedByUserId == userId);
+                predicate: x =>
+                    x.Status == Status.Active &&
+                    x.CreatedByUserId == userId);
 
-            var rows = await q
+            // 2) إجمالي عدد السجلات
+            var totalCount = await q.CountAsync(ct);
+
+            // 3) عدد الصفحات (لو مافي سجلات = 0 صفحات)
+            var totalPages = totalCount == 0
+                ? 0
+                : (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            // 4) جلب الصفحة المطلوبة
+            var pagedRows = await q
                 .OrderByDescending(x => x.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Select(x => new
                 {
                     Light = new MaintenanceRequest
@@ -109,29 +133,77 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         UpdatedAt = x.UpdatedAt,
                         CreatedByUserId = x.CreatedByUserId
                     },
-                    IsOwner = true
+                    IsOwner = true   // لأنه mine
                 })
                 .ToListAsync(ct);
 
-            return rows.Select(r =>
-                MaintenanceRequestMapper.ToMineListItem(
+            // 5) المابر إلى DTO
+            var data = pagedRows
+                .Select(r => MaintenanceRequestMapper.ToMineListItem(
                     r.Light,
                     role,
-                    r.IsOwner,   // = true
-                    language));
+                    r.IsOwner,
+                    language))
+                .ToList();
+
+            // 6) النتيجة النهائية
+            return new PagedResultDTO<MaintenanceRequestListMineDTO>
+            {
+                TotalPages = totalPages,
+                CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize,
+                Data = data
+            };
         }
 
-        public async Task<IEnumerable<MaintenanceRequestListAllDTO>> GetAllAsync(
-     string role, string language, CancellationToken ct = default)
+        public async Task<PagedResultDTO<MaintenanceRequestListAllDTO>> GetAllAsync(
+    string role,
+    string language,
+    int pageNumber = 1,
+    int pageSize = 10,
+    CancellationToken ct = default)
         {
+            language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
+
             var isManager = role.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
             var isAdmin = role.Equals("Admin", StringComparison.OrdinalIgnoreCase);
 
+            // لو مش مدير ولا أدمن، رجّع فاضي
             if (!isManager && !isAdmin)
-                return Enumerable.Empty<MaintenanceRequestListAllDTO>();
+            {
+                return new PagedResultDTO<MaintenanceRequestListAllDTO>
+                {
+                    TotalPages = 0,
+                    CurrentPage = 1,
+                    TotalCount = 0,
+                    PageSize = pageSize,
+                    Data = new List<MaintenanceRequestListAllDTO>()
+                };
+            }
 
-            var rows = await _repository.Query(asTracking: false, predicate: x => x.Status == Status.Active)
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            // 1) الكويري الأساسي مع Include للـ ProblemType + Translations
+            var q = _repository.Query(
+                    asTracking: false,
+                    predicate: x => x.Status == Status.Active)
+                .Include(x => x.ProblemType)
+                    .ThenInclude(pt => pt.Translations);
+
+            // 2) إجمالي السجلات
+            var totalCount = await q.CountAsync(ct);
+
+            var totalPages = totalCount == 0
+                ? 0
+                : (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            // 3) جلب الصفحة المطلوبة + Projection خفيف
+            var pagedRows = await q
                 .OrderByDescending(x => x.CreatedAt)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
                 .Select(x => new
                 {
                     Light = new MaintenanceRequest
@@ -144,16 +216,32 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     },
                     ProblemTypeName = x.ProblemType != null
                         ? x.ProblemType.Translations
-                            .OrderBy(t => t.Language == language ? 0 :
-                                          t.Language == "ar" ? 1 : 2)
+                            .OrderBy(t =>
+                                t.Language == language ? 0 :
+                                t.Language == "ar" ? 1 : 2)
                             .Select(t => t.Name)
                             .FirstOrDefault()
                         : null
                 })
                 .ToListAsync(ct);
 
-            return rows.Select(r =>
-                MaintenanceRequestMapper.ToAllListItem(r.Light, r.ProblemTypeName, language));
+            // 4) المابر إلى DTO
+            var data = pagedRows
+                .Select(r => MaintenanceRequestMapper.ToAllListItem(
+                    r.Light,
+                    r.ProblemTypeName,
+                    language))
+                .ToList();
+
+            // 5) النتيجة
+            return new PagedResultDTO<MaintenanceRequestListAllDTO>
+            {
+                TotalPages = totalPages,
+                CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize,
+                Data = data
+            };
         }
 
 

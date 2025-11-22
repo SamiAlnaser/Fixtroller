@@ -27,17 +27,20 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             _requestService = RequestService;
             _localizer = localizer;
         }
-
         [HttpGet] 
-        public async Task<IActionResult> List([FromQuery] int? categoryId, [FromQuery] string? search, CancellationToken ct)
+        public async Task<IActionResult> List(
+               [FromQuery] int? categoryId,
+               [FromQuery] string? search,
+               int pageNumber = 1,
+               int pageSize = 10,
+               CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var data = await _TechnicianService.GetWithMetricsAsync(language, categoryId, search, ct);
+            var data = await _TechnicianService.GetWithMetricsAsync(language,categoryId,search,pageNumber,pageSize,ct);
             return Ok(data);
         }
-
 
         [HttpPost("{id:int}/assign")]
         public async Task<IActionResult> Assign(int id, [FromBody] AssignTechnicianRequestDTO dto, CancellationToken ct)
@@ -83,13 +86,18 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         [HttpGet("by-category/{categoryId:int}")]
-        public async Task<IActionResult> GetByCategory(int categoryId, [FromQuery] string? search, CancellationToken ct)
+        public async Task<IActionResult> GetByCategory(
+            int categoryId,
+           [FromQuery] string? search,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var data = await _TechnicianService.GetByCategoryAsync(categoryId, search, language, ct);
-            return Ok(data);
+            var result = await _TechnicianService.GetByCategoryAsync(categoryId,search,language,pageNumber,pageSize,ct);
+            return Ok(result);
         }
     }
 }
