@@ -6,12 +6,14 @@ using Fixtroller.BLL.Services.NumbersServices;
 using Fixtroller.BLL.Services.ProblemTypesServices;
 using Fixtroller.BLL.Services.TCategoryServices;
 using Fixtroller.BLL.Services.TechnicianServices;
+using Fixtroller.BLL.Services.userServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.MaintenanceRequestepository;
 using Fixtroller.DAL.Repositories.NumbersRepository;
 using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
 using Fixtroller.DAL.Repositories.TCategoryRepositories;
+using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Fixtroller.DAL.UnitOfWork;
 using Fixtroller.DAL.Utils;
@@ -76,6 +78,8 @@ namespace Fixtroller.PL
             builder.Services.AddScoped<IMetricsRepository, MetricsRepository>();
             builder.Services.AddScoped<IMetricsService, MetricsService>();
 
+            builder.Services.AddScoped<IUserservice, UserService>();
+            builder.Services.AddScoped<IUserRepository, UserRepository>();
 
 
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>()

@@ -17,4 +17,12 @@
     </PackageReference>
   </ItemGroup>
 
+  <ItemGroup>
+    <Folder Include="Data\DTOs\UsersDTOS\Response\" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Include="Data\DTOs\ChangeRoleDTOs\ChangeRoleRequsetDTO.cs" />
+  </ItemGroup>
+
 </Project>
