@@ -42,5 +42,39 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             return addResult.Succeeded;
         }
 
+        public async Task<bool> BlockUserAsync(string userId, int days)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null) return false;
+
+            user.LockoutEnd = DateTime.UtcNow.AddDays(days);
+
+            var result = await _userManager.UpdateAsync(user);
+
+            return result.Succeeded;
+        }
+
+
+        public async Task<bool> UnBlockUserAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null) return false;
+
+            user.LockoutEnd = null;
+
+            var result = await _userManager.UpdateAsync(user);
+
+            return result.Succeeded;
+        }
+
+        public async Task<bool> IsBlockedAsync(string userId)
+        {
+            var user = await _userManager.FindByIdAsync(userId);
+            if (user is null) return false;
+
+            return user.LockoutEnd.HasValue && user.LockoutEnd > DateTime.UtcNow;
+        }
+
+
     }
 }

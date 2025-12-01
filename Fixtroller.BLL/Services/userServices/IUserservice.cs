@@ -16,6 +16,10 @@ namespace Fixtroller.BLL.Services.userServices
 
         Task<UserDto> GetByIdAsync(string userId);
         Task<bool> ChangeUserRoleAsync(ChangeRoleRequsetDTO dto);
+        Task<bool> BlockUserAsync(string userId, int days);
+        Task<bool> UnBlockUserAsync(string userId);
+        Task<bool> IsBlockedAsync(string userId);
+
 
 
     }

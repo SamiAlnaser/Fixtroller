@@ -13,6 +13,9 @@ namespace Fixtroller.DAL.Repositories.UserRepository
 
         Task<ApplicationUser> GetByIdAsync(string userId);
         Task<bool> ChangeUserRoleAsync(string userId, string roleName);
+        Task<bool> BlockUserAsync(string userId, int days);
+        Task<bool> UnBlockUserAsync(string userId);
+        Task<bool> IsBlockedAsync(string userId);
 
     }
 }

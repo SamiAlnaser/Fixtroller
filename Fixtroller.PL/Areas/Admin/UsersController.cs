@@ -41,12 +41,35 @@ namespace Fixtroller.PL.Areas.Admin
         }
 
         [HttpPut("ChangeRole")]
-        public async Task<IActionResult> ChangeRole( [FromBody] ChangeRoleRequsetDTO dto)
+        public async Task<IActionResult> ChangeRole([FromBody] ChangeRoleRequsetDTO dto)
         {
-            var result = await _userService.ChangeUserRoleAsync( dto);
+            var result = await _userService.ChangeUserRoleAsync(dto);
 
             return Ok(new { message = "role changed successfully" });
         }
 
+        [HttpPatch("block/{userId}")]
+
+        public async Task<IActionResult> BlockUser([FromRoute] string userId, [FromBody] int days)
+        {
+            var result = await _userService.BlockUserAsync(userId, days);
+            return Ok(result);
+        }
+
+
+        [HttpPatch("unblock/{userId}")]
+
+        public async Task<IActionResult> UnBlockUser([FromRoute] string userId)
+        {
+            var result = await _userService.UnBlockUserAsync(userId);
+            return Ok(result);
+        }
+        [HttpPatch("isblock/{userId}")]
+
+        public async Task<IActionResult> IsBlockedUser([FromRoute] string userId)
+        {
+            var result = await _userService.IsBlockedAsync(userId);
+            return Ok(result);
+        }
     }
 }

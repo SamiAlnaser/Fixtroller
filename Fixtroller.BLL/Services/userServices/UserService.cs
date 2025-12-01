@@ -63,10 +63,21 @@ namespace Fixtroller.BLL.Services.userServices
             return await _userRepository.ChangeUserRoleAsync(dto.userId, rolename);
         }
 
+        public async Task<bool> BlockUserAsync(string userId, int days)
+        {
+            return await _userRepository.BlockUserAsync(userId, days);
 
+        }
 
+        public async Task<bool> UnBlockUserAsync(string userId)
+        {
+            return await _userRepository.UnBlockUserAsync(userId); 
+        }
 
-
+        public async Task<bool> IsBlockedAsync(string userId)
+        {
+return await _userRepository.IsBlockedAsync(userId);
+        }
     }
 
 }
