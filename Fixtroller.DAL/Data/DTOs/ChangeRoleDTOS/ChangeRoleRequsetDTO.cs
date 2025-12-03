@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -15,7 +16,11 @@ namespace Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs
     }
     public class ChangeRoleRequsetDTO
     {
+        [Required]
         public roletype rolename { get; set; }
+        
+
+        [Required]
         public string userId { get; set; }
     }
 }
