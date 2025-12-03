@@ -101,12 +101,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            // 1) أساس الكويري
+            // 1) أساس الكويري + Include للـ ProblemType وترجماته
             var q = _repository.Query(
-                asTracking: false,
-                predicate: x =>
-                    x.Status == Status.Active &&
-                    x.CreatedByUserId == userId);
+                    asTracking: false,
+                    predicate: x =>
+                        x.Status == Status.Active &&
+                        x.CreatedByUserId == userId)
+                .Include(x => x.ProblemType)
+                    .ThenInclude(pt => pt.Translations);
 
             // 2) إجمالي عدد السجلات
             var totalCount = await q.CountAsync(ct);
@@ -116,7 +118,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 ? 0
                 : (int)Math.Ceiling(totalCount / (double)pageSize);
 
-            // 4) جلب الصفحة المطلوبة
+            // 4) جلب الصفحة المطلوبة + نحسب اسم نوع المشكلة
             var pagedRows = await q
                 .OrderByDescending(x => x.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
@@ -133,6 +135,16 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         UpdatedAt = x.UpdatedAt,
                         CreatedByUserId = x.CreatedByUserId
                     },
+
+                    ProblemTypeName = x.ProblemType != null
+                        ? x.ProblemType.Translations
+                            .OrderBy(t =>
+                                t.Language == language ? 0 :
+                                t.Language == "ar" ? 1 : 2)
+                            .Select(t => t.Name)
+                            .FirstOrDefault()
+                        : null,
+
                     IsOwner = true   // لأنه mine
                 })
                 .ToListAsync(ct);
@@ -143,7 +155,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     r.Light,
                     role,
                     r.IsOwner,
-                    language))
+                    language,
+                    r.ProblemTypeName))
                 .ToList();
 
             // 6) النتيجة النهائية
@@ -273,6 +286,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                             .Include(r => r.Images)
                             .Include(r => r.Notes)
                             .Include(r => r.Technicians.Where(t => t.UnassignedAtUtc == null))
+                             .Include(r => r.ProblemType)
+                                .ThenInclude(pt => pt.Translations)
                     )
                     .FirstOrDefaultAsync(ct);
 

@@ -12,6 +12,7 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public string Title { get; set; } = default!; 
         public string CaseType { get; set; } = default!;
         public string Priority { get; set; } = default!;
+        public string? ProblemTypeName { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastModifiedAt { get; set; } 
     }

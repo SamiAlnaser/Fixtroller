@@ -76,7 +76,7 @@ namespace Fixtroller.BLL.Services.userServices
 
         public async Task<bool> IsBlockedAsync(string userId)
         {
-return await _userRepository.IsBlockedAsync(userId);
+              return await _userRepository.IsBlockedAsync(userId);
         }
     }
 

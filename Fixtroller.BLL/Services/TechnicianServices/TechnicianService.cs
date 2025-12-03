@@ -144,51 +144,68 @@ namespace Fixtroller.BLL.Services.TechnicianServices
         }
 
         public async Task<PagedResultDTO<TechnicianBoardDTO>> GetMyAssignedAsync(
-     string technicianUserId,
-     string language,
-     int pageNumber = 1,
-     int pageSize = 10,
-     CancellationToken ct = default)
+       string technicianUserId,
+       string language,
+       int pageNumber = 1,
+       int pageSize = 10,
+       CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
 
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
+            // 1) الكويري الأساسي + Include لنوع المشكلة وترجماته
             var q = _reqRepo.Query(
-                asTracking: false,
-                predicate: x => x.Status == Status.Active &&
-                                x.Technicians.Any(t =>
-                                    t.TechnicianUserId == technicianUserId &&
-                                    t.UnassignedAtUtc == null));
+                    asTracking: false,
+                    predicate: x =>
+                        x.Status == Status.Active &&
+                        x.Technicians.Any(t =>
+                            t.TechnicianUserId == technicianUserId &&
+                            t.UnassignedAtUtc == null))
+                .Include(x => x.ProblemType)
+                    .ThenInclude(pt => pt.Translations);
 
-            // إجمالي عدد الطلبات المسندة (لأجل عدد الصفحات)
+            // 2) إجمالي عدد الطلبات المسندة (لأجل عدد الصفحات)
             var totalCount = await q.CountAsync(ct);
             var totalPages = totalCount == 0
                 ? 0
                 : (int)Math.Ceiling(totalCount / (double)pageSize);
 
-            // نسحب حقول خفيفة فقط مع الباجينيشن
+            // 3) نسحب حقول خفيفة + اسم نوع المشكلة مترجَم
             var rows = await q
                 .OrderByDescending(x => x.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
-                .Select(x => new MaintenanceRequest
+                .Select(x => new
                 {
-                    Id = x.Id,
-                    Title = x.Title,
-                    Description = x.Description,
-                    CaseType = x.CaseType,
-                    Priority = x.Priority,
-                    CreatedAt = x.CreatedAt
+                    Light = new MaintenanceRequest
+                    {
+                        Id = x.Id,
+                        Title = x.Title,
+                        Description = x.Description,
+                        CaseType = x.CaseType,
+                        Priority = x.Priority,
+                        CreatedAt = x.CreatedAt
+                    },
+
+                    ProblemTypeName = x.ProblemType != null
+                        ? x.ProblemType.Translations
+                            .OrderBy(t =>
+                                t.Language == language ? 0 :
+                                t.Language == "ar" ? 1 : 2)
+                            .Select(t => t.Name)
+                            .FirstOrDefault()
+                        : null
                 })
                 .ToListAsync(ct);
 
-            // تصنيف الأعمدة
+            // 4) تصنيف الأعمدة حسب حالة الطلب
             static bool IsNew(CaseType c) =>
                 c == CaseType.Submitted || c == CaseType.ManagerReview;
 
-            static bool IsInProgress(CaseType c) => c == CaseType.Processing
+            static bool IsInProgress(CaseType c) =>
+                c == CaseType.Processing
                 || c == CaseType.ResourcesNeeded
                 || c == CaseType.Modified
                 || c == CaseType.Reopened
@@ -196,37 +213,66 @@ namespace Fixtroller.BLL.Services.TechnicianServices
 
             static bool IsCompleted(CaseType c) => c == CaseType.Completed;
 
-            var newAll = rows.Where(r => IsNew(r.CaseType)).OrderByDescending(r => r.CreatedAt).ToList();
-            var progressAll = rows.Where(r => IsInProgress(r.CaseType)).OrderByDescending(r => r.CreatedAt).ToList();
-            var completedAll = rows.Where(r => IsCompleted(r.CaseType)).OrderByDescending(r => r.CreatedAt).ToList();
+            var newAll = rows
+                .Where(r => IsNew(r.Light.CaseType))
+                .OrderByDescending(r => r.Light.CreatedAt)
+                .ToList();
 
+            var progressAll = rows
+                .Where(r => IsInProgress(r.Light.CaseType))
+                .OrderByDescending(r => r.Light.CreatedAt)
+                .ToList();
+
+            var completedAll = rows
+                .Where(r => IsCompleted(r.Light.CaseType))
+                .OrderByDescending(r => r.Light.CreatedAt)
+                .ToList();
+
+            // 5) تجهيز البورد مع تمرير ProblemTypeName للمابر
             var board = new TechnicianBoardDTO
             {
                 New = new TechnicianBoardColumnDTO
                 {
                     Title = language == "ar" ? "مهام جديدة" : "New Tasks",
                     Count = newAll.Count,
-                    Items = newAll.Select(r => MaintenanceRequestMapper.ToTechnicianCard(r, language)).ToList()
+                    Items = newAll
+                        .Select(r => MaintenanceRequestMapper.ToTechnicianCard(
+                            r.Light,
+                            language,
+                            r.ProblemTypeName))
+                        .ToList()
                 },
                 InProgress = new TechnicianBoardColumnDTO
                 {
                     Title = language == "ar" ? "قيد التنفيذ" : "In Progress",
                     Count = progressAll.Count,
-                    Items = progressAll.Select(r => MaintenanceRequestMapper.ToTechnicianCard(r, language)).ToList()
+                    Items = progressAll
+                        .Select(r => MaintenanceRequestMapper.ToTechnicianCard(
+                            r.Light,
+                            language,
+                            r.ProblemTypeName))
+                        .ToList()
                 },
                 Completed = new TechnicianBoardColumnDTO
                 {
                     Title = language == "ar" ? "مكتملة" : "Completed",
                     Count = completedAll.Count,
-                    Items = completedAll.Select(r => MaintenanceRequestMapper.ToTechnicianCard(r, language)).ToList()
+                    Items = completedAll
+                        .Select(r => MaintenanceRequestMapper.ToTechnicianCard(
+                            r.Light,
+                            language,
+                            r.ProblemTypeName))
+                        .ToList()
                 }
             };
 
-            // 👇 تغليف في PagedResultDTO (Data فيها عنصر واحد: البورد)
+            // 6) إرجاع النتيجة في PagedResultDTO (Data فيها عنصر واحد: البورد)
             return new PagedResultDTO<TechnicianBoardDTO>
             {
                 TotalPages = totalPages,
                 CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize,
                 Data = new List<TechnicianBoardDTO> { board }
             };
         }

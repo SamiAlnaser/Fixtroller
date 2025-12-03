@@ -12,7 +12,8 @@ namespace Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses
         public string Title { get; set; } = "";
         public string? Description { get; set; }
         public string Priority { get; set; } = "";
-        public string CaseType { get; set; } = ""; 
+        public string CaseType { get; set; } = "";
+        public string? ProblemTypeName { get; set; }
         public DateTime CreatedAt { get; set; }    
     }
 

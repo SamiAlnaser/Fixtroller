@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
+using System.Xml.Linq;
 
 namespace Fixtroller.BLL.Mapping
 {
@@ -49,6 +50,13 @@ namespace Fixtroller.BLL.Mapping
                     ? CaseType.Processing
                     : e.CaseType;
 
+            var ptName = e.ProblemType?.Translations?
+                 .OrderBy(t =>
+                     t.Language == language ? 0 :
+                     t.Language == "ar" ? 1 : 2)
+                 .Select(t => t.Name)
+                 .FirstOrDefault();
+
             var dto = new MaintenanceRequestResponseDTO
             {
                 Id = e.Id,
@@ -57,6 +65,8 @@ namespace Fixtroller.BLL.Mapping
                 Priority = e.Priority,
                 PriorityName = GetPriorityName(e.Priority, language),
                 CaseType = GetCaseTypeName(effectiveCase, language),
+                ProblemTypeId = e.ProblemTypeId,
+                ProblemTypeName = ptName,
                 Address = e.Address,
                 CreatedByUserId = e.CreatedByUserId,
                 CreatedAt = e.CreatedAt,
@@ -160,7 +170,7 @@ namespace Fixtroller.BLL.Mapping
         }
 
         public static MaintenanceRequestListMineDTO ToMineListItem(
-          MaintenanceRequest e, string role, bool isOwner, string language = "ar")
+          MaintenanceRequest e, string role, bool isOwner, string language = "ar", string? problemTypeName = null)
         {
 
             var effectiveCase =
@@ -175,6 +185,7 @@ namespace Fixtroller.BLL.Mapping
                 Id = e.Id,
                 Title = e.Title,
                 CaseType = GetCaseTypeName(effectiveCase, language),
+                ProblemTypeName = problemTypeName,
                 Priority = GetPriorityName(e.Priority, language),
                 CreatedAt = e.CreatedAt,
                 LastModifiedAt = e.UpdatedAt
@@ -203,7 +214,9 @@ namespace Fixtroller.BLL.Mapping
 
 
         public static TechnicianTaskCardDTO ToTechnicianCard(
-    MaintenanceRequest e, string language = "ar")
+    MaintenanceRequest e,
+    string language = "ar",
+    string? problemTypeName = null)
         {
             return new TechnicianTaskCardDTO
             {
@@ -212,6 +225,7 @@ namespace Fixtroller.BLL.Mapping
                 Description = e.Description,
                 Priority = GetPriorityName(e.Priority, language),
                 CaseType = GetCaseTypeName(e.CaseType, language),
+                ProblemTypeName = problemTypeName,
                 CreatedAt = e.CreatedAt
             };
         }
