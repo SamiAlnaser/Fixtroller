@@ -87,6 +87,120 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
+
+        public async Task<(int? Id, string MessageKey)> CreateScenarioAsync(
+            MaintenanceRequestScenarioRequestDTO request,
+            string callerUserId,
+            string callerRole,
+            CancellationToken ct = default)
+        {
+            // 1) تأمين الدور
+            var isManager = callerRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = callerRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+            var isTech = callerRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+
+            if (!isManager && !isAdmin && !isTech)
+            {
+                // مفتاح موجود في الـ resources
+                return (null, "Forbidden");
+            }
+
+            // 2) التحقق من الموظف صاحب الطلب
+            if (string.IsNullOrWhiteSpace(request.OwnerUserId))
+            {
+                // رسالة عامة (موجودة في الـ resx)
+                return (null, "BadRequest");
+            }
+
+            var newCase = request.CaseType;
+
+            // 3) القواعد حسب ما طلبت انت 👇
+            // الفني: Submitted, Processing, ManagerReview, ResourcesNeeded
+            var techAllowed =
+                newCase == CaseType.Submitted ||
+                newCase == CaseType.Processing ||
+                newCase == CaseType.ManagerReview ||
+                newCase == CaseType.ResourcesNeeded;
+
+            // المدير / الأدمن: Submitted, Processing, ResourcesNeeded, Completed
+            var managerAllowed =
+                newCase == CaseType.Submitted ||
+                newCase == CaseType.Processing ||
+                newCase == CaseType.ResourcesNeeded ||
+                newCase == CaseType.Completed;
+
+            if (isTech && !techAllowed)
+            {
+                return (null, "Case_NotAllowedForTechnician");
+            }
+
+            if ((isManager || isAdmin) && !managerAllowed)
+            {
+                return (null, "Case_NotAllowedForManager");
+            }
+
+            // 4) ننشئ الكيان كأن OwnerUserId هو اللي قدّم الطلب
+            var entity = MaintenanceRequestMapper.ToEntity(request, request.OwnerUserId);
+
+            // نغيّر الحالة الافتراضية (Submitted) إلى الحالة المختارة
+            entity.CaseType = newCase;
+
+            // في الحالات النهائية، نحدّث UpdatedAt
+            if (entity.CaseType == CaseType.Processed || entity.CaseType == CaseType.Completed)
+            {
+                entity.UpdatedAt = DateTime.UtcNow;
+            }
+
+            // 5) رفع الملفات بنفس منطق CreateWithFile
+            var uploaded = new List<string>();
+            if (request.Images != null)
+            {
+                foreach (var f in request.Images)
+                {
+                    if (f != null && f.Length > 0)
+                        uploaded.Add(await _fileService.UploadAsync(f, ct));
+                }
+            }
+
+            // 6) ربط الصور مع الطلب
+            for (int i = 0; i < uploaded.Count; i++)
+            {
+                entity.Images.Add(new MaintenanceRequestImage
+                {
+                    FileName = uploaded[i],
+                    IsPrimary = (i == 0)
+                });
+            }
+
+            if (entity.Images.Count > 0 && !entity.Images.Any(i => i.IsPrimary))
+                entity.Images.First().IsPrimary = true;
+
+            // 7) ترانزاكشن الحفظ
+            await _uow.BeginTransactionAsync(ct);
+            try
+            {
+                await _repository.AddAsync(entity);
+                await _uow.SaveAndCommitAsync(ct);
+
+                // نجاح: نرجّع Id + MessageKey جاهز للترجمة في الـ PL
+                return (entity.Id, "Created"); // "Created" موجودة في SharedResource
+            }
+            catch
+            {
+                await _uow.RollbackAsync(ct);
+
+                // تعويض ملفات الصور
+                foreach (var name in uploaded)
+                {
+                    try { await _fileService.DeleteAsync(name, ct); } catch { }
+                }
+
+                // خطأ غير متوقّع => يُترجم إلى 500 من الـ middleware
+                throw;
+            }
+        }
+
+
         public async Task<PagedResultDTO<MaintenanceRequestListMineDTO>> GetMineAsync(
      string userId,
      string role,

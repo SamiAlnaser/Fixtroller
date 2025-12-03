@@ -20,6 +20,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             string userId,
             CancellationToken ct = default);
 
+        Task<(int? Id, string MessageKey)> CreateScenarioAsync(
+            MaintenanceRequestScenarioRequestDTO request,
+            string callerUserId,
+            string callerRole,
+            CancellationToken ct = default);
+
 
         Task<PagedResultDTO<MaintenanceRequestListMineDTO>> GetMineAsync(string userId,string role,string language,
         int pageNumber = 1,

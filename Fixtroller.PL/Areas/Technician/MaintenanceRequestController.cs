@@ -41,6 +41,47 @@ namespace Fixtroller.PL.Areas.Technician
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
 
+
+        [HttpPost("scenario")]
+        public async Task<IActionResult> CreateScenario(
+                [FromForm] MaintenanceRequestScenarioRequestDTO dto,
+                CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized();
+
+            var role = User.FindFirst("role")?.Value
+                     ?? "Technician";
+
+            var (id, key) = await _maintenanceRequestService.CreateScenarioAsync(
+                dto,
+                callerUserId: userId,
+                callerRole: role,
+                ct: ct);
+
+            if (id is null)
+            {
+                // فشل (حالة غير مسموحة، ownerUserId ناقص، ...الخ)
+                return BadRequest(new { message = _localizer[key].Value });
+            }
+
+            // نجاح
+            return CreatedAtAction(
+                nameof(GetById),
+                new { id = id.Value },
+                new
+                {
+                    id = id.Value,
+                    message = _localizer[key].Value
+                });
+        }
+
+
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id, CancellationToken ct = default)
         {
