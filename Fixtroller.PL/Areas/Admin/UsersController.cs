@@ -1,5 +1,5 @@
 ﻿using Azure.Core;
-using Fixtroller.BLL.Services.userServices;
+using Fixtroller.BLL.Services.UserServices;
 using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
 
 using Microsoft.AspNetCore.Authorization;
@@ -48,27 +48,27 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(new { message = "role changed successfully" });
         }
 
-        [HttpPatch("block/{userId}")]
+        [HttpPatch("Vacation/{userId}")]
 
-        public async Task<IActionResult> BlockUser([FromRoute] string userId, [FromBody] int days)
+        public async Task<IActionResult> VacationUser([FromRoute] string userId, [FromBody] int days)
         {
-            var result = await _userService.BlockUserAsync(userId, days);
+            var result = await _userService.VacationUserAsync(userId, days);
             return Ok(result);
         }
 
 
-        [HttpPatch("unblock/{userId}")]
+        [HttpPatch("unVacation/{userId}")]
 
-        public async Task<IActionResult> UnBlockUser([FromRoute] string userId)
+        public async Task<IActionResult> UnVacationUser([FromRoute] string userId)
         {
-            var result = await _userService.UnBlockUserAsync(userId);
+            var result = await _userService.UnVacationUserAsync(userId);
             return Ok(result);
         }
-        [HttpPatch("isblock/{userId}")]
+        [HttpPatch("isVacation/{userId}")]
 
-        public async Task<IActionResult> IsBlockedUser([FromRoute] string userId)
+        public async Task<IActionResult> IsVacationUser([FromRoute] string userId)
         {
-            var result = await _userService.IsBlockedAsync(userId);
+            var result = await _userService.IsVacationAsync(userId);
             return Ok(result);
         }
     }

@@ -11,7 +11,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.BLL.Services.userServices
+namespace Fixtroller.BLL.Services.UserServices
 {
     public class UserService : IUserservice
     {
@@ -25,16 +25,16 @@ namespace Fixtroller.BLL.Services.userServices
 
         }
 
-        public async Task<List<UserDto>> GetAllAsync()
+        public async Task<List<UserDTO>> GetAllAsync()
         {
             var users = await _userRepository.GetAllAsync();
-            var userDtos = new List<UserDto>();
+            var userDtos = new List<UserDTO>();
 
             foreach (var user in users)
             {
                 var roles = await _userManager.GetRolesAsync(user);
 
-                userDtos.Add(new UserDto
+                userDtos.Add(new UserDTO
                 {
                     Id = user.Id,
                     FullName = user.FullName,
@@ -50,10 +50,10 @@ namespace Fixtroller.BLL.Services.userServices
 
 
 
-        public async Task<UserDto> GetByIdAsync(string userId)
+        public async Task<UserDTO> GetByIdAsync(string userId)
         {
             var users = await _userRepository.GetByIdAsync(userId);
-            return users.Adapt<UserDto>();
+            return users.Adapt<UserDTO>();
         }
 
         public async Task<bool> ChangeUserRoleAsync(ChangeRoleRequsetDTO dto)
@@ -63,20 +63,20 @@ namespace Fixtroller.BLL.Services.userServices
             return await _userRepository.ChangeUserRoleAsync(dto.userId, rolename);
         }
 
-        public async Task<bool> BlockUserAsync(string userId, int days)
+        public async Task<bool> VacationUserAsync(string userId, int days)
         {
-            return await _userRepository.BlockUserAsync(userId, days);
+            return await _userRepository.VacationUserAsync(userId, days);
 
         }
 
-        public async Task<bool> UnBlockUserAsync(string userId)
+        public async Task<bool> UnVacationUserAsync(string userId)
         {
-            return await _userRepository.UnBlockUserAsync(userId); 
+            return await _userRepository.UnVacationUserAsync(userId); 
         }
 
-        public async Task<bool> IsBlockedAsync(string userId)
+        public async Task<bool> IsVacationAsync(string userId)
         {
-              return await _userRepository.IsBlockedAsync(userId);
+              return await _userRepository.IsVacationAsync(userId);
         }
     }
 

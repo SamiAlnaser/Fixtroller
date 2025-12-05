@@ -42,7 +42,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             return addResult.Succeeded;
         }
 
-        public async Task<bool> BlockUserAsync(string userId, int days)
+        public async Task<bool> VacationUserAsync(string userId, int days)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null) return false;
@@ -55,7 +55,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository
         }
 
 
-        public async Task<bool> UnBlockUserAsync(string userId)
+        public async Task<bool> UnVacationUserAsync(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null) return false;
@@ -67,7 +67,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             return result.Succeeded;
         }
 
-        public async Task<bool> IsBlockedAsync(string userId)
+        public async Task<bool> IsVacationAsync(string userId)
         {
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null) return false;
