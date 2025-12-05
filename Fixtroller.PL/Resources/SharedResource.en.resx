@@ -252,4 +252,34 @@
   <data name="Images_Disabled_In_FinalState" xml:space="preserve">
     <value>Images cannot be added after the request is finalized</value>
   </data>
+  <data name="User_NotFound" xml:space="preserve">
+    <value>User not found</value>
+  </data>
+  <data name="User_ChangeRole_Success" xml:space="preserve">
+    <value>User role changed successfully</value>
+  </data>
+  <data name="User_ChangeRole_Failed" xml:space="preserve">
+    <value>Failed to change user role</value>
+  </data>
+  <data name="User_Vacation_InvalidDays" xml:space="preserve">
+    <value>Vacation days must be greater than zero</value>
+  </data>
+  <data name="User_Vacation_Failed" xml:space="preserve">
+    <value>Failed to set user vacation</value>
+  </data>
+  <data name="User_Vacation_Success" xml:space="preserve">
+    <value>User set to vacation successfully</value>
+  </data>
+  <data name="User_UnVacation_Failed" xml:space="preserve">
+    <value>Failed to remove user vacation</value>
+  </data>
+  <data name="User_UnVacation_Success" xml:space="preserve">
+    <value>User vacation removed successfully</value>
+  </data>
+  <data name="User_IsVacation_True" xml:space="preserve">
+    <value>User is currently on vacation</value>
+  </data>
+  <data name="User_IsVacation_False" xml:space="preserve">
+    <value>User is not on vacation</value>
+  </data>
 </root>

@@ -12,15 +12,28 @@ namespace Fixtroller.BLL.Services.UserServices
 {
     public interface IUserservice
     {
-        Task<List<UserDTO>> GetAllAsync();
+        Task<List<UserDTO>> GetAllAsync(
+            CancellationToken ct = default);
 
-        Task<UserDTO> GetByIdAsync(string userId);
-        Task<bool> ChangeUserRoleAsync(ChangeRoleRequsetDTO dto);
-        Task<bool> VacationUserAsync(string userId, int days);
-        Task<bool> UnVacationUserAsync(string userId);
-        Task<bool> IsVacationAsync(string userId);
+        Task<UserDTO?> GetByIdAsync(
+            string userId,
+            CancellationToken ct = default);
 
+        Task<(bool Success, string MessageKey)> ChangeUserRoleAsync(
+            ChangeRoleRequsetDTO dto,
+            CancellationToken ct = default);
 
+        Task<(bool Success, string MessageKey)> VacationUserAsync(
+            string userId,
+            int days,
+            CancellationToken ct = default);
 
+        Task<(bool Success, string MessageKey)> UnVacationUserAsync(
+            string userId,
+            CancellationToken ct = default);
+
+        Task<(bool IsVacation, string MessageKey)> IsVacationAsync(
+            string userId,
+            CancellationToken ct = default);
     }
 }

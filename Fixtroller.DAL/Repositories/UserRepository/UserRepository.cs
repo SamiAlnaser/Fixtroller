@@ -19,62 +19,87 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             _userManager = userManager;
         }
 
-        public async Task<List<ApplicationUser>> GetAllAsync()
+        public async Task<List<ApplicationUser>> GetAllAsync(
+            CancellationToken ct = default)
         {
-            return await _userManager.Users.ToListAsync();
+            ct.ThrowIfCancellationRequested();
+
+            return await _userManager.Users
+                .ToListAsync(ct);
         }
 
-        public async Task<ApplicationUser> GetByIdAsync(string userId)
+        public async Task<ApplicationUser?> GetByIdAsync(
+            string userId,
+            CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+
             return await _userManager.FindByIdAsync(userId);
         }
-        public async Task<bool> ChangeUserRoleAsync(string userId, string roleName)
+
+        public async Task<bool> ChangeUserRoleAsync(
+            string userId,
+            string roleName,
+            CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+
             var user = await _userManager.FindByIdAsync(userId);
-            if (user == null) return false;
+            if (user is null) return false;
 
             var currentRoles = await _userManager.GetRolesAsync(user);
-
-            var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
-            if (!removeResult.Succeeded) return false;
+            if (currentRoles.Any())
+            {
+                var removeResult = await _userManager.RemoveFromRolesAsync(user, currentRoles);
+                if (!removeResult.Succeeded) return false;
+            }
 
             var addResult = await _userManager.AddToRoleAsync(user, roleName);
             return addResult.Succeeded;
         }
 
-        public async Task<bool> VacationUserAsync(string userId, int days)
+        public async Task<bool> VacationUserAsync(
+            string userId,
+            int days,
+            CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null) return false;
 
-            user.LockoutEnd = DateTime.UtcNow.AddDays(days);
+            user.LockoutEnd = DateTimeOffset.UtcNow.AddDays(days);
 
             var result = await _userManager.UpdateAsync(user);
-
             return result.Succeeded;
         }
 
-
-        public async Task<bool> UnVacationUserAsync(string userId)
+        public async Task<bool> UnVacationUserAsync(
+            string userId,
+            CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null) return false;
 
             user.LockoutEnd = null;
 
             var result = await _userManager.UpdateAsync(user);
-
             return result.Succeeded;
         }
 
-        public async Task<bool> IsVacationAsync(string userId)
+        public async Task<bool> IsVacationAsync(
+            string userId,
+            CancellationToken ct = default)
         {
+            ct.ThrowIfCancellationRequested();
+
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null) return false;
 
-            return user.LockoutEnd.HasValue && user.LockoutEnd > DateTime.UtcNow;
+            return user.LockoutEnd.HasValue &&
+                   user.LockoutEnd > DateTimeOffset.UtcNow;
         }
-
-
     }
 }

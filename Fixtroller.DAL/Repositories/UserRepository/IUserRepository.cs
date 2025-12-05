@@ -9,13 +9,29 @@ namespace Fixtroller.DAL.Repositories.UserRepository
 {
     public interface IUserRepository
     {
-        Task<List<ApplicationUser>> GetAllAsync();
+        Task<List<ApplicationUser>> GetAllAsync(
+            CancellationToken ct = default);
 
-        Task<ApplicationUser> GetByIdAsync(string userId);
-        Task<bool> ChangeUserRoleAsync(string userId, string roleName);
-        Task<bool> VacationUserAsync(string userId, int days);
-        Task<bool> UnVacationUserAsync(string userId);
-        Task<bool> IsVacationAsync(string userId);
+        Task<ApplicationUser?> GetByIdAsync(
+            string userId,
+            CancellationToken ct = default);
 
+        Task<bool> ChangeUserRoleAsync(
+            string userId,
+            string roleName,
+            CancellationToken ct = default);
+
+        Task<bool> VacationUserAsync(
+            string userId,
+            int days,
+            CancellationToken ct = default);
+
+        Task<bool> UnVacationUserAsync(
+            string userId,
+            CancellationToken ct = default);
+
+        Task<bool> IsVacationAsync(
+            string userId,
+            CancellationToken ct = default);
     }
 }

@@ -17,10 +17,10 @@ namespace Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs
     public class ChangeRoleRequsetDTO
     {
         [Required]
-        public roletype rolename { get; set; }
+        public roletype NewRoleName { get; set; }
         
 
         [Required]
-        public string userId { get; set; }
+        public string UserId { get; set; }
     }
 }

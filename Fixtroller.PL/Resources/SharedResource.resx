@@ -252,4 +252,34 @@
   <data name="Images_Disabled_In_FinalState" xml:space="preserve">
     <value>لا يمكن إضافة صور بعد إنهاء أو إلغاء الطلب</value>
   </data>
+  <data name="User_NotFound" xml:space="preserve">
+    <value>المستخدم غير موجود</value>
+  </data>
+  <data name="User_ChangeRole_Success" xml:space="preserve">
+    <value>تم تغيير دور المستخدم بنجاح</value>
+  </data>
+  <data name="User_ChangeRole_Failed" xml:space="preserve">
+    <value>فشل تغيير دور المستخدم</value>
+  </data>
+  <data name="User_Vacation_InvalidDays" xml:space="preserve">
+    <value>عدد أيام الإجازة يجب أن يكون أكبر من صفر</value>
+  </data>
+  <data name="User_Vacation_Failed" xml:space="preserve">
+    <value>فشل وضع المستخدم في حالة إجازة</value>
+  </data>
+  <data name="User_Vacation_Success" xml:space="preserve">
+    <value>تم وضع المستخدم في حالة إجازة بنجاح</value>
+  </data>
+  <data name="User_UnVacation_Failed" xml:space="preserve">
+    <value>فشل إلغاء حالة الإجازة للمستخدم</value>
+  </data>
+  <data name="User_UnVacation_Success" xml:space="preserve">
+    <value>تم إلغاء حالة الإجازة للمستخدم بنجاح</value>
+  </data>
+  <data name="User_IsVacation_True" xml:space="preserve">
+    <value>المستخدم حالياً في حالة إجازة</value>
+  </data>
+  <data name="User_IsVacation_False" xml:space="preserve">
+    <value>المستخدم ليس في حالة إجازة</value>
+  </data>
 </root>
