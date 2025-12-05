@@ -6,7 +6,7 @@ using Fixtroller.BLL.Services.NumbersServices;
 using Fixtroller.BLL.Services.ProblemTypesServices;
 using Fixtroller.BLL.Services.TCategoryServices;
 using Fixtroller.BLL.Services.TechnicianServices;
-using Fixtroller.BLL.Services.userServices;
+using Fixtroller.BLL.Services.UserServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.MaintenanceRequestepository;

@@ -1,4 +1,4 @@
-﻿using Fixtroller.BLL.Services.userServices;
+﻿using Fixtroller.BLL.Services.UserServices;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

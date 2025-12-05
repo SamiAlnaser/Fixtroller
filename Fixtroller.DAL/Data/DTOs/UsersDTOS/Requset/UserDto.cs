@@ -7,7 +7,7 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.DAL.Data.DTOs.UsersDTOS.Requset
 {
-    public  class UserDto
+    public  class UserDTO
     {
         public string Id { get; set; }
         public string FullName { get; set; }
