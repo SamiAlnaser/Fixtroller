@@ -1,7 +1,7 @@
-
 using Fixtroller.BLL.Services.AuthenticationServices;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.BLL.Services.MaintenanceRequestServices;
+using Fixtroller.BLL.Services.NotificationServices;
 using Fixtroller.BLL.Services.NumbersServices;
 using Fixtroller.BLL.Services.ProblemTypesServices;
 using Fixtroller.BLL.Services.TCategoryServices;
@@ -10,6 +10,7 @@ using Fixtroller.BLL.Services.userServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.MaintenanceRequestepository;
+using Fixtroller.DAL.Repositories.NotificationRepository;
 using Fixtroller.DAL.Repositories.NumbersRepository;
 using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
 using Fixtroller.DAL.Repositories.TCategoryRepositories;
@@ -17,6 +18,8 @@ using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Fixtroller.DAL.UnitOfWork;
 using Fixtroller.DAL.Utils;
+using Fixtroller.PL.Services.Email;
+using Fixtroller.PL.Services.Push;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -85,6 +88,17 @@ namespace Fixtroller.PL
             builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
                 .AddEntityFrameworkStores<ApplicationDbContext>()
                 .AddDefaultTokenProviders();
+
+
+            // Email settings
+            builder.Services.Configure<EmailSettings>(
+                builder.Configuration.GetSection("Email"));
+
+            // Email + Notifications
+            builder.Services.AddScoped<IAppEmailSender, SmtpEmailSender>();
+            builder.Services.AddScoped<IPushNotificationSender, NoopPushNotificationSender>();
+            builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
+            builder.Services.AddScoped<INotificationService, NotificationService>();
 
 
             builder.Services.AddControllers();

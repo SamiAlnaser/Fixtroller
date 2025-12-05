@@ -23,6 +23,8 @@ namespace Fixtroller.DAL.Data
         public DbSet<MaintenanceNote> MaintenanceNotes { get; set; }
         public DbSet<WorkTimeEntry> WorkTimeEntries { get; set; }
         public DbSet<MaintenanceRequestTechnician> MaintenanceRequestTechnicians { get; set; }
+
+        public DbSet<Notification> Notifications { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
         {

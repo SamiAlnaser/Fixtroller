@@ -10,6 +10,8 @@ using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Fixtroller.DAL.Repositories.MaintenanceRequestepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Fixtroller.DAL.UnitOfWork;
+using Fixtroller.BLL.Services.NotificationServices;
+using Fixtroller.DAL.Entities;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -27,7 +29,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         private readonly IFileService _fileService;
         private readonly IUnitOfWork _uow;
         private readonly IWorkTimeRepository _workRepo;
-        private readonly IMaintenanceRequestTechnicianRepository _reqTechRepo; 
+        private readonly IMaintenanceRequestTechnicianRepository _reqTechRepo;
+        private readonly INotificationService _notificationService;
 
         public MaintenanceRequestService(
             IMaintenanceRequestRepository repository,
@@ -35,7 +38,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             IFileService fileService,
             IUnitOfWork uow,
             IWorkTimeRepository workRepo,
-            IMaintenanceRequestTechnicianRepository reqTechRepo 
+            IMaintenanceRequestTechnicianRepository reqTechRepo,
+            INotificationService notificationService
         ) : base(repository, uow)
         {
             _repository = repository;
@@ -43,7 +47,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             _fileService = fileService;
             _uow = uow;
             _workRepo = workRepo;
-            _reqTechRepo = reqTechRepo; // NEW
+            _reqTechRepo = reqTechRepo;
+            _notificationService = notificationService;
         }
 
         public async Task<int> CreateWithFile(MaintenanceRequestRequestDTO request, string userId, CancellationToken ct = default)
@@ -499,6 +504,19 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 request.UpdatedAt = DateTime.UtcNow;
 
                 await _uow.SaveAndCommitAsync(ct);
+
+
+                await _notificationService.CreateAsync(new NotificationCreateModel
+                {
+                    UserId = technicianUserId,
+                    MaintenanceRequestId = request.Id,
+                    Type = NotificationType.RequestAssigned,
+                    Severity = NotificationSeverity.Info,
+                    Title = "تم تعيينك لطلب صيانة جديد",
+                    Body = $"تم تعيينك لطلب الصيانة رقم {request.Id}.",
+                    Channels = NotificationChannel.InApp | NotificationChannel.Email
+                }, ct);
+
 
                 var loaded = await _repository.GetForAssignmentAsync(requestId, ct);
                 return (TechnicianMappings.ToAssignTechnicianResponse(loaded!, language), "Technician_Assigned");
