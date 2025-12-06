@@ -51,7 +51,7 @@ namespace Fixtroller.PL
                 options.SupportedUICultures = supportedCultures;
             
              });
- 
+
 
 
 
