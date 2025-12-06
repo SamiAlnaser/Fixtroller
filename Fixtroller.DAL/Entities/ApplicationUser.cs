@@ -14,8 +14,12 @@ namespace Fixtroller.DAL.Entities
     {
         public string FullName { get; set; } // username رح يتغير عشان موضوع اللغات و رح يتغير تبعياته في السيرفر و التوكين و غيره مع  
         public string Location { get; set; }
+        public string? Department { get; set; }
         public int? TechnicianCategoryId { get; set; }
         public TechnicianCategory TechnicianCategory { get; set; }
+        // الطلبات التي "باسمه" كصاحب الطلب
+        public ICollection<MaintenanceRequest> OwnedRequests { get; set; } = new List<MaintenanceRequest>();
+
         public ICollection<MaintenanceRequest> SubmittedRequests { get; set; } = new List<MaintenanceRequest>();
     }
 

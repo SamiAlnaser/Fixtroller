@@ -37,9 +37,16 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         public string Address { get; set; }
         public Priority Priority { get; set; }
 
+
+        // صاحب الطلب (الموظف اللي الطلب باسمه)
+        public string OwnerUserId { get; set; }
+        public ApplicationUser OwnerUser { get; set; }
+
+        // الشخص اللي أنشأ الطلب فعلياً في النظام (موظف/فني/مدير)
         public string CreatedByUserId { get; set; }            
         public ApplicationUser CreatedByUser { get; set; }
         public DateTime? UpdatedAt { get; set; }
+        public DateTime? ClosedAtUtc { get; set; }
         public int ProblemTypeId { get; set; }
         public ProblemType ProblemType { get; set; }
 

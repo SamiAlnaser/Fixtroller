@@ -54,7 +54,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         public async Task<int> CreateWithFile(MaintenanceRequestRequestDTO request, string userId, CancellationToken ct = default)
         {
             // جهّز الكيان
-            var entity = MaintenanceRequestMapper.ToEntity(request, userId);
+            var entity = MaintenanceRequestMapper.ToEntity(
+                     request,
+                     ownerUserId: userId,
+                     createdByUserId: userId);
 
             // 1) ارفع الملفات "خارج" الترانزاكشن + لائحة للتعويض عند الفشل
             var uploaded = new List<string>();
@@ -145,7 +148,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
 
             // 4) ننشئ الكيان كأن OwnerUserId هو اللي قدّم الطلب
-            var entity = MaintenanceRequestMapper.ToEntity(request, request.OwnerUserId);
+            var entity = MaintenanceRequestMapper.ToEntity(request,ownerUserId: request.OwnerUserId,createdByUserId: callerUserId);
 
             // نغيّر الحالة الافتراضية (Submitted) إلى الحالة المختارة
             entity.CaseType = newCase;
@@ -225,7 +228,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     asTracking: false,
                     predicate: x =>
                         x.Status == Status.Active &&
-                        x.CreatedByUserId == userId)
+                        x.OwnerUserId == userId)
                 .Include(x => x.ProblemType)
                     .ThenInclude(pt => pt.Translations);
 
@@ -397,7 +400,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                             (
                                 isAdmin ||
                                 isManager ||
-                                (isEmployee && x.CreatedByUserId == userId) ||
+                                (isEmployee && x.OwnerUserId == userId) ||
                                 (isTechnician && (x.CreatedByUserId == userId ||
                                                   x.Technicians.Any(t => t.UnassignedAtUtc == null && t.TechnicianUserId == userId)))
                             ),
@@ -412,7 +415,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             if (e is null) return null;
 
-            var isOwner = string.Equals(e.CreatedByUserId, userId, StringComparison.Ordinal);
+            var isOwner = string.Equals(e.OwnerUserId, userId, StringComparison.Ordinal);
             return MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner);
         }
 
@@ -633,7 +636,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             bool isManager = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
             bool isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
             bool isTechnician = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
-            bool isOwner = r.CreatedByUserId == userId;
+            bool isOwner = r.OwnerUserId == userId;
 
             var useOwnerPath = isOwner && (preferOwnerPath || !(isManager || isAdmin || isTechnician));
             var author = InferAuthor(isOwner, isTechnician, isManager, isAdmin);
@@ -700,6 +703,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
                         r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
 
+                    if (newCase == CaseType.Reopened)
+                    {
+                        r.ClosedAtUtc = null;
+                    }
+                    else if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
+                    {
+                        r.ClosedAtUtc = DateTime.UtcNow;
+                    }
+
                     r.UpdatedAt = DateTime.UtcNow;
                     await _workRepo.StopActiveForRequestAsync(requestId, ct);
                     await _uow.SaveAndCommitAsync(ct);
@@ -713,7 +725,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     r.CaseType = newCase;
                     if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
                         r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
-
+                    if (newCase == CaseType.Reopened)
+                    {
+                        r.ClosedAtUtc = null;
+                    }
+                    else if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
+                    {
+                        r.ClosedAtUtc = DateTime.UtcNow;
+                    }
                     r.UpdatedAt = DateTime.UtcNow;
                     await _workRepo.StopActiveForRequestAsync(requestId, ct);
                     await _uow.SaveAndCommitAsync(ct);
@@ -727,6 +746,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     r.CaseType = newCase;
                     if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
                         r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
+
+                    if (newCase == CaseType.Reopened)
+                    {
+                        r.ClosedAtUtc = null;
+                    }
+                    else if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
+                    {
+                        r.ClosedAtUtc = DateTime.UtcNow;
+                    }
 
                     r.UpdatedAt = DateTime.UtcNow;
 
@@ -790,7 +818,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var r = await _repository.GetForUpdateAsync(requestId, ct);
             if (r is null) return (null, "Request_NotFound");
 
-            var isOwner = string.Equals(r.CreatedByUserId, userId, StringComparison.Ordinal);
+            var isOwner = string.Equals(r.OwnerUserId, userId, StringComparison.Ordinal);
             var isTech = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
             var isMgr = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
             var isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
@@ -866,7 +894,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 if (r is null) return (null, "Request_NotFound");
 
                 // المالك فقط
-                if (!string.Equals(r.CreatedByUserId, userId, StringComparison.Ordinal))
+                if (!string.Equals(r.OwnerUserId, userId, StringComparison.Ordinal))
                     throw new UnauthorizedAccessException("Forbidden");
 
                 // الحالات المسموح فيها التعديل
@@ -958,7 +986,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var r = await _repository.GetForUpdateAsync(requestId, ct);
             if (r is null) return (null, "Request_NotFound");
 
-            var isOwner = string.Equals(r.CreatedByUserId, userId, StringComparison.Ordinal);
+            var isOwner = string.Equals(r.OwnerUserId, userId, StringComparison.Ordinal);
             var isTech = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
             var isMgr = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
             var isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);

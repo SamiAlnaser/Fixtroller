@@ -49,19 +49,23 @@ namespace Fixtroller.DAL.Data
 
             builder.Entity<MaintenanceRequest>(e =>
             {
+                // من أنشأ الطلب فعلاً
                 e.HasOne(m => m.CreatedByUser)
                  .WithMany(u => u.SubmittedRequests)
                  .HasForeignKey(m => m.CreatedByUserId)
-                 .OnDelete(DeleteBehavior.Restrict); //  NoAction
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                // صاحب الطلب (الموظف)
+                e.HasOne(m => m.OwnerUser)
+                 .WithMany(u => u.OwnedRequests)
+                 .HasForeignKey(m => m.OwnerUserId)
+                 .OnDelete(DeleteBehavior.Restrict);
 
                 e.HasIndex(m => m.CreatedByUserId);
+                e.HasIndex(m => m.OwnerUserId);
+
                 e.Property(m => m.Title).IsRequired().HasMaxLength(200);
                 e.Property(m => m.Address).IsRequired().HasMaxLength(300);
-
-                 // e.HasOne(m => m.AssignedTechnician)
-                 //.WithMany()
-                 //.HasForeignKey(m => m.AssignedTechnicianUserId)
-                 //.OnDelete(DeleteBehavior.SetNull);
             });
             builder.Entity<ApplicationUser>(u =>
             {

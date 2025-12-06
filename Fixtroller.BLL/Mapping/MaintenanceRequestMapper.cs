@@ -15,16 +15,20 @@ namespace Fixtroller.BLL.Mapping
     {
         public static MaintenanceRequest ToEntity(
             MaintenanceRequestRequestDTO request,
+            string ownerUserId,
             string createdByUserId)
         {
             return new MaintenanceRequest
             {
                 Title = request.Title?.Trim(),
-                Description = string.IsNullOrWhiteSpace(request.Description) ? null : request.Description.Trim(),
+                Description = string.IsNullOrWhiteSpace(request.Description)
+                    ? null
+                    : request.Description.Trim(),
                 Priority = request.Priority,
                 Address = request.Address?.Trim(),
                 ProblemTypeId = request.ProblemTypeId,
                 CaseType = CaseType.Submitted,
+                OwnerUserId = ownerUserId,
                 CreatedByUserId = createdByUserId,
                 CreatedAt = DateTime.UtcNow
             };
@@ -65,12 +69,18 @@ namespace Fixtroller.BLL.Mapping
                 Priority = e.Priority,
                 PriorityName = GetPriorityName(e.Priority, language),
                 CaseType = GetCaseTypeName(effectiveCase, language),
+
                 ProblemTypeId = e.ProblemTypeId,
                 ProblemTypeName = ptName,
                 Address = e.Address,
+
+                OwnerUserId = e.OwnerUserId,
                 CreatedByUserId = e.CreatedByUserId,
+                IsCreatedByOwner = string.Equals(e.OwnerUserId, e.CreatedByUserId, StringComparison.Ordinal),
+
                 CreatedAt = e.CreatedAt,
-                LastModifiedAt = e.UpdatedAt
+                LastModifiedAt = e.UpdatedAt,
+                ClosedAtUtc = e.ClosedAtUtc
             };
 
             if (e.Images is not null && e.Images.Count > 0)

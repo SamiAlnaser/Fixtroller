@@ -28,9 +28,13 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public int ProblemTypeId { get; set; }
         public string? ProblemTypeName { get; set; }
         public string? Address { get; set; }
+
+        public string OwnerUserId { get; set; } = default!;
         public string CreatedByUserId { get; set; } = default!;
+        public bool IsCreatedByOwner { get; set; }
         public DateTime CreatedAt { get; set; }
         public DateTime? LastModifiedAt { get; set; }
+        public DateTime? ClosedAtUtc { get; set; }
         public List<AssignedTechnicianDTO> AssignedTechnicians { get; set; } = new();
 
         // فقط الصور المتعددة

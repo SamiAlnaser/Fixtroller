@@ -358,10 +358,19 @@ namespace Fixtroller.DAL.Utils
         }
                 };
 
-                await _context.MaintenanceRequests.AddRangeAsync(new[]
+                var requests = new[]
                 {
-        r1,r2,r3,r4,r5,r6,r7,r8,r9
-    });
+    r1, r2, r3, r4, r5, r6, r7, r8, r9
+};
+
+                // عَبّي OwnerUserId لو مش متعبّي
+                foreach (var r in requests)
+                {
+                    // صاحب الطلب في الـ seed = نفس اللي أنشأه
+                    r.OwnerUserId ??= r.CreatedByUserId;
+                }
+
+                await _context.MaintenanceRequests.AddRangeAsync(requests);
                 await _context.SaveChangesAsync();
 
                 // تعيينات الفنيين (بدل AssignedTechnicianUserId/AssignedAtUtc القديمة)
@@ -435,7 +444,6 @@ namespace Fixtroller.DAL.Utils
                 await _roleManager.CreateAsync(new IdentityRole("Technician"));
                 await _roleManager.CreateAsync(new IdentityRole("Employee"));
                 await _roleManager.CreateAsync(new IdentityRole("MaintenanceManager"));
-                await _roleManager.CreateAsync(new IdentityRole("SpecialEmployee"));
             }
 
             if (!await _userManager.Users.AnyAsync())
@@ -448,7 +456,8 @@ namespace Fixtroller.DAL.Utils
                     Email = "admin@sys.com",
                     PhoneNumber = "0590000001",
                     FullName = "System Administrator",
-                    Location = "HQ"
+                    Location = "HQ",
+                    Department = "HR"
                 };
 
                 await _userManager.CreateAsync(admin);
@@ -462,7 +471,8 @@ namespace Fixtroller.DAL.Utils
                     Email = "manager@sys.com",
                     PhoneNumber = "0590000002",
                     FullName = "Maintenance Manager",
-                    Location = "HQ"
+                    Location = "HQ",
+                    Department = "HR"
                 };
 
                 await _userManager.CreateAsync(manager);
@@ -478,7 +488,8 @@ namespace Fixtroller.DAL.Utils
                         Email = $"technician{i}@sys.com",
                         PhoneNumber = $"05900000{i + 2}",
                         FullName = $"Technician {i}",
-                        Location = "Main Branch"
+                        Location = "Main Branch",
+                        Department = "HR"
                     };
 
                     await _userManager.CreateAsync(technician);
@@ -495,26 +506,15 @@ namespace Fixtroller.DAL.Utils
                         Email = $"employee{i}@sys.com",
                         PhoneNumber = $"05900001{i + 10}",
                         FullName = $"Employee {i}",
-                        Location = (i <= 5 ? "Branch A" : "Branch B")
+                        Location = (i <= 5 ? "Branch A" : "Branch B"),
+                        Department = "HR"
                     };
 
                     await _userManager.CreateAsync(employee);
                     await _userManager.AddToRoleAsync(employee, "Employee");
                 }
 
-                //  موظف مميز
-                var specialUser = new ApplicationUser
-                {
-                    Id = "special011",
-                    Email = "specialemployee@sys.com",
-                    UserName = "specialemployee",
-                    PhoneNumber = "0590000020",
-                    FullName = "Special Employee",
-                    Location = "Main Branch"
-                };
-                await _userManager.CreateAsync(specialUser);
-                await _userManager.AddToRoleAsync(specialUser, "Employee");
-                await _userManager.AddToRoleAsync(specialUser, "SpecialEmployee");
+              
             }
 
             await _context.SaveChangesAsync();
