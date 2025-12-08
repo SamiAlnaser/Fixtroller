@@ -37,6 +37,20 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             return await _userManager.FindByIdAsync(userId);
         }
 
+        public async Task<List<ApplicationUser>> GetByRoleAsync(
+    string roleName,
+    CancellationToken ct = default)
+        {
+            if (string.IsNullOrWhiteSpace(roleName))
+                return new List<ApplicationUser>();
+
+            // UserManager ما بدعم CancellationToken هنا، فنطنّش ct
+            var usersInRole = await _userManager.GetUsersInRoleAsync(roleName);
+
+            // نرجّع List<ApplicationUser> عادية
+            return usersInRole.ToList();
+        }
+
         public async Task<bool> ChangeUserRoleAsync(
             string userId,
             string roleName,

@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Repositories.GenericRepository
+namespace Fixtroller.DAL.Repositories.GenericRepositories
 {
 
     public class GenericRepository<T> : IGenericRepository<T> where T : BaseModel

@@ -21,8 +21,8 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             _localizer = localizer;
         }
 
-        // GET: api/MaintenanceManager/Users/employees
-        [HttpGet("employees")]
+        // GET: api/MaintenanceManager/Users/Employees
+        [HttpGet("Employees")]
         public async Task<IActionResult> GetEmployeesAsync(CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();

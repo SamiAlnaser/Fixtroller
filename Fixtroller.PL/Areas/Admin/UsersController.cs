@@ -26,7 +26,7 @@ namespace Fixtroller.PL.Areas.Admin
             _localizer = localizer;
         }
 
-        [HttpGet]
+        [HttpGet("Employees")]
         public async Task<IActionResult> List(CancellationToken ct)
         {
             var users = await _userService.GetAllAsync(ct);

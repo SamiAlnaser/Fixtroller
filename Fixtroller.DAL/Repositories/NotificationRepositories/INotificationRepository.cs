@@ -1,12 +1,12 @@
 ﻿using Fixtroller.DAL.Entities;
-using Fixtroller.DAL.Repositories.GenericRepository;
+using Fixtroller.DAL.Repositories.GenericRepositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Repositories.NotificationRepository
+namespace Fixtroller.DAL.Repositories.NotificationRepositories
 {
     public interface INotificationRepository : IGenericRepository<Notification>
     {

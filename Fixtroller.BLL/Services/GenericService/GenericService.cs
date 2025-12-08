@@ -1,6 +1,6 @@
 ﻿
 using Fixtroller.DAL.Entities;
-using Fixtroller.DAL.Repositories.GenericRepository;
+using Fixtroller.DAL.Repositories.GenericRepositories;
 using Fixtroller.DAL.UnitOfWork;
 using Mapster;
 

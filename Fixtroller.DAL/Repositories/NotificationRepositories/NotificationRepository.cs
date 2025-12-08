@@ -1,6 +1,6 @@
 ﻿using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
-using Fixtroller.DAL.Repositories.GenericRepository;
+using Fixtroller.DAL.Repositories.GenericRepositories;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
@@ -8,7 +8,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Repositories.NotificationRepository
+namespace Fixtroller.DAL.Repositories.NotificationRepositories
 {
     public sealed class NotificationRepository
             : GenericRepository<Notification>, INotificationRepository

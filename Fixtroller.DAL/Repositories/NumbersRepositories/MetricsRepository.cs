@@ -7,7 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Repositories.NumbersRepository
+namespace Fixtroller.DAL.Repositories.NumbersRepositories
 {
     public class MetricsRepository : IMetricsRepository
     {

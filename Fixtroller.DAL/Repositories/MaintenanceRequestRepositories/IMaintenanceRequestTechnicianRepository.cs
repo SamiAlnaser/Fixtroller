@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Repositories.MaintenanceRequestepository
+namespace Fixtroller.DAL.Repositories.MaintenanceRequestRepositories
 {
     public interface IMaintenanceRequestTechnicianRepository
     {

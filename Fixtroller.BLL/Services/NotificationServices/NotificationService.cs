@@ -1,6 +1,6 @@
 ﻿using Fixtroller.DAL.Data.DTOs.NotificationDTOs;
 using Fixtroller.DAL.Entities;
-using Fixtroller.DAL.Repositories.NotificationRepository;
+using Fixtroller.DAL.Repositories.NotificationRepositories;
 using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.UnitOfWork;
 

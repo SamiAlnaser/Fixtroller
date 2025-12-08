@@ -1,7 +1,7 @@
 ﻿using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
-using Fixtroller.DAL.Repositories.GenericRepository;
+using Fixtroller.DAL.Repositories.GenericRepositories;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;

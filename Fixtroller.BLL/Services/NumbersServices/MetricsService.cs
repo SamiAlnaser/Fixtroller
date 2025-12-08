@@ -1,7 +1,7 @@
 ﻿using Fixtroller.BLL.Mapping;
 using Fixtroller.DAL.Data.DTOs.NumbersDTOs.Responses;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
-using Fixtroller.DAL.Repositories.NumbersRepository;
+using Fixtroller.DAL.Repositories.NumbersRepositories;
 using System;
 using System.Collections.Generic;
 using System.Linq;

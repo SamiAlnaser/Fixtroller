@@ -1,5 +1,5 @@
 ﻿using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
-using Fixtroller.DAL.Repositories.GenericRepository;
+using Fixtroller.DAL.Repositories.GenericRepositories;
 
 namespace Fixtroller.DAL.Repositories.TCategoryRepositories
 {

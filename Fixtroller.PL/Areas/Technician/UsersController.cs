@@ -21,8 +21,8 @@ namespace Fixtroller.PL.Areas.Technician
             _localizer = localizer;
         }
 
-        // GET: api/Technician/Users/employees
-        [HttpGet("employees")]
+        // GET: api/Technician/Users/Employees
+        [HttpGet("Employees")]
         public async Task<IActionResult> GetEmployeesAsync(CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();

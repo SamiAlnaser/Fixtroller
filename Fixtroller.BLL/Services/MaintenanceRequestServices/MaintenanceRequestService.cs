@@ -1,17 +1,17 @@
 ﻿using Fixtroller.BLL.Mapping;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.BLL.Services.GenericService;
+using Fixtroller.BLL.Services.NotificationServices;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
-using Fixtroller.DAL.Repositories.MaintenanceRequestepository;
+using Fixtroller.DAL.Repositories.MaintenanceRequestRepositories;
+using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Fixtroller.DAL.UnitOfWork;
-using Fixtroller.BLL.Services.NotificationServices;
-using Fixtroller.DAL.Entities;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -31,6 +31,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         private readonly IWorkTimeRepository _workRepo;
         private readonly IMaintenanceRequestTechnicianRepository _reqTechRepo;
         private readonly INotificationService _notificationService;
+        private readonly IUserRepository _userRepo;
 
         public MaintenanceRequestService(
             IMaintenanceRequestRepository repository,
@@ -39,7 +40,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             IUnitOfWork uow,
             IWorkTimeRepository workRepo,
             IMaintenanceRequestTechnicianRepository reqTechRepo,
-            INotificationService notificationService
+            INotificationService notificationService,
+            IUserRepository userRepo
         ) : base(repository, uow)
         {
             _repository = repository;
@@ -49,6 +51,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             _workRepo = workRepo;
             _reqTechRepo = reqTechRepo;
             _notificationService = notificationService;
+            _userRepo = userRepo;
         }
 
         public async Task<int> CreateWithFile(MaintenanceRequestRequestDTO request, string userId, CancellationToken ct = default)
@@ -82,6 +85,29 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             {
                 await _repository.AddAsync(entity);
                 await _uow.SaveAndCommitAsync(ct);
+
+                var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
+                if (managers is { Count: > 0 })
+                {
+                    foreach (var mgr in managers)
+                    {
+                        if (string.IsNullOrWhiteSpace(mgr.Id))
+                            continue;
+
+                        await _notificationService.CreateAsync(new NotificationCreateModel
+                        {
+                            UserId = mgr.Id,
+                            MaintenanceRequestId = entity.Id,
+                            Type = NotificationType.RequestStatusChanged,   // تقدر تعمل نوع خاص مثلاً RequestCreated لو ضفته في enum
+                            Severity = NotificationSeverity.Info,
+                            Title = "تم إنشاء طلب صيانة جديد",
+                            Body = $"تم إنشاء طلب صيانة جديد برقم {entity.Id}.",
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email
+                        }, ct);
+                    }
+                }
+
+
                 return entity.Id;
             }
             catch
@@ -135,6 +161,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 newCase == CaseType.Submitted ||
                 newCase == CaseType.Processing ||
                 newCase == CaseType.ResourcesNeeded ||
+                newCase == CaseType.Processed ||
                 newCase == CaseType.Completed;
 
             if (isTech && !techAllowed)
@@ -148,7 +175,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
 
             // 4) ننشئ الكيان كأن OwnerUserId هو اللي قدّم الطلب
-            var entity = MaintenanceRequestMapper.ToEntity(request,ownerUserId: request.OwnerUserId,createdByUserId: callerUserId);
+            var entity = MaintenanceRequestMapper.ToEntity(
+                request,
+                ownerUserId: request.OwnerUserId,
+                createdByUserId: callerUserId);
 
             // نغيّر الحالة الافتراضية (Submitted) إلى الحالة المختارة
             entity.CaseType = newCase;
@@ -157,6 +187,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (entity.CaseType == CaseType.Processed || entity.CaseType == CaseType.Completed)
             {
                 entity.UpdatedAt = DateTime.UtcNow;
+                entity.ClosedAtUtc = DateTime.UtcNow;
             }
 
             // 5) رفع الملفات بنفس منطق CreateWithFile
@@ -190,6 +221,43 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 await _repository.AddAsync(entity);
                 await _uow.SaveAndCommitAsync(ct);
 
+                // 🔔 إشعار لصاحب الطلب بأن تم إنشاء طلب له
+                if (!string.IsNullOrWhiteSpace(entity.OwnerUserId))
+                {
+                    await _notificationService.CreateAsync(new NotificationCreateModel
+                    {
+                        UserId = entity.OwnerUserId,
+                        MaintenanceRequestId = entity.Id,
+                        Type = NotificationType.RequestStatusChanged,
+                        Severity = NotificationSeverity.Info,
+                        Title = "تم إنشاء طلب صيانة لك",
+                        Body = $"تم إنشاء طلب صيانة جديد برقم {entity.Id}.",
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email
+                    }, ct);
+                }
+
+                // 🔔 إشعارات لمدراء الصيانة عن طلب جديد
+                var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
+                if (managers is { Count: > 0 })
+                {
+                    foreach (var mgr in managers)
+                    {
+                        if (string.IsNullOrWhiteSpace(mgr.Id))
+                            continue;
+
+                        await _notificationService.CreateAsync(new NotificationCreateModel
+                        {
+                            UserId = mgr.Id,
+                            MaintenanceRequestId = entity.Id,
+                            Type = NotificationType.RequestStatusChanged,   // تقدر تضيف نوع جديد لاحقاً
+                            Severity = NotificationSeverity.Info,
+                            Title = "تم إنشاء طلب صيانة جديد (سيناريو)",
+                            Body = $"تم إنشاء طلب صيانة جديد برقم {entity.Id} عن طريق {callerRole}.",
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email
+                        }, ct);
+                    }
+                }
+
                 // نجاح: نرجّع Id + MessageKey جاهز للترجمة في الـ PL
                 return (entity.Id, "Created"); // "Created" موجودة في SharedResource
             }
@@ -203,7 +271,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     try { await _fileService.DeleteAsync(name, ct); } catch { }
                 }
 
-                // خطأ غير متوقّع => يُترجم إلى 500 من الـ middleware
+                // خطأ غير متوقّع
                 throw;
             }
         }
@@ -420,7 +488,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
 
         public async Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechniciansAsync(
-            int requestId, IEnumerable<string> technicianUserIds, int? expectedDuration, string language = "ar", CancellationToken ct = default)
+     int requestId,
+     IEnumerable<string> technicianUserIds,
+     int? expectedDuration,
+     string language = "ar",
+     CancellationToken ct = default)
         {
             var request = await _repository.GetForAssignmentAsync(requestId, ct);
             if (request is null) return (null, "Request_NotFound");
@@ -447,24 +519,45 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             await _uow.BeginTransactionAsync(ct);
             try
             {
-                // التعرّف على الفنيين الذين سيتم شطبهم لإيقاف مؤقتاتهم بعد التحديث
+                // الفنيين الحاليين
                 var current = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
-                var removed = current.Except(list, StringComparer.Ordinal).ToList();
 
-                // مزامنة التعيينات: إضافة الجديد وشطب غير الموجود
-                await _reqTechRepo.SetActiveListAsync(requestId, list, expectedDuration, ct);
+                // الفنيين الجدد فقط (اللي مش موجودين أصلاً)
+                var added = list.Except(current, StringComparer.Ordinal).ToList();
 
-                // أوقف مؤقّتات الفنيين الذين أُزيلوا من التعيين
-                foreach (var tid in removed)
-                    await _workRepo.StopActiveForRequestAndTechAsync(requestId, tid, ct);
+                // نعمل اتحاد للقوائم: الحالي + الجدد
+                var newActiveList = current
+                    .Concat(added)
+                    .Distinct(StringComparer.Ordinal)
+                    .ToList();
 
-                // لو Submitted ارفعها إلى Processing (نفس سلوكك)
+                // مزامنة التعيينات بدون شطب السابقين
+                await _reqTechRepo.SetActiveListAsync(requestId, newActiveList, expectedDuration, ct);
+
+                // 👈 ما في removed، بالتالي ما بنوقف أي مؤقتات هنا
+
+                // لو Submitted ارفعها إلى Processing
                 if (request.CaseType == CaseType.Submitted)
                     request.CaseType = CaseType.Processing;
 
                 request.UpdatedAt = DateTime.UtcNow;
 
                 await _uow.SaveAndCommitAsync(ct);
+
+                // إشعارات للفنيين الجدد فقط
+                foreach (var tid in added)
+                {
+                    await _notificationService.CreateAsync(new NotificationCreateModel
+                    {
+                        UserId = tid,
+                        MaintenanceRequestId = request.Id,
+                        Type = NotificationType.RequestAssigned,
+                        Severity = NotificationSeverity.Info,
+                        Title = "تم تعيينك لطلب صيانة جديد",
+                        Body = $"تم تعيينك لطلب الصيانة رقم {request.Id}.",
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email
+                    }, ct);
+                }
 
                 var loaded = await _repository.GetForAssignmentAsync(requestId, ct);
                 return (TechnicianMappings.ToAssignTechnicianResponse(loaded!, language), "Technicians_Assigned");
@@ -532,9 +625,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
 
         public async Task<(bool ok, string messageKey)> RemoveTechnicianAsync(
-    int requestId,
-    string technicianUserId,
-    CancellationToken ct = default)
+      int requestId,
+      string technicianUserId,
+      CancellationToken ct = default)
         {
             // 1) تأكد الطلب موجود
             var r = await _repository.GetForUpdateAsync(requestId, ct);
@@ -559,6 +652,40 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 // 6) حفظ + Commit
                 await _uow.SaveAndCommitAsync(ct);
 
+                // 🔔 إشعار للفني الذي تمّت إزالته
+                await _notificationService.CreateAsync(new NotificationCreateModel
+                {
+                    UserId = technicianUserId,
+                    MaintenanceRequestId = r.Id,
+                    Type = NotificationType.RequestStatusChanged,
+                    Severity = NotificationSeverity.Info,
+                    Title = "تمت إزالتك من طلب صيانة",
+                    Body = $"تمت إزالتك من طلب الصيانة رقم {r.Id}.",
+                    Channels = NotificationChannel.InApp | NotificationChannel.Email
+                }, ct);
+
+                // 🔔 إشعارات لمدراء الصيانة (اختياري بس منطقي)
+                var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
+                if (managers is { Count: > 0 })
+                {
+                    foreach (var mgr in managers)
+                    {
+                        if (string.IsNullOrWhiteSpace(mgr.Id))
+                            continue;
+
+                        await _notificationService.CreateAsync(new NotificationCreateModel
+                        {
+                            UserId = mgr.Id,
+                            MaintenanceRequestId = r.Id,
+                            Type = NotificationType.RequestStatusChanged,
+                            Severity = NotificationSeverity.Info,
+                            Title = "تم إزالة فني من طلب صيانة",
+                            Body = $"تمت إزالة فني من طلب الصيانة رقم {r.Id}.",
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email
+                        }, ct);
+                    }
+                }
+
                 return (true, "Technician_Removed");
             }
             catch
@@ -569,54 +696,67 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
 
         public async Task<(bool ok, string messageKey)> StartWorkAsync(
-    int requestId,
-    string technicianUserId,
-    string callerUserId,
-    string callerRole,
-    CancellationToken ct = default)
-{
-    // 1) تحقق الطلب
-    var req = await _repository.GetForUpdateAsync(requestId, ct);
-    if (req is null) return (false, "Request_NotFound");
-
-    // 2) الصلاحيات:
-    // - الفني: لازم يبدأ لنفسه (callerUserId == technicianUserId)
-    // - المدير: يقدر يبدأ لأي فني مُعيَّن نشطًا
-    var isManager = callerRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
-    var isTech = callerRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
-    var callerIsSameTech = string.Equals(callerUserId, technicianUserId, StringComparison.Ordinal);
-
-    if (!(isManager || (isTech && callerIsSameTech)))
-        return (false, "Forbidden");
-
-    // 3) تأكد أن الفني المطلوب مُعيَّن نشطًا على الطلب
-    var isAssignedActive = await _reqTechRepo.IsActiveAssignedAsync(requestId, technicianUserId, ct);
-    if (!isAssignedActive) return (false, "Request_NotAssignedToThisTechnician");
-
-    // 4) منع الازدواج
-    var hasActive = await _workRepo.HasActiveAsync(requestId, technicianUserId, ct);
-    if (hasActive) return (false, "Work_AlreadyStarted");
-
-    // 5) ابدأ ضمن ترانزاكشن
-    await _uow.BeginTransactionAsync(ct);
-    try
-    {
-        await _workRepo.StartAsync(new WorkTimeEntry
+           int requestId,
+           string technicianUserId,
+           string callerUserId,
+           string callerRole,
+           CancellationToken ct = default)
         {
-            RequestId = requestId,
-            TechnicianUserId = technicianUserId,
-            StartedAt = DateTimeOffset.UtcNow
-        }, ct);
+            // 1) تحقق الطلب
+            var req = await _repository.GetForUpdateAsync(requestId, ct);
+            if (req is null) return (false, "Request_NotFound");
 
-        await _uow.SaveAndCommitAsync(ct);
-        return (true, "Work_Started");
-    }
-    catch
-    {
-        await _uow.RollbackAsync(ct);
-        throw;
-    }
-}
+            // 2) الصلاحيات:
+            // - الفني: لازم يبدأ لنفسه (callerUserId == technicianUserId)
+            // - المدير: يقدر يبدأ لأي فني مُعيَّن نشطًا
+            var isManager = callerRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            var isTech = callerRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+            var callerIsSameTech = string.Equals(callerUserId, technicianUserId, StringComparison.Ordinal);
+
+            if (!(isManager || (isTech && callerIsSameTech)))
+                return (false, "Forbidden");
+
+            // 3) تأكد أن الفني المطلوب مُعيَّن نشطًا على الطلب
+            var isAssignedActive = await _reqTechRepo.IsActiveAssignedAsync(requestId, technicianUserId, ct);
+            if (!isAssignedActive) return (false, "Request_NotAssignedToThisTechnician");
+
+            // 4) منع الازدواج
+            var hasActive = await _workRepo.HasActiveAsync(requestId, technicianUserId, ct);
+            if (hasActive) return (false, "Work_AlreadyStarted");
+
+            // 5) ابدأ ضمن ترانزاكشن
+            await _uow.BeginTransactionAsync(ct);
+            try
+            {
+                await _workRepo.StartAsync(new WorkTimeEntry
+                {
+                    RequestId = requestId,
+                    TechnicianUserId = technicianUserId,
+                    StartedAt = DateTimeOffset.UtcNow
+                }, ct);
+
+                await _uow.SaveAndCommitAsync(ct);
+
+                // ( إشعار للفني )
+                await _notificationService.CreateAsync(new NotificationCreateModel
+                {
+                    UserId = technicianUserId,
+                    MaintenanceRequestId = req.Id,
+                    Type = NotificationType.RequestStatusChanged, // ممكن تعمل نوع خاص لاحقًا
+                    Severity = NotificationSeverity.Info,
+                    Title = "تم بدء العمل على طلب صيانة",
+                    Body = $"تم بدء العمل على طلب الصيانة رقم {req.Id}.",
+                    Channels = NotificationChannel.InApp | NotificationChannel.Email
+                }, ct);
+
+                return (true, "Work_Started");
+            }
+            catch
+            {
+                await _uow.RollbackAsync(ct);
+                throw;
+            }
+        }
 
         public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> ChangeCaseAsync(
      int requestId,
@@ -647,6 +787,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 return (respNoChange, "Case_NoChange");
             }
 
+            // الحالات اللي بتتغيّر داخلياً فقط
             if (newCase is CaseType.Submitted or CaseType.Modified)
                 return (null, "Case_AutoManaged");
 
@@ -664,42 +805,21 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 _ => dto.NoteType ?? NoteType.General
             };
 
-
-            if (useOwnerPath)
-            {
-                var allowedOwner = new[] { CaseType.Cancelled, CaseType.Reopened, CaseType.Completed };
-                if (!allowedOwner.Contains(newCase))
-                    return (null, "Case_NotAllowedForOwner");
-            }
-            else if (isTechnician)
-            {
-                var isActiveAssigned = await _reqTechRepo.IsActiveAssignedAsync(requestId, userId, ct);
-                if (!isActiveAssigned)
-                    return (null, "Request_NotAssignedToYou");
-
-                var allowedTech = new[] { CaseType.ResourcesNeeded, CaseType.ManagerReview };
-                if (!allowedTech.Contains(newCase))
-                    return (null, "Case_NotAllowedForTechnician");
-            }
-            else if (isManager || isAdmin)
-            {
-                var allowedMgr = new[] { CaseType.ResourcesNeeded, CaseType.Processing, CaseType.Processed, CaseType.Completed };
-                if (!allowedMgr.Contains(newCase))
-                    return (null, "Case_NotAllowedForManager");
-            }
-            else
-            {
-                return (null, "Forbidden");
-            }
-
             await _uow.BeginTransactionAsync(ct);
             try
             {
+                // ===================== مسار المالك =====================
                 if (useOwnerPath)
                 {
+                    var allowedOwner = new[] { CaseType.Cancelled, CaseType.Reopened, CaseType.Completed };
+                    if (!allowedOwner.Contains(newCase))
+                        return (null, "Case_NotAllowedForOwner");
+
                     r.CaseType = newCase;
+
                     if (newCase == CaseType.Reopened && dto.Priority.HasValue)
                         r.Priority = dto.Priority.Value;
+
                     if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
                         r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
 
@@ -713,91 +833,112 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     }
 
                     r.UpdatedAt = DateTime.UtcNow;
+
+                    // أوقف كل المؤقتات
                     await _workRepo.StopActiveForRequestAsync(requestId, ct);
+
+                   
+                    if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
+                    {
+                        var activeTechs = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
+                        foreach (var tid in activeTechs)
+                        {
+                            await _reqTechRepo.RemoveActiveAsync(requestId, tid, ct);
+                        }
+                    }
+
                     await _uow.SaveAndCommitAsync(ct);
+
+                    
+                    await SendStatusChangeNotificationAsync(r, newCase, ct);
 
                     var resp = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
                     return (resp, "Case_Changed");
                 }
 
+                // ===================== مسار الفني =====================
                 if (isTechnician)
                 {
+                    var isActiveAssigned = await _reqTechRepo.IsActiveAssignedAsync(requestId, userId, ct);
+                    if (!isActiveAssigned)
+                        return (null, "Request_NotAssignedToYou");
+
+                    var allowedTech = new[] { CaseType.ResourcesNeeded, CaseType.ManagerReview };
+                    if (!allowedTech.Contains(newCase))
+                        return (null, "Case_NotAllowedForTechnician");
+
                     r.CaseType = newCase;
                     if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
                         r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
-                    if (newCase == CaseType.Reopened)
-                    {
-                        r.ClosedAtUtc = null;
-                    }
-                    else if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
-                    {
-                        r.ClosedAtUtc = DateTime.UtcNow;
-                    }
+
                     r.UpdatedAt = DateTime.UtcNow;
+
+                    // الفني لما يغيّر الحالة نوقف أي مؤقت شغال
                     await _workRepo.StopActiveForRequestAsync(requestId, ct);
+
                     await _uow.SaveAndCommitAsync(ct);
 
-                    var resp = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
-                    return (resp, "Case_Changed");
+                    await SendStatusChangeNotificationAsync(r, newCase, ct);
+
+                    var respTech = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
+                    return (respTech, "Case_Changed");
                 }
 
-                // isManager || isAdmin
+                // ===================== مسار المدير / الآدمن =====================
+                if (!(isManager || isAdmin))
+                    return (null, "Forbidden");
+
+                r.CaseType = newCase;
+                if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
+                    r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
+
+                if (newCase == CaseType.Reopened)
                 {
-                    r.CaseType = newCase;
-                    if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
-                        r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
-
-                    if (newCase == CaseType.Reopened)
-                    {
-                        r.ClosedAtUtc = null;
-                    }
-                    else if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
-                    {
-                        r.ClosedAtUtc = DateTime.UtcNow;
-                    }
-
-                    r.UpdatedAt = DateTime.UtcNow;
-
-                    if (newCase == CaseType.Processing)
-                    {
-                        var techs = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
-                        if (techs.Count == 0)
-                        {
-                            await _uow.RollbackAsync(ct);
-                            return (null, "Technician_NotAssigned");
-                        }
-
-                        foreach (var tid in techs)
-                        {
-                            var hasActive = await _workRepo.HasActiveAsync(requestId, tid, ct);
-                            if (!hasActive)
-                            {
-                                await _workRepo.StartAsync(new WorkTimeEntry
-                                {
-                                    RequestId = requestId,
-                                    TechnicianUserId = tid,
-                                    StartedAt = DateTimeOffset.UtcNow
-                                }, ct);
-                            }
-                        }
-                    }
-                    else
-                    {
-                        await _workRepo.StopActiveForRequestAsync(requestId, ct);
-
-                        if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
-                        {
-                            var activeTechs = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
-                            foreach (var tid in activeTechs)
-                                await _reqTechRepo.RemoveActiveAsync(requestId, tid, ct);
-                        }
-                    }
-
-                    await _uow.SaveAndCommitAsync(ct);
-
-                    var resp = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
-                    return (resp, "Case_Changed");
+                    r.ClosedAtUtc = null;
                 }
+                else if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
+                {
+                    r.ClosedAtUtc = DateTime.UtcNow;
+                }
+
+                r.UpdatedAt = DateTime.UtcNow;
+
+                
+                if (newCase == CaseType.Processing)
+                {
+                    
+                    var techs = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
+                    if (techs.Count == 0)
+                    {
+                        await _uow.RollbackAsync(ct);
+                        return (null, "Technician_NotAssigned");
+                    }
+
+                   
+                }
+                else
+                {
+                    // باقي الحالات نوقف كل المؤقتات
+                    await _workRepo.StopActiveForRequestAsync(requestId, ct);
+
+                    // وفي حالة الإكمال / الإلغاء نشطب الربط مع الفنيين الفعّالين
+                    if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
+                    {
+                        var activeTechs = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
+
+                        foreach (var tid in activeTechs)
+                            await _reqTechRepo.RemoveActiveAsync(requestId, tid, ct);
+                    }
+                    // ملاحظة: حالة Processed تدخل هنا → نوقف المؤقتات فقط بدون شطب الفنيين
+                }
+
+                await _uow.SaveAndCommitAsync(ct);
+
+                
+                await SendStatusChangeNotificationAsync(r, newCase, ct);
+
+                var respMgr = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
+                return (respMgr, "Case_Changed");
             }
             catch
             {
@@ -806,13 +947,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
+
         public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> AddNoteAsync(
-            int requestId,
-            string userId,
-            string userRole,
-            AddNoteRequestDTO dto,
-            string language = "ar",
-            CancellationToken ct = default)
+    int requestId,
+    string userId,
+    string userRole,
+    AddNoteRequestDTO dto,
+    string language = "ar",
+    CancellationToken ct = default)
         {
             // تحقّقات بدون ترانزاكشن
             var r = await _repository.GetForUpdateAsync(requestId, ct);
@@ -831,7 +973,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             if (isTech)
             {
-                var activeAssigned = await _reqTechRepo.IsActiveAssignedAsync(requestId, userId, ct); // NEW
+                var activeAssigned = await _reqTechRepo.IsActiveAssignedAsync(requestId, userId, ct);
                 if (!activeAssigned) return (null, "Request_NotAssignedToYou");
             }
 
@@ -850,6 +992,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 r.UpdatedAt = DateTime.UtcNow;
 
                 await _uow.SaveAndCommitAsync(ct);
+
+                // 🔔 إشعار بإضافة ملاحظة جديدة على الطلب
+                await SendNoteAddedNotificationAsync(r, noteType, userId, dto.Text!, ct);
 
                 return (MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner),
                         "Note_Added");
@@ -899,12 +1044,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
                 // الحالات المسموح فيها التعديل
                 var editable = new HashSet<CaseType>
-            {
-                CaseType.Submitted,
-                CaseType.ManagerReview,
-                CaseType.Reopened,
-                CaseType.Modified
-            } ;
+        {
+            CaseType.Submitted,
+            CaseType.Reopened,
+            CaseType.Modified
+        };
                 if (!editable.Contains(r.CaseType))
                     return (null, "Request_NotEditableInThisState");
 
@@ -953,6 +1097,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     try { await _fileService.DeleteAsync(filename, ct); } catch { /* تجاهل */ }
                 }
 
+                // 9) إشعارات للمديرين والفنيين أن صاحب الطلب عدّل الطلب 👇
+                await SendRequestUpdatedByOwnerNotificationAsync(r, ct);
+
                 var isOwner = true; // مؤكّد من الفحص أعلاه
                 var response = MaintenanceRequestMapper.ToResponse(r, role, _fileService.GetPublicUrl, language, isOwner);
                 return (response, "Request_Updated");
@@ -970,7 +1117,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
 
 
- 
+
 
 
 
@@ -1087,8 +1234,212 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (isTech) return NoteAuthor.Technician;
             return NoteAuthor.Owner;
         }
-         
+
+        private async Task SendStatusChangeNotificationAsync(
+            MaintenanceRequest r,
+            CaseType newCase,
+            CancellationToken ct)
+        {
+            // 1) جهّز قائمة المستلمين بدون تكرار
+            var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+            //  صاحب الطلب: نستثنيه فقط لو الحالة ManagerReview
+            if (newCase != CaseType.ManagerReview &&
+                !string.IsNullOrWhiteSpace(r.OwnerUserId))
+            {
+                recipients.Add(r.OwnerUserId);
+            }
+
+            // الفنيين المعيَّنين نشطًا على الطلب
+            var techIds = await _reqTechRepo.GetActiveTechniciansAsync(r.Id, ct);
+            if (techIds is { Count: > 0 })
+            {
+                foreach (var tid in techIds)
+                {
+                    if (!string.IsNullOrWhiteSpace(tid))
+                        recipients.Add(tid);
+                }
+            }
+
+            // المدراء (Role = MaintenanceManager)
+            var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
+            if (managers is { Count: > 0 })
+            {
+                foreach (var mgr in managers)
+                {
+                    if (!string.IsNullOrWhiteSpace(mgr.Id))
+                        recipients.Add(mgr.Id);
+                }
+            }
+
+            // لو ما في ولا مستلم، خلص
+            if (recipients.Count == 0)
+                return;
+
+            // 2) نوع الإشعار، الشدة، العنوان، النص
+            var type = newCase == CaseType.Completed
+                ? NotificationType.RequestCompleted
+                : NotificationType.RequestStatusChanged;
+
+            var severity = newCase == CaseType.Completed
+                ? NotificationSeverity.Success
+                : NotificationSeverity.Info;
+
+            var title = newCase == CaseType.Completed
+                ? "تم إكمال طلب الصيانة"
+                : "تم تغيير حالة طلب الصيانة";
+
+            var body = newCase == CaseType.Completed
+                ? $"تم إكمال طلب الصيانة رقم {r.Id}."
+                : $"تم تغيير حالة طلب الصيانة رقم {r.Id} إلى {newCase}.";
+
+            // 3) إرسال نفس الإشعار لكل مستلم
+            foreach (var userId in recipients)
+            {
+                await _notificationService.CreateAsync(new NotificationCreateModel
+                {
+                    UserId = userId,
+                    MaintenanceRequestId = r.Id,
+                    Type = type,
+                    Severity = severity,
+                    Title = title,
+                    Body = body,
+                    Channels = NotificationChannel.InApp | NotificationChannel.Email
+                }, ct);
+            }
+        }
+
+        private async Task SendNoteAddedNotificationAsync(
+    MaintenanceRequest r,
+    NoteType noteType,
+    string authorUserId,
+    string noteText,
+    CancellationToken ct)
+        {
+            // جهّز قائمة المستلمين (بدون تكرار)
+            var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+            // صاحب الطلب (إن لم يكن هو الكاتب)
+            if (!string.IsNullOrWhiteSpace(r.OwnerUserId) &&
+                !string.Equals(r.OwnerUserId, authorUserId, StringComparison.Ordinal))
+            {
+                recipients.Add(r.OwnerUserId);
+            }
+
+            // الفنيّون المعيّنون نشطًا (غير الكاتب)
+            var techIds = await _reqTechRepo.GetActiveTechniciansAsync(r.Id, ct);
+            if (techIds is { Count: > 0 })
+            {
+                foreach (var tid in techIds)
+                {
+                    if (!string.IsNullOrWhiteSpace(tid) &&
+                        !string.Equals(tid, authorUserId, StringComparison.Ordinal))
+                    {
+                        recipients.Add(tid);
+                    }
+                }
+            }
+
+            // المدراء (غير الكاتب)
+            var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
+            if (managers is { Count: > 0 })
+            {
+                foreach (var mgr in managers)
+                {
+                    if (!string.IsNullOrWhiteSpace(mgr.Id) &&
+                        !string.Equals(mgr.Id, authorUserId, StringComparison.Ordinal))
+                    {
+                        recipients.Add(mgr.Id);
+                    }
+                }
+            }
+
+            if (recipients.Count == 0)
+                return;
+
+            var title = "تم إضافة ملاحظة جديدة على طلب الصيانة";
+
+            var trimmed = (noteText ?? string.Empty).Trim();
+            if (trimmed.Length > 120)
+                trimmed = trimmed.Substring(0, 120) + "...";
+
+            var body = $"تمت إضافة ملاحظة جديدة على طلب الصيانة رقم {r.Id}: {trimmed}";
+
+            foreach (var uid in recipients)
+            {
+                await _notificationService.CreateAsync(new NotificationCreateModel
+                {
+                    UserId = uid,
+                    MaintenanceRequestId = r.Id,
+                    Type = NotificationType.RequestStatusChanged, // لو عندك نوع خاص NoteAdded حاب تضيفه لاحقاً، استعمله هنا
+                    Severity = NotificationSeverity.Info,
+                    Title = title,
+                    Body = body,
+                    Channels = NotificationChannel.InApp | NotificationChannel.Email
+                }, ct);
+            }
+        }
+
+
+        private async Task SendRequestUpdatedByOwnerNotificationAsync(
+    MaintenanceRequest r,
+    CancellationToken ct)
+        {
+            // قائمة المستلمين بدون تكرار
+            var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+            // الفنيين المعيّنين نشطًا على الطلب
+            var techIds = await _reqTechRepo.GetActiveTechniciansAsync(r.Id, ct);
+            if (techIds is { Count: > 0 })
+            {
+                foreach (var tid in techIds)
+                {
+                    if (!string.IsNullOrWhiteSpace(tid))
+                        recipients.Add(tid);
+                }
+            }
+
+            // المدراء (MaintenanceManager)
+            var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
+            if (managers is { Count: > 0 })
+            {
+                foreach (var mgr in managers)
+                {
+                    if (!string.IsNullOrWhiteSpace(mgr.Id))
+                        recipients.Add(mgr.Id);
+                }
+            }
+
+            // تأكد ما يوصل للمالك حتى لو كان ضمن أي مجموعة
+            if (!string.IsNullOrWhiteSpace(r.OwnerUserId))
+                recipients.Remove(r.OwnerUserId);
+
+            if (recipients.Count == 0)
+                return;
+
+            var title = "تم تعديل طلب الصيانة";
+            var body = $"قام صاحب الطلب بتعديل طلب الصيانة رقم {r.Id}.";
+
+            foreach (var uid in recipients)
+            {
+                await _notificationService.CreateAsync(new NotificationCreateModel
+                {
+                    UserId = uid,
+                    MaintenanceRequestId = r.Id,
+                    Type = NotificationType.RequestStatusChanged, // لو حاب لاحقاً تعمل نوع خاص RequestUpdatedByOwner تمام
+                    Severity = NotificationSeverity.Info,
+                    Title = title,
+                    Body = body,
+                    Channels = NotificationChannel.InApp | NotificationChannel.Email
+                }, ct);
+            }
+        }
+
+
     }
+
+
+
 }
 
 

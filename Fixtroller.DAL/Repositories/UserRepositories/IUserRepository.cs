@@ -20,6 +20,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             string userId,
             string roleName,
             CancellationToken ct = default);
+        Task<List<ApplicationUser>> GetByRoleAsync(string roleName, CancellationToken ct = default);
 
         Task<bool> VacationUserAsync(
             string userId,
