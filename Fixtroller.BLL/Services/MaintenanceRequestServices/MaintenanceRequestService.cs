@@ -490,7 +490,30 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (e is null) return null;
 
             var isOwner = string.Equals(e.OwnerUserId, userId, StringComparison.Ordinal);
-            return MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner);
+
+
+            var dto = MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner);
+
+            // لو المستخدم الحالي فني: نبحث عن مؤقّت عمل نشط له على هذا الطلب
+            if (isTechnician)
+            {
+                var activeEntry = await _workRepo.Query(asTracking: false)
+                    .Where(w => w.RequestId == e.Id &&
+                                w.TechnicianUserId == userId &&
+                                w.StoppedAt == null)
+                    .OrderByDescending(w => w.StartedAt)
+                    .FirstOrDefaultAsync(ct);
+
+                if (activeEntry is not null)
+                {
+                    var now = DateTimeOffset.UtcNow;
+                    var seconds = (int)Math.Max(0, (now - activeEntry.StartedAt).TotalSeconds);
+
+                    dto.CurrentTechnicianActiveSeconds = seconds;
+                }
+            }
+
+            return dto;
         }
 
         public async Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechniciansAsync(

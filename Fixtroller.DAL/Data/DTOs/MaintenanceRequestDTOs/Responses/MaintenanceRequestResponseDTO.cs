@@ -42,5 +42,9 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         // فقط الصور المتعددة
         public List<MaintenanceRequestImageDTO> Images { get; set; } = new();
         public List<MaintenanceNoteDTO> Notes { get; set; } = new();
+
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public int? CurrentTechnicianActiveSeconds { get; set; }
     }
 }
