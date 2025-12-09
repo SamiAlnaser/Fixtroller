@@ -13,6 +13,7 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public string Type { get; set; } = default!;
         public string Author { get; set; } = default!;
         public string CreatedByUserId { get; set; } = default!;
+        public string? CreatedByName { get; set; }
         public DateTime CreatedAt { get; set; }
     }
 }

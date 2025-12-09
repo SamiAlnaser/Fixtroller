@@ -107,6 +107,7 @@ namespace Fixtroller.BLL.Mapping
                         Type = GetNoteTypeName(n.Type, language),
                         Author = GetNoteAuthorName(n.Author, language),
                         CreatedByUserId = n.CreatedByUserId,
+                        CreatedByName = n.CreatedByUser?.FullName ?? n.CreatedByUserId,
                         CreatedAt = n.CreatedAt
                     })
                     .ToList();

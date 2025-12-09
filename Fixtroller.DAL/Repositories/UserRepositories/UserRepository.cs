@@ -115,5 +115,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             return user.LockoutEnd.HasValue &&
                    user.LockoutEnd > DateTimeOffset.UtcNow;
         }
+
+
     }
 }

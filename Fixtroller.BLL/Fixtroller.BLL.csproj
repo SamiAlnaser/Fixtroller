@@ -9,6 +9,7 @@
 
 	<ItemGroup>
 		<PackageReference Include="Mapster" Version="7.4.0" />
+		<PackageReference Include="QuestPDF" Version="2025.7.4" />
 	</ItemGroup>
 
 	<ItemGroup>

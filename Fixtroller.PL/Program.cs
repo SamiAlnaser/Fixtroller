@@ -4,6 +4,7 @@ using Fixtroller.BLL.Services.MaintenanceRequestServices;
 using Fixtroller.BLL.Services.NotificationServices;
 using Fixtroller.BLL.Services.NumbersServices;
 using Fixtroller.BLL.Services.ProblemTypesServices;
+using Fixtroller.BLL.Services.ReportsServices;
 using Fixtroller.BLL.Services.TCategoryServices;
 using Fixtroller.BLL.Services.TechnicianServices;
 using Fixtroller.BLL.Services.UserServices;
@@ -26,6 +27,7 @@ using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
+using QuestPDF.Infrastructure;
 using Scalar;
 using Scalar.AspNetCore;
 using System.Globalization;
@@ -38,6 +40,8 @@ namespace Fixtroller.PL
         public static async Task Main(string[] args)
         {
             var builder = WebApplication.CreateBuilder(args);
+            QuestPDF.Settings.EnableDebugging = true;
+            QuestPDF.Settings.License = LicenseType.Community;
 
             const string defaultCulture = "ar";
             var supportedCultures = new[]
@@ -80,6 +84,9 @@ namespace Fixtroller.PL
             builder.Services.AddScoped<IMaintenanceRequestTechnicianRepository, MaintenanceRequestTechnicianRepository>();
             builder.Services.AddScoped<IMetricsRepository, MetricsRepository>();
             builder.Services.AddScoped<IMetricsService, MetricsService>();
+
+
+            builder.Services.AddScoped<IMaintenanceReportsService, MaintenanceReportsService>();
 
             builder.Services.AddScoped<IUserservice, UserService>();
             builder.Services.AddScoped<IUserRepository, UserRepository>();
@@ -135,7 +142,7 @@ namespace Fixtroller.PL
                 IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("jwtOptions")["SecretKey"]))
             };
         });
-
+            
 
             var app = builder.Build();
 

@@ -34,5 +34,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository
         Task<bool> IsVacationAsync(
             string userId,
             CancellationToken ct = default);
+
     }
 }
+
