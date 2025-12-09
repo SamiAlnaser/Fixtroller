@@ -31,6 +31,15 @@ namespace Fixtroller.PL.Services.Email
             string body,
             CancellationToken ct = default)
         {
+            // حماية بسيطة لو الإعدادات ناقصة أو to فاضية
+            if (string.IsNullOrWhiteSpace(to) ||
+                string.IsNullOrWhiteSpace(_settings.From) ||
+                string.IsNullOrWhiteSpace(_settings.SmtpHost))
+            {
+                // ممكن تحط Log هنا لو حاب
+                return; // ما نبعت إيميل، بس كمان ما نكسر الـ API
+            }
+
             using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
             {
                 EnableSsl = _settings.UseSsl,
@@ -42,12 +51,11 @@ namespace Fixtroller.PL.Services.Email
                 From = new MailAddress(_settings.From, _settings.DisplayName),
                 Subject = subject,
                 Body = body,
-                IsBodyHtml = true 
+                IsBodyHtml = true
             };
 
             mail.To.Add(to);
 
-            // SmtpClient ما بدعم CancellationToken، فمش رح نستخدم ct هنا
             await client.SendMailAsync(mail);
         }
     }

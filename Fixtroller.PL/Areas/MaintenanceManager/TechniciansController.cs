@@ -42,6 +42,27 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(data);
         }
 
+
+        [HttpGet("{techId}/assigned")]
+        public async Task<IActionResult> GetAssignedForTechnician(
+    string techId,
+    int pageNumber = 1,
+    int pageSize = 10,
+    CancellationToken ct = default)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var board = await _TechnicianService.GetMyAssignedAsync(
+                techId,
+                language,
+                pageNumber,
+                pageSize,
+                ct);
+
+            return Ok(board);
+        }
+
         [HttpPost("{id:int}/assign")]
         public async Task<IActionResult> Assign(int id, [FromBody] AssignTechnicianRequestDTO dto, CancellationToken ct)
         {
