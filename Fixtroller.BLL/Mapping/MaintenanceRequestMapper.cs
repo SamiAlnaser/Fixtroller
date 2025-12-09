@@ -91,7 +91,8 @@ namespace Fixtroller.BLL.Mapping
                     {
                         Id = i.Id,
                         Url = urlBuilder(i.FileName),
-                        IsPrimary = i.IsPrimary
+                        IsPrimary = i.IsPrimary,
+                        IsStaffAttachment = i.Source == MaintenanceRequestImageSource.StaffAttachment
                     })
                     .ToList();
             }

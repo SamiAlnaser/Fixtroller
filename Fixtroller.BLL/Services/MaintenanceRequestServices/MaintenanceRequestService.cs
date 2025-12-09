@@ -73,9 +73,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
             }
 
-            // اربط الصور بالكيان (الأولى Primary)
             for (int i = 0; i < uploaded.Count; i++)
-                entity.Images.Add(new MaintenanceRequestImage { FileName = uploaded[i], IsPrimary = (i == 0) });
+            {
+                entity.Images.Add(new MaintenanceRequestImage
+                {
+                    FileName = uploaded[i],
+                    IsPrimary = (i == 0),
+                    Source = MaintenanceRequestImageSource.RequestCreation
+                });
+            }
 
             if (entity.Images.Count > 0 && !entity.Images.Any(i => i.IsPrimary))
                 entity.Images.First().IsPrimary = true;
@@ -201,13 +207,13 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
             }
 
-            // 6) ربط الصور مع الطلب
             for (int i = 0; i < uploaded.Count; i++)
             {
                 entity.Images.Add(new MaintenanceRequestImage
                 {
                     FileName = uploaded[i],
-                    IsPrimary = (i == 0)
+                    IsPrimary = (i == 0),
+                    Source = MaintenanceRequestImageSource.RequestCreation
                 });
             }
 
@@ -1076,7 +1082,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     r.Images.Add(new MaintenanceRequestImage
                     {
                         FileName = name,
-                        IsPrimary = false
+                        IsPrimary = false,
+                        Source = MaintenanceRequestImageSource.RequestCreation
                     });
                 }
 
@@ -1189,7 +1196,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     r.Images.Add(new MaintenanceRequestImage
                     {
                         FileName = uploaded[i],
-                        IsPrimary = isPrimary
+                        IsPrimary = isPrimary,
+                        Source = MaintenanceRequestImageSource.StaffAttachment
                     });
                 }
 
@@ -1224,6 +1232,109 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                       isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
 
             return (dtoRes, "Images_Added");
+        }
+
+
+        public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> RemoveStaffImagesAsync(
+    int requestId,
+    string userId,
+    string userRole,
+    RemoveStaffImagesRequestDTO dto,
+    string language = "ar",
+    CancellationToken ct = default)
+        {
+            // 1) تحقّقات أولية
+            var r = await _repository.GetForUpdateAsync(requestId, ct);
+            if (r is null) return (null, "Request_NotFound");
+
+            var isTech = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+            var isMgr = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+
+            // فقط: فني, مدير صيانة, أدمن
+            if (!isTech && !isMgr && !isAdmin)
+                return (null, "Forbidden");
+
+            // نفس منطق AddImagesAsync: لا تعديل بعد الإنهاء/الإلغاء (إلا للأدمن)
+            var lockedFinal = r.CaseType == CaseType.Completed || r.CaseType == CaseType.Cancelled;
+            if (lockedFinal && !isAdmin)
+                return (null, "Images_Disabled_In_FinalState");
+
+            // الفني لازم يكون معيَّن على الطلب
+            if (isTech)
+            {
+                var activeAssigned = await _reqTechRepo.IsActiveAssignedAsync(requestId, userId, ct);
+                if (!activeAssigned) return (null, "Request_NotAssignedToYou");
+            }
+
+            if (dto?.ImageIds is null || dto.ImageIds.Count == 0)
+                return (null, "Images_Empty");
+
+            // 2) اختر فقط الصور التي أضيفت من AddImagesAsync
+            var toRemove = r.Images
+                .Where(i =>
+                    dto.ImageIds.Contains(i.Id) &&
+                    i.Source == MaintenanceRequestImageSource.StaffAttachment)
+                .ToList();
+
+            if (toRemove.Count == 0)
+            {
+                // ما في صور مطابقة للحذف
+                return (null, "Images_NotFound_Or_NotStaff");
+            }
+
+            var toDeleteFiles = new List<string>();
+
+            await _uow.BeginTransactionAsync(ct);
+            try
+            {
+                foreach (var img in toRemove)
+                {
+                    toDeleteFiles.Add(img.FileName);
+                    r.Images.Remove(img);
+                }
+
+                // ضمان وجود صورة أساسية واحدة
+                if (r.Images.Count > 0 && !r.Images.Any(i => i.IsPrimary))
+                    r.Images.First().IsPrimary = true;
+
+                r.UpdatedAt = DateTime.UtcNow;
+
+                await _uow.SaveAndCommitAsync(ct);
+            }
+            catch
+            {
+                await _uow.RollbackAsync(ct);
+                throw;
+            }
+
+            // بعد الـ Commit: حذف الملفات فعلياً من التخزين
+            foreach (var filename in toDeleteFiles)
+            {
+                try { await _fileService.DeleteAsync(filename, ct); } catch { /* ولا يهمك */ }
+            }
+
+            // رجّع الطلب مع الصور/الملاحظات إلخ..
+            var withIncludes = await _repository.Query(
+                    asTracking: false,
+                    include: q => q
+                        .Include(x => x.Images)
+                        .Include(x => x.Notes)
+                        .Include(x => x.ProblemType).ThenInclude(pt => pt.Translations),
+                    predicate: x => x.Id == requestId)
+                .FirstOrDefaultAsync(ct);
+
+            var dtoRes = withIncludes is null
+                ? null
+                : MaintenanceRequestMapper.ToResponse(
+                      withIncludes,
+                      userRole,
+                      _fileService.GetPublicUrl,
+                      language,
+                      isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
+
+            // 🔑 مسج جديدة للترجمة
+            return (dtoRes, "Images_Removed");
         }
 
 

@@ -260,5 +260,24 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(new { message = _localizer[key].Value, data = res });
         }
 
+        [HttpDelete("{id:int}/images")]
+        public async Task<IActionResult> RemoveImages(int id, [FromBody] RemoveStaffImagesRequestDTO dto, CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("Id")?.Value
+                         ?? string.Empty;
+
+            var role = User.FindFirst("role")?.Value ?? "MaintenanceManager";
+
+            var (res, key) = await _maintenanceRequestService.RemoveStaffImagesAsync(id, userId, role, dto, language, ct);
+            if (res is null)
+                return BadRequest(new { message = _localizer[key].Value });
+
+            return Ok(new { message = _localizer[key].Value, data = res });
+        }
+
     }
 }

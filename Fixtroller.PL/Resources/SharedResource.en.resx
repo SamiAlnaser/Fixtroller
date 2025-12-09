@@ -282,4 +282,10 @@
   <data name="User_IsVacation_False" xml:space="preserve">
     <value>User is not on vacation</value>
   </data>
+  <data name="Images_Removed" xml:space="preserve">
+    <value>The images were successfully deleted</value>
+  </data>
+  <data name="Images_NotFound_Or_NotStaff" xml:space="preserve">
+    <value>You cannot delete these images part or all of them were uploaded by the request owner.</value>
+  </data>
 </root>

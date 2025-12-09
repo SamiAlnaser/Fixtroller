@@ -14,6 +14,8 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public int Id { get; set; }
         public string Url { get; set; } = default!;
         public bool IsPrimary { get; set; }
+
+        public bool IsStaffAttachment { get; set; }
     }
 
     public class MaintenanceRequestResponseDTO

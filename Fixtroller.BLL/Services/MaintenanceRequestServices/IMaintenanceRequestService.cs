@@ -106,6 +106,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
     string language = "ar",
     CancellationToken ct = default);
 
+        Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> RemoveStaffImagesAsync(
+    int requestId,
+    string userId,
+    string userRole,
+    RemoveStaffImagesRequestDTO dto,
+    string language = "ar",
+    CancellationToken ct = default);
+
 
 
 

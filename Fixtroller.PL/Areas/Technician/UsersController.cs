@@ -21,7 +21,7 @@ namespace Fixtroller.PL.Areas.Technician
             _localizer = localizer;
         }
 
-        // GET: api/Technician/Users/Employees
+        // GET: api/Technician/Users/E0mployees
         [HttpGet("Employees")]
         public async Task<IActionResult> GetEmployeesAsync(CancellationToken ct)
         {

@@ -282,4 +282,10 @@
   <data name="User_IsVacation_False" xml:space="preserve">
     <value>المستخدم ليس في حالة إجازة</value>
   </data>
+  <data name="Images_Removed" xml:space="preserve">
+    <value>تم حذف الصور بنجاح</value>
+  </data>
+  <data name="Images_NotFound_Or_NotStaff" xml:space="preserve">
+    <value>لا يمكنك مسح هذه الصور جزء منها او كلها تم رفعه بواسطة مالك الطلب</value>
+  </data>
 </root>
