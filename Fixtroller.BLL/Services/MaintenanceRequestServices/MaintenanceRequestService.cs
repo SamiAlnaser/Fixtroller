@@ -367,11 +367,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
 
         public async Task<PagedResultDTO<MaintenanceRequestListAllDTO>> GetAllAsync(
-    string role,
-    string language,
-    int pageNumber = 1,
-    int pageSize = 10,
-    CancellationToken ct = default)
+        string role,
+        string language,
+        int pageNumber = 1,
+        int pageSize = 10,
+        CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
 
@@ -408,7 +408,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 ? 0
                 : (int)Math.Ceiling(totalCount / (double)pageSize);
 
-            // 3) جلب الصفحة المطلوبة + Projection خفيف
+            // 3) الصفحة المطلوبة + اختيار أول فني نشط
             var pagedRows = await q
                 .OrderByDescending(x => x.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
@@ -430,19 +430,59 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                                 t.Language == "ar" ? 1 : 2)
                             .Select(t => t.Name)
                             .FirstOrDefault()
-                        : null
+                        : null,
+
+                    // أول فني "نشط" (UnassignedAtUtc == null) حسب أقدم AssignedAtUtc
+                    FirstTechnicianUserId = x.Technicians
+                        .Where(t => t.UnassignedAtUtc == null)
+                        .OrderBy(t => t.AssignedAtUtc)
+                        .Select(t => t.TechnicianUserId)
+                        .FirstOrDefault()
                 })
                 .ToListAsync(ct);
 
-            // 4) المابر إلى DTO
-            var data = pagedRows
-                .Select(r => MaintenanceRequestMapper.ToAllListItem(
-                    r.Light,
-                    r.ProblemTypeName,
-                    language))
+            // 4) جهّز أسماء الفنيين
+            var techIds = pagedRows
+                .Select(r => r.FirstTechnicianUserId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct()
                 .ToList();
 
-            // 5) النتيجة
+            var techNames = new Dictionary<string, string>();
+
+            foreach (var techId in techIds)
+            {
+                var user = await _userRepo.GetByIdAsync(techId!, ct);
+                if (user is not null && !string.IsNullOrWhiteSpace(user.FullName))
+                {
+                    techNames[techId!] = user.FullName;
+                }
+            }
+
+            // 5) المابر إلى DTO مع تمرير الفني الأول (إن وجد)
+            var data = pagedRows
+                .Select(r =>
+                {
+                    string? techId = r.FirstTechnicianUserId;
+                    string? techName = null;
+
+                    if (!string.IsNullOrWhiteSpace(techId) &&
+                        techNames.TryGetValue(techId, out var name))
+                    {
+                        techName = name;
+                    }
+
+                    return MaintenanceRequestMapper.ToAllListItem(
+                        r.Light,
+                        r.ProblemTypeName,
+                        language,
+                        technicianUserId: techId,
+                        technicianName: techName
+                    );
+                })
+                .ToList();
+
+            // 6) النتيجة
             return new PagedResultDTO<MaintenanceRequestListAllDTO>
             {
                 TotalPages = totalPages,
@@ -452,6 +492,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 Data = data
             };
         }
+
 
 
         public async Task<MaintenanceRequestResponseDTO?> GetByIdAsync(

@@ -209,9 +209,13 @@ namespace Fixtroller.BLL.Mapping
             MaintenanceRequest e, string language = "ar")
             => ToMineListItem(e, role: "Employee", isOwner: false, language);
 
-  
+
         public static MaintenanceRequestListAllDTO ToAllListItem(
-            MaintenanceRequest e, string? problemTypeName, string language = "ar")
+            MaintenanceRequest e,
+            string? problemTypeName,
+            string language = "ar",
+            string? technicianUserId = null,
+            string? technicianName = null)
         {
             return new MaintenanceRequestListAllDTO
             {
@@ -220,7 +224,9 @@ namespace Fixtroller.BLL.Mapping
                 CaseType = GetCaseTypeName(e.CaseType, language),
                 Priority = GetPriorityName(e.Priority, language),
                 CreatedAt = e.CreatedAt,
-                ProblemTypeName = problemTypeName
+                ProblemTypeName = problemTypeName,
+                AssignedTechnicianUserId = technicianUserId,
+                AssignedTechnicianName = technicianName
             };
         }
 
