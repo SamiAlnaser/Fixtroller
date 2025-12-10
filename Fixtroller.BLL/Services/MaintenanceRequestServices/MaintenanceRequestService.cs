@@ -630,13 +630,66 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
 
                 var loaded = await _repository.GetForAssignmentAsync(requestId, ct);
-                return (TechnicianMappings.ToAssignTechnicianResponse(loaded!, language), "Technicians_Assigned");
+                var response = TechnicianMappings.ToAssignTechnicianResponse(loaded!, language);
+                await EnrichAssignTechnicianResponseAsync(response, ct);
+                return (response, "Technicians_Assigned");
             }
             catch
             {
                 await _uow.RollbackAsync(ct);
                 throw;
             }
+        }
+
+        private async Task EnrichAssignTechnicianResponseAsync(
+    AssignTechnicianResponseDTO? res,
+    CancellationToken ct)
+        {
+            if (res == null) return;
+
+            // اجمع كل IDs (الفني الرئيسي + كل النشطين)
+            var ids = res.ActiveTechnicians
+                .Select(t => t.Id)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (res.Technician != null &&
+                !string.IsNullOrWhiteSpace(res.Technician.Id) &&
+                !ids.Contains(res.Technician.Id, StringComparer.Ordinal))
+            {
+                ids.Add(res.Technician.Id);
+            }
+
+            if (ids.Count == 0) return;
+
+            // حمل بيانات المستخدمين من الـ UserRepository
+            var dict = new Dictionary<string, (string fullName, string email)>(StringComparer.Ordinal);
+
+            foreach (var id in ids)
+            {
+                var user = await _userRepo.GetByIdAsync(id, ct);
+                if (user is null) continue;
+
+                dict[id] = (user.FullName, user.Email);
+            }
+
+            // فانكشن صغيرة لتطبيق البيانات على dto موجود
+            void Apply(TechnicianResponseDTO t)
+            {
+                if (t == null) return;
+                if (dict.TryGetValue(t.Id, out var info))
+                {
+                    t.FullName = info.fullName;
+                    t.Email = info.email;
+                }
+            }
+
+            foreach (var t in res.ActiveTechnicians)
+                Apply(t);
+
+            if (res.Technician != null)
+                Apply(res.Technician);
         }
 
         public async Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(
@@ -656,7 +709,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (already)
             {
                 var loadedNoop = await _repository.GetForAssignmentAsync(requestId, ct);
-                return (TechnicianMappings.ToAssignTechnicianResponse(loadedNoop!, language), "Technician_AlreadyAssigned");
+                var response = TechnicianMappings.ToAssignTechnicianResponse(loadedNoop!, language);
+                await EnrichAssignTechnicianResponseAsync(response, ct);
+                return (response, "Technician_AlreadyAssigned");
             }
 
             await _uow.BeginTransactionAsync(ct);
@@ -685,7 +740,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
 
                 var loaded = await _repository.GetForAssignmentAsync(requestId, ct);
-                return (TechnicianMappings.ToAssignTechnicianResponse(loaded!, language), "Technician_Assigned");
+                var response = TechnicianMappings.ToAssignTechnicianResponse(loaded!, language);
+                await EnrichAssignTechnicianResponseAsync(response, ct);
+                return (response, "Technician_Assigned");
             }
             catch
             {

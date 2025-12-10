@@ -288,4 +288,16 @@
   <data name="Images_NotFound_Or_NotStaff" xml:space="preserve">
     <value>لا يمكنك مسح هذه الصور جزء منها او كلها تم رفعه بواسطة مالك الطلب</value>
   </data>
+  <data name="Technician_AlreadyAssigned" xml:space="preserve">
+    <value>تم إسناد هذا الفني مسبقًا إلى الطلب</value>
+  </data>
+  <data name="Priority_Required_For_Reopen" xml:space="preserve">
+    <value>لا يمكن إعادة فتح الطلب بدون تحديد أولوية</value>
+  </data>
+  <data name="Request_NotAssignedToThisTechnician" xml:space="preserve">
+    <value>هذا الطلب غير مُسند إلى هذا الفني</value>
+  </data>
+  <data name="Technician_NotActiveOnRequest" xml:space="preserve">
+    <value>هذا الفني لم يعد نشطًا على هذا الطلب</value>
+  </data>
 </root>

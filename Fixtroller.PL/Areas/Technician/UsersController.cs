@@ -31,7 +31,7 @@ namespace Fixtroller.PL.Areas.Technician
             var users = await _userService.GetAllAsync(ct);
 
             var employees = users
-                .Where(u => u.RoleName == "Employee")
+                .Where(u => u.RoleName == "Employee" || u.RoleName == "Admin")
                 .ToList();
 
             return Ok(new

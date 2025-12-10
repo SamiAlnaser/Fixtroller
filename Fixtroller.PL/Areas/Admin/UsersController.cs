@@ -29,11 +29,12 @@ namespace Fixtroller.PL.Areas.Admin
         [HttpGet("Employees")]
         public async Task<IActionResult> List(CancellationToken ct)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
             var users = await _userService.GetAllAsync(ct);
 
-            var employees = users
-                .Where(u => u.RoleName == "Employee")
-                .ToList();
+            var employees = users.ToList();
 
             return Ok(new
             {
