@@ -124,21 +124,19 @@ namespace Fixtroller.BLL.Services.NumbersServices
         }
 
         public async Task<ManagerChartsDTO> GetManagerChartsAsync(
-        string language = "ar",
-        DateTimeOffset? fromUtc = null,
-        DateTimeOffset? toUtc = null,
-        CancellationToken ct = default)
+            string language = "ar",
+            DateTimeOffset? fromUtc = null,
+            DateTimeOffset? toUtc = null,
+            CancellationToken ct = default)
         {
-            // تنفيذ متوازي لسرعة أفضل
-            var byCatTask = GetRequestsByTechnicianCategoryAsync(language, fromUtc, toUtc, ct);
-            var byStatusTask = GetStatusDistributionAsync(language, fromUtc, toUtc, ct);
-
-            await Task.WhenAll(byCatTask, byStatusTask);
+            // تنفيذ تسلسلي لتفادي مشكلة الـ DbContext concurrent operations
+            var requestsByCategory = await GetRequestsByTechnicianCategoryAsync(language, fromUtc, toUtc, ct);
+            var statusDistribution = await GetStatusDistributionAsync(language, fromUtc, toUtc, ct);
 
             return new ManagerChartsDTO
             {
-                RequestsByCategory = byCatTask.Result,
-                StatusDistribution = byStatusTask.Result
+                RequestsByCategory = requestsByCategory,
+                StatusDistribution = statusDistribution
             };
         }
     }
