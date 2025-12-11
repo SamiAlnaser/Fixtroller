@@ -190,7 +190,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير الفني الواحد
         // GET: api/MaintenanceManager/Reports/technicians/tech-001?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/technicians/tech-001?from=2025-01-01&to=2025-01-31&format=pdf
-        [HttpGet("technicians/{technicianUserId}")]
+        [HttpGet("Technicians/{technicianUserId}")]
         public async Task<IActionResult> GetTechnicianPerformanceReport(
             string technicianUserId,
             [FromQuery] DateTime from,
@@ -239,7 +239,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير الفنيين حسب الـ Category
         // GET: api/MaintenanceManager/Reports/technicians-by-category?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/technicians-by-category?from=2025-01-01&to=2025-01-31&format=pdf
-        [HttpGet("technicians-by-category")]
+        [HttpGet("Technicians-By-Category")]
         public async Task<IActionResult> GetTechniciansByCategoryReport(
             [FromQuery] DateTime from,
             [FromQuery] DateTime to,
@@ -285,7 +285,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير قسم الصيانة ككل
         // GET: api/MaintenanceManager/Reports/maintenance-department?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/maintenance-department?from=2025-01-01&to=2025-01-31&format=pdf
-        [HttpGet("maintenance-department")]
+        [HttpGet("Maintenance-Department")]
         public async Task<IActionResult> GetMaintenanceDepartmentReport(
             [FromQuery] DateTime from,
             [FromQuery] DateTime to,

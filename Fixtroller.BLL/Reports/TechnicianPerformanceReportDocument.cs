@@ -176,16 +176,16 @@ namespace Fixtroller.BLL.Reports
                 {
                     table.ColumnsDefinition(columns =>
                     {
-                        columns.ConstantColumn(40);  // #
-                        columns.ConstantColumn(50);  // رقم الطلب
-                        columns.ConstantColumn(70);  // تاريخ الإنشاء
-                        columns.RelativeColumn();    // نوع المشكلة
-                        columns.ConstantColumn(80);  // الحالة
-                        columns.ConstantColumn(80);  // تعيين
-                        columns.ConstantColumn(80);  // بدء عمل
-                        columns.ConstantColumn(80);  // إغلاق
-                        columns.ConstantColumn(70);  // SLA(س)
-                        columns.ConstantColumn(70);  // متأخر؟
+                        columns.ConstantColumn(25);  // #
+                        columns.ConstantColumn(45);  // رقم
+                        columns.ConstantColumn(55);  // إنشاء
+                        columns.RelativeColumn();    // نوع المشكلة (تاخذ الباقي)
+                        columns.ConstantColumn(60);  // الحالة
+                        columns.ConstantColumn(60);  // تعيين
+                        columns.ConstantColumn(60);  // بدء
+                        columns.ConstantColumn(60);  // إغلاق
+                        columns.ConstantColumn(50);  // SLA
+                        columns.ConstantColumn(50);  // متأخر
                     });
 
                     table.Header(header =>

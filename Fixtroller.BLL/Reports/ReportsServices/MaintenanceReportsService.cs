@@ -841,8 +841,8 @@ namespace Fixtroller.BLL.Services.ReportsServices
             if (toUtc <= fromUtc)
                 toUtc = fromUtc.AddDays(1);
 
-            // تحميل بيانات الفني
-            var techUser = await _userRepository.GetByIdAsync(technicianUserId, ct);
+            // تحميل بيانات الفني من الريبو الخاص بالفنيين
+            var techUser = await _technicianRepository.GetByIdAsync(technicianUserId, ct);
             if (techUser is null)
             {
                 return (new TechnicianPerformanceReportDTO
@@ -853,7 +853,6 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 }, "User_NotFound");
             }
 
-            // 👈 هذا هو الاسم اللي كان missing
             var techName = techUser.FullName ?? technicianUserId;
 
             // اسم الكاتيجوري باستخدام Translations
@@ -1138,23 +1137,23 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 }
             }
 
-            var techInfoDict = new Dictionary<string, (string Name, int? CategoryId, string CategoryName)>();
 
-            // نجيب كل IDs للفنيين من التجميعة اللي فوق
+
             var techIds = techAggDict.Keys.ToList();
+            var techInfoDict = new Dictionary<string, (string Name, int? CategoryId, string CategoryName)>();
 
             foreach (var techId in techIds)
             {
-                var user = await _userRepository.GetByIdAsync(techId, ct);
-                if (user == null)
+                var tech = await _technicianRepository.GetByIdAsync(techId, ct);
+                if (tech == null)
                     continue;
 
-                var name = string.IsNullOrWhiteSpace(user.FullName) ? techId : user.FullName;
+                var name = string.IsNullOrWhiteSpace(tech.FullName) ? techId : tech.FullName;
 
-                int? catId = user.TechnicianCategoryId;
+                int? catId = tech.TechnicianCategoryId;
                 string catName = "غير مصنّف";
 
-                var catTrans = user.TechnicianCategory?.Translations;
+                var catTrans = tech.TechnicianCategory?.Translations;
                 if (catTrans != null && catTrans.Count > 0)
                 {
                     var best = catTrans
@@ -1164,7 +1163,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                         .FirstOrDefault();
 
                     if (!string.IsNullOrWhiteSpace(best?.Name))
-                        catName = best!.Name!;
+                        catName = best.Name!;
                 }
 
                 techInfoDict[techId] = (name, catId, catName);
@@ -1437,14 +1436,14 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             foreach (var techId in technicianIds)
             {
-                var user = await _userRepository.GetByIdAsync(techId, ct);
-                if (user == null)
+                var tech = await _technicianRepository.GetByIdAsync(techId, ct);
+                if (tech == null)
                     continue;
 
-                int? catId = user.TechnicianCategoryId;
+                int? catId = tech.TechnicianCategoryId;
                 string catName = "غير مصنّف";
 
-                var catTrans = user.TechnicianCategory?.Translations;
+                var catTrans = tech.TechnicianCategory?.Translations;
                 if (catTrans != null && catTrans.Count > 0)
                 {
                     var best = catTrans
@@ -1454,7 +1453,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                         .FirstOrDefault();
 
                     if (!string.IsNullOrWhiteSpace(best?.Name))
-                        catName = best!.Name!;
+                        catName = best.Name!;
                 }
 
                 techInfoDict[techId] = (catId, catName);
