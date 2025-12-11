@@ -812,7 +812,759 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             return (bytes, fileName, "application/pdf", msg);
         }
+        public async Task<(TechnicianPerformanceReportDTO Report, string MessageKey)> GetTechnicianPerformanceAsync(
+            string technicianUserId,
+            DateTime fromUtc,
+            DateTime toUtc,
+            string callerUserId,
+            string callerRole,
+            string language = "ar",
+            CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
 
+            var isAdmin = string.Equals(callerRole, "Admin", StringComparison.OrdinalIgnoreCase);
+            var isManager = string.Equals(callerRole, "MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            var isTechnician = string.Equals(callerRole, "Technician", StringComparison.OrdinalIgnoreCase);
+
+            // صلاحيات: مدير / أدمن أو نفس الفني
+            if (!isAdmin && !isManager && !(isTechnician && technicianUserId == callerUserId))
+            {
+                return (new TechnicianPerformanceReportDTO
+                {
+                    TechnicianUserId = technicianUserId,
+                    FromUtc = fromUtc,
+                    ToUtc = toUtc
+                }, "Forbidden");
+            }
+
+            if (toUtc <= fromUtc)
+                toUtc = fromUtc.AddDays(1);
+
+            // تحميل بيانات الفني
+            var techUser = await _userRepository.GetByIdAsync(technicianUserId, ct);
+            if (techUser is null)
+            {
+                return (new TechnicianPerformanceReportDTO
+                {
+                    TechnicianUserId = technicianUserId,
+                    FromUtc = fromUtc,
+                    ToUtc = toUtc
+                }, "User_NotFound");
+            }
+
+            // 👈 هذا هو الاسم اللي كان missing
+            var techName = techUser.FullName ?? technicianUserId;
+
+            // اسم الكاتيجوري باستخدام Translations
+            string? techCategoryName = null;
+            var catTrans = techUser.TechnicianCategory?.Translations;
+            if (catTrans != null && catTrans.Count > 0)
+            {
+                var best = catTrans
+                    .OrderBy(tr =>
+                        tr.Language.Equals(language, StringComparison.OrdinalIgnoreCase) ? 0 :
+                        tr.Language.Equals("ar", StringComparison.OrdinalIgnoreCase) ? 1 : 2)
+                    .FirstOrDefault();
+
+                techCategoryName = best?.Name;
+            }
+
+            // الطلبات التي تم تعيين هذا الفني عليها ضمن الفترة
+            var query = _requestRepository.Query(
+                asTracking: false,
+                include: q => q
+                    .Include(r => r.ProblemType)
+                        .ThenInclude(pt => pt.Translations)
+                    .Include(r => r.Technicians),
+                predicate: r =>
+                    r.Status == DAL.Entities.Status.Active &&
+                    r.Technicians.Any(t =>
+                        t.TechnicianUserId == technicianUserId &&
+                        t.AssignedAtUtc >= fromUtc &&
+                        t.AssignedAtUtc <= toUtc));
+
+            var requests = await query.ToListAsync(ct);
+            var requestIds = requests.Select(r => r.Id).ToList();
+
+            // WorkTime entries لهذا الفني على هذه الطلبات
+            var workEntries = await _workTimeRepository.Query(asTracking: false)
+                .Where(w => w.TechnicianUserId == technicianUserId && requestIds.Contains(w.RequestId))
+                .ToListAsync(ct);
+
+            var now = DateTime.UtcNow;
+
+            var items = new List<TechnicianRequestPerformanceItemDTO>();
+
+            int assignedCount = requests.Count;
+            int completedCount = requests.Count(r =>
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled);
+
+            int overdueCount = 0;
+            int slaRequestsCount = 0;
+
+            var closureHoursList = new List<double>();
+            var startDelayHoursList = new List<double>();
+
+            foreach (var r in requests)
+            {
+                var baseDto = MaintenanceRequestMapper.ToResponse(
+                    r,
+                    callerRole,
+                    _fileService.GetPublicUrl,
+                    language,
+                    isOwner: false);
+
+                // الرابط الخاص بهذا الفني
+                var techLink = r.Technicians
+                    .Where(t => t.TechnicianUserId == technicianUserId)
+                    .OrderBy(t => t.AssignedAtUtc)
+                    .FirstOrDefault();
+
+                if (techLink is null)
+                    continue;
+
+                // SLA
+                int? slaHours = techLink.ExpectedDuration;
+                bool? isOverdue = null;
+
+                if (slaHours.HasValue)
+                {
+                    slaRequestsCount++;
+
+                    var slaDuration = TimeSpan.FromHours(slaHours.Value);
+                    var end = r.ClosedAtUtc ?? now;
+                    var elapsed = end - r.CreatedAt;
+
+                    if (r.ClosedAtUtc.HasValue)
+                    {
+                        var overdue = elapsed > slaDuration;
+                        isOverdue = overdue;
+                        if (overdue)
+                            overdueCount++;
+                    }
+                    else
+                    {
+                        // طلب مفتوح: نعتبره متأخر إذا المدة الحالية > SLA
+                        var overdue = elapsed > slaDuration;
+                        isOverdue = overdue;
+                        if (overdue)
+                            overdueCount++;
+                    }
+                }
+
+                // زمن الإغلاق
+                double? closureHours = null;
+                if (r.ClosedAtUtc.HasValue)
+                {
+                    closureHours = (r.ClosedAtUtc.Value - r.CreatedAt).TotalHours;
+                    closureHoursList.Add(closureHours.Value);
+                }
+
+                // أول بدء عمل لهذا الفني
+                DateTime? firstStart = null;
+                var techWorkEntries = workEntries.Where(w => w.RequestId == r.Id).ToList();
+                if (techWorkEntries.Count > 0)
+                {
+                    firstStart = techWorkEntries.Min(w => w.StartedAt.UtcDateTime);
+                }
+
+                double? startDelayHours = null;
+                if (firstStart.HasValue)
+                {
+                    var delay = (firstStart.Value - techLink.AssignedAtUtc).TotalHours;
+                    if (delay >= 0)
+                    {
+                        startDelayHours = delay;
+                        startDelayHoursList.Add(delay);
+                    }
+                }
+
+                items.Add(new TechnicianRequestPerformanceItemDTO
+                {
+                    RequestId = r.Id,
+                    Title = baseDto.Title,
+                    CreatedAtUtc = r.CreatedAt,
+                    ProblemTypeName = baseDto.ProblemTypeName ?? "",
+                    CaseTypeName = baseDto.CaseType,
+                    AssignedAtUtc = techLink.AssignedAtUtc,
+                    FirstWorkStartedAtUtc = firstStart,
+                    ClosedAtUtc = r.ClosedAtUtc,
+                    ExpectedDurationHours = slaHours,
+                    IsOverdue = isOverdue,
+                    ClosureHours = closureHours,
+                    StartDelayHours = startDelayHours
+                });
+            }
+
+            double? avgClosure = null;
+            if (closureHoursList.Count > 0)
+                avgClosure = closureHoursList.Average();
+
+            double? avgStartDelay = null;
+            if (startDelayHoursList.Count > 0)
+                avgStartDelay = startDelayHoursList.Average();
+
+            double? overdueRate = null;
+            if (slaRequestsCount > 0)
+                overdueRate = (double)overdueCount / slaRequestsCount * 100.0;
+
+            var summary = new TechnicianPerformanceSummaryDTO
+            {
+                AssignedCount = assignedCount,
+                CompletedCount = completedCount,
+                OverdueCount = overdueCount,
+                OverdueRate = overdueRate,
+                AverageClosureHours = avgClosure,
+                AverageStartDelayHours = avgStartDelay
+            };
+
+            var report = new TechnicianPerformanceReportDTO
+            {
+                TechnicianUserId = technicianUserId,
+                TechnicianName = techName,          // ✅ صار معرّف فوق
+                TechnicianCategoryName = techCategoryName,
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+                Summary = summary,
+                Items = items
+            };
+
+            return (report, "Success");
+        }
+
+        public async Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetTechnicianPerformancePdfAsync(
+     string technicianUserId,
+     DateTime fromUtc,
+     DateTime toUtc,
+     string callerUserId,
+     string callerRole,
+     string language = "ar",
+     CancellationToken ct = default)
+        {
+            var (report, msg) = await GetTechnicianPerformanceAsync(
+                technicianUserId, fromUtc, toUtc, callerUserId, callerRole, language, ct);
+
+            var document = new TechnicianPerformanceReportDocument(report);
+            var bytes = document.GeneratePdf();
+
+            var fileName = $"Technician_{technicianUserId}_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";
+            return (bytes, fileName, "application/pdf", msg);
+        }
+
+        public async Task<(TechnicianCategoriesPerformanceReportDTO Report, string MessageKey)> GetTechnicianCategoriesPerformanceAsync(
+    DateTime fromUtc,
+    DateTime toUtc,
+    string callerUserId,
+    string callerRole,
+    string language = "ar",
+    CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var isAdmin = string.Equals(callerRole, "Admin", StringComparison.OrdinalIgnoreCase);
+            var isManager = string.Equals(callerRole, "MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+
+            if (!isAdmin && !isManager)
+            {
+                return (new TechnicianCategoriesPerformanceReportDTO
+                {
+                    FromUtc = fromUtc,
+                    ToUtc = toUtc
+                }, "Forbidden");
+            }
+
+            if (toUtc <= fromUtc)
+                toUtc = fromUtc.AddDays(1);
+
+            // نجيب الطلبات اللي تم تعيين أي فني عليها داخل الفترة
+            var reqQuery = _requestRepository.Query(
+                asTracking: false,
+                include: q => q
+                    .Include(r => r.Technicians),
+                predicate: r =>
+                    r.Status == DAL.Entities.Status.Active &&
+                    r.Technicians.Any(t =>
+                        t.AssignedAtUtc >= fromUtc &&
+                        t.AssignedAtUtc <= toUtc));
+
+            var requests = await reqQuery.ToListAsync(ct);
+            var now = DateTime.UtcNow;
+
+            // تجميع حسب الفني
+            var techAggDict = new Dictionary<string, (int Assigned, int Completed, int Overdue, int SlaRequests, List<double> ClosureHours)>();
+
+            foreach (var r in requests)
+            {
+                var isCompleted = r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
+                                  r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled;
+
+                double? closureHours = null;
+                if (r.ClosedAtUtc.HasValue)
+                    closureHours = (r.ClosedAtUtc.Value - r.CreatedAt).TotalHours;
+
+                foreach (var link in r.Technicians.Where(t => t.AssignedAtUtc >= fromUtc && t.AssignedAtUtc <= toUtc))
+                {
+                    var techId = link.TechnicianUserId;
+
+                    if (!techAggDict.TryGetValue(techId, out var agg))
+                    {
+                        agg = (Assigned: 0, Completed: 0, Overdue: 0, SlaRequests: 0, ClosureHours: new List<double>());
+                    }
+
+                    agg.Assigned++;
+
+                    if (isCompleted)
+                        agg.Completed++;
+
+                    int? slaHours = link.ExpectedDuration;
+                    if (slaHours.HasValue)
+                    {
+                        agg.SlaRequests++;
+
+                        var end = r.ClosedAtUtc ?? now;
+                        var elapsed = end - r.CreatedAt;
+                        var slaDuration = TimeSpan.FromHours(slaHours.Value);
+
+                        if (elapsed > slaDuration)
+                            agg.Overdue++;
+                    }
+
+                    if (closureHours.HasValue)
+                        agg.ClosureHours.Add(closureHours.Value);
+
+                    techAggDict[techId] = agg;
+                }
+            }
+
+            var techInfoDict = new Dictionary<string, (string Name, int? CategoryId, string CategoryName)>();
+
+            // نجيب كل IDs للفنيين من التجميعة اللي فوق
+            var techIds = techAggDict.Keys.ToList();
+
+            foreach (var techId in techIds)
+            {
+                var user = await _userRepository.GetByIdAsync(techId, ct);
+                if (user == null)
+                    continue;
+
+                var name = string.IsNullOrWhiteSpace(user.FullName) ? techId : user.FullName;
+
+                int? catId = user.TechnicianCategoryId;
+                string catName = "غير مصنّف";
+
+                var catTrans = user.TechnicianCategory?.Translations;
+                if (catTrans != null && catTrans.Count > 0)
+                {
+                    var best = catTrans
+                        .OrderBy(tr =>
+                            tr.Language.Equals(language, StringComparison.OrdinalIgnoreCase) ? 0 :
+                            tr.Language.Equals("ar", StringComparison.OrdinalIgnoreCase) ? 1 : 2)
+                        .FirstOrDefault();
+
+                    if (!string.IsNullOrWhiteSpace(best?.Name))
+                        catName = best!.Name!;
+                }
+
+                techInfoDict[techId] = (name, catId, catName);
+            }
+
+
+            // تجميع حسب الفئة
+            var categoryDict = new Dictionary<int?, TechnicianCategoryPerformanceDTO>();
+
+            foreach (var kvp in techAggDict)
+            {
+                var techId = kvp.Key;
+                var agg = kvp.Value;
+
+                if (!techInfoDict.TryGetValue(techId, out var info))
+                    continue;
+
+                var catId = info.CategoryId;
+                var catName = info.CategoryName;
+
+                if (!categoryDict.TryGetValue(catId, out var catDto))
+                {
+                    catDto = new TechnicianCategoryPerformanceDTO
+                    {
+                        CategoryId = catId,
+                        CategoryName = catName
+                    };
+                }
+
+                // بيانات الفني
+                double? techAvgClosure = null;
+                if (agg.ClosureHours.Count > 0)
+                    techAvgClosure = agg.ClosureHours.Average();
+
+                catDto.Technicians.Add(new TechnicianCategoryTechItemDTO
+                {
+                    TechnicianUserId = techId,
+                    TechnicianName = info.Name,
+                    AssignedCount = agg.Assigned,
+                    CompletedCount = agg.Completed,
+                    OverdueCount = agg.Overdue,
+                    AverageClosureHours = techAvgClosure
+                });
+
+                // تجميع على مستوى الفئة
+                catDto.TotalAssigned += agg.Assigned;
+                catDto.TotalCompleted += agg.Completed;
+                catDto.TotalOverdue += agg.Overdue;
+
+                categoryDict[catId] = catDto;
+            }
+
+            // حساب المؤشرات النهائية لكل فئة
+            foreach (var catKvp in categoryDict.ToList())
+            {
+                var catDto = catKvp.Value;
+
+                catDto.TechniciansCount = catDto.Technicians.Count;
+
+                if (catDto.TotalAssigned > 0)
+                {
+                    catDto.CompletionRate = (double)catDto.TotalCompleted / catDto.TotalAssigned * 100.0;
+                    catDto.OverdueRate = (double)catDto.TotalOverdue / catDto.TotalAssigned * 100.0;
+                }
+
+                if (catDto.TechniciansCount > 0)
+                {
+                    catDto.AverageRequestsPerTechnician = (double)catDto.TotalAssigned / catDto.TechniciansCount;
+                }
+
+                // متوسط زمن الإغلاق على مستوى الفئة
+                var allClosureHours = catDto.Technicians
+                    .Where(t => t.AverageClosureHours.HasValue)
+                    .SelectMany(t => Enumerable.Repeat(t.AverageClosureHours!.Value, 1)) // نستخدم متوسط الفني كتمثيل
+                    .ToList();
+
+                if (allClosureHours.Count > 0)
+                    catDto.AverageClosureHours = allClosureHours.Average();
+
+                categoryDict[catKvp.Key] = catDto;
+            }
+
+            var report = new TechnicianCategoriesPerformanceReportDTO
+            {
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+                Categories = categoryDict.Values
+                    .OrderByDescending(c => c.TotalAssigned)
+                    .ToList()
+            };
+
+            return (report, "Success");
+        }
+        public async Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetTechnicianCategoriesPerformancePdfAsync(
+            DateTime fromUtc,
+            DateTime toUtc,
+            string callerUserId,
+            string callerRole,
+            string language = "ar",
+            CancellationToken ct = default)
+        {
+            var (report, msg) = await GetTechnicianCategoriesPerformanceAsync(
+                fromUtc, toUtc, callerUserId, callerRole, language, ct);
+
+            var document = new TechnicianCategoriesPerformanceReportDocument(report);
+            var bytes = document.GeneratePdf();
+
+            var fileName = $"TechniciansByCategory_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";
+            return (bytes, fileName, "application/pdf", msg);
+        }
+        public async Task<(MaintenanceDepartmentReportDTO Report, string MessageKey)> GetMaintenanceDepartmentAsync(
+            DateTime fromUtc,
+            DateTime toUtc,
+            string userId,
+            string userRole,
+            string language = "ar",
+            CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var isAdmin = string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase);
+            var isManager = string.Equals(userRole, "MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+
+            if (!isAdmin && !isManager)
+            {
+                return (new MaintenanceDepartmentReportDTO
+                {
+                    FromUtc = fromUtc,
+                    ToUtc = toUtc
+                }, "Forbidden");
+            }
+
+            if (toUtc <= fromUtc)
+                toUtc = fromUtc.AddDays(1);
+
+            var now = DateTime.UtcNow;
+
+            // نفس نمط تقرير KPI: الطلبات التي CreatedAt ضمن الفترة
+            var query = _requestRepository.Query(
+                asTracking: false,
+                include: q => q
+                    .Include(r => r.ProblemType)
+                        .ThenInclude(pt => pt.Translations)
+                    .Include(r => r.Technicians),
+                predicate: r =>
+                    r.CreatedAt >= fromUtc &&
+                    r.CreatedAt <= toUtc &&
+                    r.Status == DAL.Entities.Status.Active);
+
+            var entities = await query.ToListAsync(ct);
+            var total = entities.Count;
+
+            // مغلقة / مفتوحة
+            var closedEntities = entities.Where(r =>
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled).ToList();
+
+            var openEntities = entities.Except(closedEntities).ToList();
+
+            // SLA حساب
+            int overdueCount = 0;
+            int closedWithinSlaCount = 0;
+            int closedWithSlaCount = 0;
+
+            foreach (var r in entities)
+            {
+                int? slaHours = r.Technicians
+                    .Where(t => t.ExpectedDuration.HasValue)
+                    .OrderBy(t => t.AssignedAtUtc)
+                    .Select(t => t.ExpectedDuration)
+                    .FirstOrDefault();
+
+                if (!slaHours.HasValue)
+                    continue;
+
+                var slaDuration = TimeSpan.FromHours(slaHours.Value);
+                var end = r.ClosedAtUtc ?? now;
+                var elapsed = end - r.CreatedAt;
+
+                var isClosed = closedEntities.Contains(r);
+
+                if (isClosed)
+                {
+                    closedWithSlaCount++;
+                    if (elapsed <= slaDuration)
+                    {
+                        closedWithinSlaCount++;
+                    }
+                    else
+                    {
+                        overdueCount++;
+                    }
+                }
+                else
+                {
+                    if (elapsed > slaDuration)
+                        overdueCount++;
+                }
+            }
+
+            // متوسط زمن الإغلاق
+            double? avgClosureHours = null;
+            var closedWithTime = closedEntities.Where(r => r.ClosedAtUtc.HasValue).ToList();
+            if (closedWithTime.Count > 0)
+            {
+                avgClosureHours = closedWithTime
+                    .Average(r => (r.ClosedAtUtc!.Value - r.CreatedAt).TotalHours);
+            }
+
+            var summary = new KpiRequestsSummaryDTO
+            {
+                TotalRequests = total,
+                NewRequests = total,
+                ClosedRequests = closedEntities.Count,
+                OpenRequests = openEntities.Count,
+                RemainingRequests = openEntities.Count,
+                OverdueRequests = overdueCount
+            };
+
+            if (total > 0)
+            {
+                summary.CompletionRate = (double)summary.ClosedRequests / total * 100.0;
+                summary.OverdueRate = (double)summary.OverdueRequests / total * 100.0;
+            }
+
+            if (closedWithSlaCount > 0)
+            {
+                summary.SlaComplianceRate = (double)closedWithinSlaCount / closedWithSlaCount * 100.0;
+            }
+
+            summary.AverageClosureHours = avgClosureHours;
+
+            // Top Problem Types (نفس اللي في KPI)
+            var topProblemTypes = entities
+                .GroupBy(r => r.ProblemTypeId)
+                .Select(g =>
+                {
+                    var any = g.FirstOrDefault();
+                    string name = string.Empty;
+                    if (any?.ProblemType?.Translations != null)
+                    {
+                        name = any.ProblemType.Translations
+                            .FirstOrDefault(t => t.Language == language)?.Name
+                            ?? any.ProblemType.Translations.FirstOrDefault()?.Name
+                            ?? string.Empty;
+                    }
+
+                    return new KpiTopProblemTypeDTO
+                    {
+                        ProblemTypeId = g.Key,
+                        ProblemTypeName = name,
+                        Count = g.Count()
+                    };
+                })
+                .OrderByDescending(x => x.Count)
+                .Take(3)
+                .ToList();
+
+            // الفنيين المشاركين في هذه الطلبات
+            var technicianIds = entities
+                .SelectMany(r => r.Technicians)
+                .Select(t => t.TechnicianUserId)
+                .Distinct()
+                .ToList();
+
+            var totalTechnicians = technicianIds.Count;
+
+            // تحميل بيانات الفنيين (اسم + Category)
+            var techInfoDict = new Dictionary<string, (int? CategoryId, string CategoryName)>();
+
+            foreach (var techId in technicianIds)
+            {
+                var user = await _userRepository.GetByIdAsync(techId, ct);
+                if (user == null)
+                    continue;
+
+                int? catId = user.TechnicianCategoryId;
+                string catName = "غير مصنّف";
+
+                var catTrans = user.TechnicianCategory?.Translations;
+                if (catTrans != null && catTrans.Count > 0)
+                {
+                    var best = catTrans
+                        .OrderBy(tr =>
+                            tr.Language.Equals(language, StringComparison.OrdinalIgnoreCase) ? 0 :
+                            tr.Language.Equals("ar", StringComparison.OrdinalIgnoreCase) ? 1 : 2)
+                        .FirstOrDefault();
+
+                    if (!string.IsNullOrWhiteSpace(best?.Name))
+                        catName = best!.Name!;
+                }
+
+                techInfoDict[techId] = (catId, catName);
+            }
+
+            // توزيع الفنيين على الفئات
+            var categoryTechCount = techInfoDict
+                .GroupBy(kvp => kvp.Value.CategoryId)
+                .ToDictionary(
+                    g => g.Key,
+                    g => new
+                    {
+                        CategoryId = g.Key,
+                        CategoryName = g.First().Value.CategoryName,
+                        TechniciansCount = g.Count()
+                    });
+
+            // توزيع الطلبات على الفئات (Distinct per request/category)
+            var categoryReqDict = new Dictionary<int?, HashSet<int>>();
+
+            foreach (var r in entities)
+            {
+                // لكل طلب، لكل فني عليه، نضيف الـ RequestId لفئته
+                var requestId = r.Id;
+                var techLinks = r.Technicians;
+
+                foreach (var link in techLinks)
+                {
+                    if (!techInfoDict.TryGetValue(link.TechnicianUserId, out var info))
+                        continue;
+
+                    var catId = info.CategoryId;
+                    var catName = info.CategoryName;
+
+                    if (!categoryReqDict.TryGetValue(catId, out var set))
+                    {
+                        set = new HashSet<int>();
+                        categoryReqDict[catId] = set;
+                    }
+
+                    set.Add(requestId);
+
+                    // نضمن أن CategoryName محفوظ في categoryTechCount حتى لو ما كان فيه فنيين محسوبين
+                    if (!categoryTechCount.ContainsKey(catId))
+                    {
+                        categoryTechCount[catId] = new
+                        {
+                            CategoryId = catId,
+                            CategoryName = catName,
+                            TechniciansCount = 0
+                        };
+                    }
+                }
+            }
+
+            var categories = new List<MaintenanceDepartmentCategoryStatDTO>();
+
+            foreach (var kvp in categoryReqDict)
+            {
+                var catId = kvp.Key;
+                var reqCount = kvp.Value.Count;
+
+                var techInfo = categoryTechCount.TryGetValue(catId, out var infoObj)
+                    ? infoObj
+                    : new { CategoryId = catId, CategoryName = "غير مصنّف", TechniciansCount = 0 };
+
+                categories.Add(new MaintenanceDepartmentCategoryStatDTO
+                {
+                    CategoryId = catId,
+                    CategoryName = techInfo.CategoryName,
+                    TechniciansCount = techInfo.TechniciansCount,
+                    RequestsCount = reqCount
+                });
+            }
+
+            // Top categories by requests (Top 3)
+            var topCategories = categories
+                .OrderByDescending(c => c.RequestsCount)
+                .Take(3)
+                .ToList();
+
+            var report = new MaintenanceDepartmentReportDTO
+            {
+                FromUtc = fromUtc,
+                ToUtc = toUtc,
+                Summary = summary,
+                TotalTechnicians = totalTechnicians,
+                Categories = categories,
+                TopProblemTypes = topProblemTypes,
+                TopCategoriesByRequests = topCategories
+            };
+
+            return (report, "Success");
+        }
+        public async Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetMaintenanceDepartmentPdfAsync(
+            DateTime fromUtc,
+            DateTime toUtc,
+            string userId,
+            string userRole,
+            string language = "ar",
+            CancellationToken ct = default)
+        {
+            var (report, msg) = await GetMaintenanceDepartmentAsync(fromUtc, toUtc, userId, userRole, language, ct);
+
+            var document = new MaintenanceDepartmentReportDocument(report);
+            var bytes = document.GeneratePdf();
+
+            var fileName = $"MaintenanceDepartment_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";
+            return (bytes, fileName, "application/pdf", msg);
+        }
 
     }
 }

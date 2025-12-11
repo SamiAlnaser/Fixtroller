@@ -186,5 +186,148 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
             }
         }
 
+
+        // تقرير الفني الواحد
+        // GET: api/MaintenanceManager/Reports/technicians/tech-001?from=2025-01-01&to=2025-01-31
+        // GET: api/MaintenanceManager/Reports/technicians/tech-001?from=2025-01-01&to=2025-01-31&format=pdf
+        [HttpGet("technicians/{technicianUserId}")]
+        public async Task<IActionResult> GetTechnicianPerformanceReport(
+            string technicianUserId,
+            [FromQuery] DateTime from,
+            [FromQuery] DateTime to,
+            [FromQuery] string? format,
+            CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var callerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+            var callerRole = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+
+            var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+            var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+
+            if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                var (file, fileName, contentType, msgKey) =
+                    await _reportsService.GetTechnicianPerformancePdfAsync(
+                        technicianUserId, fromUtc, toUtc, callerUserId, callerRole, language, ct);
+
+                if (msgKey == "Forbidden" || msgKey == "User_NotFound")
+                    return BadRequest(new { message = _localizer[msgKey].Value });
+
+                return File(file, contentType, fileName);
+            }
+            else
+            {
+                var (report, msgKey) =
+                    await _reportsService.GetTechnicianPerformanceAsync(
+                        technicianUserId, fromUtc, toUtc, callerUserId, callerRole, language, ct);
+
+                if (msgKey == "Forbidden" || msgKey == "User_NotFound")
+                    return BadRequest(new { message = _localizer[msgKey].Value });
+
+                return Ok(new
+                {
+                    message = _localizer[msgKey].Value,
+                    data = report
+                });
+            }
+        }
+
+
+        // تقرير الفنيين حسب الـ Category
+        // GET: api/MaintenanceManager/Reports/technicians-by-category?from=2025-01-01&to=2025-01-31
+        // GET: api/MaintenanceManager/Reports/technicians-by-category?from=2025-01-01&to=2025-01-31&format=pdf
+        [HttpGet("technicians-by-category")]
+        public async Task<IActionResult> GetTechniciansByCategoryReport(
+            [FromQuery] DateTime from,
+            [FromQuery] DateTime to,
+            [FromQuery] string? format,
+            CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var callerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+            var callerRole = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+
+            var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+            var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+
+            if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                var (file, fileName, contentType, msgKey) =
+                    await _reportsService.GetTechnicianCategoriesPerformancePdfAsync(
+                        fromUtc, toUtc, callerUserId, callerRole, language, ct);
+
+                if (msgKey == "Forbidden")
+                    return BadRequest(new { message = _localizer[msgKey].Value });
+
+                return File(file, contentType, fileName);
+            }
+            else
+            {
+                var (report, msgKey) =
+                    await _reportsService.GetTechnicianCategoriesPerformanceAsync(
+                        fromUtc, toUtc, callerUserId, callerRole, language, ct);
+
+                if (msgKey == "Forbidden")
+                    return BadRequest(new { message = _localizer[msgKey].Value });
+
+                return Ok(new
+                {
+                    message = _localizer[msgKey].Value,
+                    data = report
+                });
+            }
+        }
+        // تقرير قسم الصيانة ككل
+        // GET: api/MaintenanceManager/Reports/maintenance-department?from=2025-01-01&to=2025-01-31
+        // GET: api/MaintenanceManager/Reports/maintenance-department?from=2025-01-01&to=2025-01-31&format=pdf
+        [HttpGet("maintenance-department")]
+        public async Task<IActionResult> GetMaintenanceDepartmentReport(
+            [FromQuery] DateTime from,
+            [FromQuery] DateTime to,
+            [FromQuery] string? format,
+            CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
+            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+
+            var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
+            var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
+
+            if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
+            {
+                var (file, fileName, contentType, msgKey) =
+                    await _reportsService.GetMaintenanceDepartmentPdfAsync(
+                        fromUtc, toUtc, userId, role, language, ct);
+
+                if (msgKey == "Forbidden")
+                    return BadRequest(new { message = _localizer[msgKey].Value });
+
+                return File(file, contentType, fileName);
+            }
+            else
+            {
+                var (report, msgKey) =
+                    await _reportsService.GetMaintenanceDepartmentAsync(
+                        fromUtc, toUtc, userId, role, language, ct);
+
+                if (msgKey == "Forbidden")
+                    return BadRequest(new { message = _localizer[msgKey].Value });
+
+                return Ok(new
+                {
+                    message = _localizer[msgKey].Value,
+                    data = report
+                });
+            }
+        }
+
     }
 }

@@ -76,7 +76,57 @@ namespace Fixtroller.BLL.Services.ReportsServices
             string userRole,
             string language = "ar",
             CancellationToken ct = default);
+        // تقرير الفني الواحد
+        Task<(TechnicianPerformanceReportDTO Report, string MessageKey)> GetTechnicianPerformanceAsync(
+            string technicianUserId,
+            DateTime fromUtc,
+            DateTime toUtc,
+            string callerUserId,
+            string callerRole,
+            string language = "ar",
+            CancellationToken ct = default);
 
+        Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetTechnicianPerformancePdfAsync(
+            string technicianUserId,
+            DateTime fromUtc,
+            DateTime toUtc,
+            string callerUserId,
+            string callerRole,
+            string language = "ar",
+            CancellationToken ct = default);
+
+        // تقرير الفنيين حسب الـ Category
+        Task<(TechnicianCategoriesPerformanceReportDTO Report, string MessageKey)> GetTechnicianCategoriesPerformanceAsync(
+            DateTime fromUtc,
+            DateTime toUtc,
+            string callerUserId,
+            string callerRole,
+            string language = "ar",
+            CancellationToken ct = default);
+
+        Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetTechnicianCategoriesPerformancePdfAsync(
+            DateTime fromUtc,
+            DateTime toUtc,
+            string callerUserId,
+            string callerRole,
+            string language = "ar",
+            CancellationToken ct = default);
+        // تقرير قسم الصيانة ككل
+        Task<(MaintenanceDepartmentReportDTO Report, string MessageKey)> GetMaintenanceDepartmentAsync(
+            DateTime fromUtc,
+            DateTime toUtc,
+            string userId,
+            string userRole,
+            string language = "ar",
+            CancellationToken ct = default);
+
+        Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetMaintenanceDepartmentPdfAsync(
+            DateTime fromUtc,
+            DateTime toUtc,
+            string userId,
+            string userRole,
+            string language = "ar",
+            CancellationToken ct = default);
 
     }
 }
