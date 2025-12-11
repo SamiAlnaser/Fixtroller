@@ -11,7 +11,7 @@ namespace Fixtroller.PL.Areas.Employee
     [Route("api/[area]/[controller]")]
     [ApiController]
     [Area("Employee")]
-    [Authorize(Roles = "Employee , SpecialEmployee")]
+    [Authorize(Roles = "Employee")]
     public class MaintenanceRequestController : ControllerBase
     {
         private readonly IMaintenanceRequestService _maintenanceRequestService;

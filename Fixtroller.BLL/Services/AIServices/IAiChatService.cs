@@ -9,24 +9,22 @@ namespace Fixtroller.BLL.Services.AiServices
 
     public interface IAiChatService
     {
-        // 1) تشات عام (مدير، فني، موظف... إلخ)
-        Task<string> SendAsync(
-            string userId,
-            string userRole,
-            string message,
+        // 1) إرسال رسالة للـ AI (الموظف / الفني / المدير / ... إلخ)
+        Task<AiEmployeeChatResponseDTO> SendAsync(
+                    string userRole,
+                    string message,
+                    List<AiChatHistoryItemDTO>? history,
+                    CancellationToken ct = default);
+
+        // 2) جلب إعدادات تفعيل الـ AI (موظف + فني)
+        Task<AiEmployeeChatSettingsDTO> GetSettingsAsync(
             CancellationToken ct = default);
 
-        // 2) تشات الموظف (يرجع DTO فيها IsEnabled)
-        Task<AiEmployeeChatResponseDTO> SendEmployeeAsync(
-            string userId,
-            string message,
-            CancellationToken ct = default);
-
-        Task<AiEmployeeChatSettingsDTO> GetEmployeeSettingsAsync(
-            CancellationToken ct = default);
-
-        Task<AiEmployeeChatSettingsDTO> UpdateEmployeeSettingsAsync(
-            bool isEnabled,
+        // 3) تحديث إعدادات التفعيل (موظف + فني)
+        Task<AiEmployeeChatSettingsDTO> UpdateSettingsAsync(
+            bool isEmployeeEnabled,
+            bool isTechnicianEnabled,
             CancellationToken ct = default);
     }
 }
+

@@ -1,18 +1,17 @@
 ﻿using Fixtroller.BLL.Services.AiServices;
 using Fixtroller.DAL.Data.DTOs.AIDTOs;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using System.Security.Claims;
-using System.Threading;
-using System.Threading.Tasks;
 
-namespace Fixtroller.PL.Areas.MaintenanceManager
+namespace Fixtroller.PL.Areas.Admin
 {
-    [Area("MaintenanceManager")]
     [Route("api/[area]/[controller]")]
     [ApiController]
-    [Authorize(Roles = "MaintenanceManager")]
+    [Area("Admin")]
+    [Authorize(Roles = "Admin")]
     public class AiChatController : ControllerBase
     {
         private readonly IAiChatService _aiChatService;
@@ -25,7 +24,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             _localizer = localizer;
         }
 
-        // POST: api/MaintenanceManager/AiChat
+        // POST: api/Admin/AiChat
         [HttpPost]
         public async Task<IActionResult> SendAsync(
             [FromBody] AiEmployeeChatRequestDTO dto,
@@ -37,9 +36,9 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                 User.FindFirstValue(ClaimTypes.NameIdentifier) ??
                 string.Empty;
 
-            // الدور هنا ثابت "MaintenanceManager"
+            // الدور هنا ثابت "Admin"
             var result = await _aiChatService.SendAsync(
-                "MaintenanceManager",
+                "Admin",
                 dto.Message,
                 dto.History,
                 ct);
@@ -51,7 +50,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             });
         }
 
-        // GET: api/MaintenanceManager/AiChatSettings
+        // GET: api/Admin/AiChatSettings
         [HttpGet]
         public async Task<IActionResult> GetAsync(CancellationToken ct)
         {
@@ -64,7 +63,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             });
         }
 
-        // PUT: api/MaintenanceManager/AiChatSettings
+        // PUT: api/Admin/AiChatSettings
         [HttpPut]
         public async Task<IActionResult> UpdateAsync(
             [FromBody] AiEmployeeChatSettingsDTO dto,

@@ -11,6 +11,7 @@ using Fixtroller.BLL.Services.TechnicianServices;
 using Fixtroller.BLL.Services.UserServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
+using Fixtroller.DAL.Repositories.AIChatRepositories;
 using Fixtroller.DAL.Repositories.MaintenanceRequestRepositories;
 using Fixtroller.DAL.Repositories.NotificationRepositories;
 using Fixtroller.DAL.Repositories.NumbersRepositories;
@@ -85,6 +86,7 @@ namespace Fixtroller.PL
             builder.Services.AddScoped<IMaintenanceRequestTechnicianRepository, MaintenanceRequestTechnicianRepository>();
             builder.Services.AddScoped<IMetricsRepository, MetricsRepository>();
             builder.Services.AddScoped<IMetricsService, MetricsService>();
+            builder.Services.AddScoped<IAiEmployeeChatSettingsRepository, AiEmployeeChatSettingsRepository>();
             builder.Services.AddScoped<IAiChatService, AiChatService>();
 
 

@@ -1,6 +1,8 @@
 ﻿using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Data.DTOs.AIDTOs;
 using Fixtroller.DAL.Entities.AICHAT;
+using Fixtroller.DAL.Repositories.AIChatRepositories;
+using Fixtroller.DAL.UnitOfWork;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using OpenAI.Chat;
@@ -12,47 +14,82 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.BLL.Services.AiServices
 {
- 
-    
-        public sealed class AiChatService : IAiChatService
+
+
+    public sealed class AiChatService : IAiChatService
+    {
+        private readonly ChatClient _chatClient;
+        private readonly IAiEmployeeChatSettingsRepository _settingsRepo;
+        private readonly IUnitOfWork _uow;
+
+        public AiChatService(
+            IConfiguration configuration,
+            IAiEmployeeChatSettingsRepository settingsRepo,
+            IUnitOfWork uow)
         {
-            private readonly ChatClient _chatClient;
-            private readonly string _model;
-            private readonly ApplicationDbContext _db;
+            _settingsRepo = settingsRepo;
+            _uow = uow;
 
-            public AiChatService(
-                IConfiguration configuration,
-                ApplicationDbContext db)
+            var apiKey = configuration["OpenAI:ApiKey"]
+                ?? throw new System.InvalidOperationException("OpenAI:ApiKey is not configured");
+
+            var model = configuration["OpenAI:Model"] ?? "gpt-4.1-mini";
+
+            _chatClient = new ChatClient(model, apiKey);
+        }
+
+        // 1) ميثود موحّدة للإرسال لكل الأدوار
+        public async Task<AiEmployeeChatResponseDTO> SendAsync(
+            string userRole,
+            string message,
+            List<AiChatHistoryItemDTO>? history,
+            CancellationToken ct = default)
+        {
+            // 1) نجيب الإعدادات (تفعيل الموظف/الفني) من الريبو بدل الـ DbContext
+            var settings = await _settingsRepo.GetAsync(ct);
+
+            bool isEnabled = true;
+            string? disabledMessage = null;
+
+            switch (userRole)
             {
-                _db = db;
+                case "Employee":
+                    isEnabled = settings?.IsEmployeeEnabled ?? false;
+                    disabledMessage = "ميزة المساعد الذكي للموظفين غير مفعّلة حالياً من قبل الإدارة.";
+                    break;
 
-                var apiKey = configuration["OpenAI:ApiKey"]
-                    ?? throw new InvalidOperationException("OpenAI:ApiKey is not configured");
+                case "Technician":
+                    isEnabled = settings?.IsTechnicianEnabled ?? false;
+                    disabledMessage = "ميزة المساعد الذكي للفنيين غير مفعّلة حالياً من قبل الإدارة.";
+                    break;
 
-                _model = configuration["OpenAI:Model"] ?? "gpt-4.1-mini";
-
-                _chatClient = new ChatClient(
-                    model: _model,
-                    apiKey: apiKey
-                );
+                default:
+                    isEnabled = true;
+                    break;
             }
 
-        // ============================
-        // 1) تشات عام (مدير / فني / موظف)
-        // ============================
-        public async Task<string> SendAsync(
- string userId,
- string userRole,
- string message,
- CancellationToken ct = default)
-        {
+            if (!isEnabled)
+            {
+                return new AiEmployeeChatResponseDTO
+                {
+                    IsEnabled = false,
+                    Reply = disabledMessage ?? "ميزة المساعد الذكي غير مفعّلة حالياً."
+                };
+            }
+
+            // 2) نبني الـ System message حسب الـ role
             var roleDescription = userRole switch
             {
-                "MaintenanceManager" => "أنت مساعد ذكي لمدير الصيانة. ركّز على إدارة المهام، توزيع الفنيين، متابعة الحالة، والتوصية بالخطوات التالية.",
-                "Technician" => "أنت مساعد ذكي لفني الصيانة. ركّز على خطوات الإصلاح العملية، الأدوات المطلوبة، وتحذيرات السلامة.",
-                "Employee" => "أنت مساعد ذكي لموظف يواجه مشكلة صيانة ويريد فهمها أو وصفها أو متابعة طلبه.",
-                "Admin" => "أنت مساعد ذكي لمشرف النظام. ركّز على نظرة شمولية، مؤشرات الأداء، وإدارة المستخدمين والأقسام.",
-                _ => "أنت مساعد ذكي في نظام صيانة. أجب بإيجاز ووضوح."
+                "MaintenanceManager" =>
+                    "أنت مساعد ذكي لمدير الصيانة. ركّز على إدارة المهام، توزيع الفنيين، متابعة الحالة، والتوصية بالخطوات التالية.",
+                "Technician" =>
+                    "أنت مساعد ذكي لفني الصيانة. ركّز على خطوات الإصلاح العملية، الأدوات المطلوبة، وتحذيرات السلامة.",
+                "Employee" =>
+                    "أنت مساعد ذكي لموظف يواجه مشكلة صيانة ويريد فهمها أو وصفها أو متابعة طلبه.",
+                "Admin" =>
+                    "أنت مساعد ذكي لمشرف النظام. ركّز على نظرة شمولية، مؤشرات الأداء، وإدارة المستخدمين والأقسام.",
+                _ =>
+                    "أنت مساعد ذكي في نظام صيانة. أجب بإيجاز ووضوح."
             };
 
             var systemMessage =
@@ -61,102 +98,95 @@ namespace Fixtroller.BLL.Services.AiServices
                 "\nأجِب بإجابات قصيرة ومباشرة قدر الإمكان." +
                 $"\nوصف الدور: {roleDescription}";
 
-            ChatMessage[] messages =
-            {
-        new SystemChatMessage(systemMessage),
-        new UserChatMessage(message)
-    };
+            var chatMessages = new List<ChatMessage>
+        {
+            new SystemChatMessage(systemMessage)
+        };
 
+            // 3) نضيف تاريخ المحادثة القادم من الفرونت
+            if (history is not null)
+            {
+                foreach (var h in history)
+                {
+                    if (string.Equals(h.Role, "assistant", StringComparison.OrdinalIgnoreCase))
+                    {
+                        chatMessages.Add(new AssistantChatMessage(h.Content));
+                    }
+                    else
+                    {
+                        // الافتراضي user
+                        chatMessages.Add(new UserChatMessage(h.Content));
+                    }
+                }
+            }
+
+            // 4) نضيف رسالة المستخدم الحالية في الآخر
+            chatMessages.Add(new UserChatMessage(message));
+
+            // 5) نرسل للـ OpenAI
             var result = await _chatClient.CompleteChatAsync(
-                messages,
+                chatMessages,
                 new ChatCompletionOptions
                 {
-                    MaxOutputTokens = 512
+                    MaxOutputTokenCount = 512
                 },
                 ct);
 
-            return result.Value.Content.FirstOrDefault()?.Text ?? string.Empty;
+            var replyText = result.Value.Content.FirstOrDefault()?.Text ?? string.Empty;
+
+            return new AiEmployeeChatResponseDTO
+            {
+                IsEnabled = true,
+                Reply = replyText
+            };
         }
 
-        // ==================================
-        // 2) تشات الموظف (يراعي الإعداد IsEnabled)
-        // ==================================
-        public async Task<AiEmployeeChatResponseDTO> SendEmployeeAsync(
-                string userId,
-                string message,
-                CancellationToken ct = default)
+        // 2) قراءة إعدادات الموظف + الفني
+        public async Task<AiEmployeeChatSettingsDTO> GetSettingsAsync(
+            CancellationToken ct = default)
+        {
+            var s = await _settingsRepo.GetAsync(ct);
+
+            return new AiEmployeeChatSettingsDTO
             {
-                // نقرأ إعداد تفعيل/تعطيل التشات
-                var settings = await _db.AiEmployeeChatSettings
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(ct);
+                IsEmployeeEnabled = s?.IsEmployeeEnabled ?? false,
+                IsTechnicianEnabled = s?.IsTechnicianEnabled ?? false
+            };
+        }
 
-                var isEnabled = settings?.IsEnabled ?? false;
-                if (!isEnabled)
+        // 3) تحديث إعدادات الموظف + الفني
+        public async Task<AiEmployeeChatSettingsDTO> UpdateSettingsAsync(
+            bool isEmployeeEnabled,
+            bool isTechnicianEnabled,
+            CancellationToken ct = default)
+        {
+            var s = await _settingsRepo.GetAsync(ct);
+
+            if (s is null)
+            {
+                s = new AiEmployeeChatSettingsEntity
                 {
-                    return new AiEmployeeChatResponseDTO
-                    {
-                        IsEnabled = false,
-                        Reply = "ميزة المساعد الذكي للموظفين غير مفعّلة حالياً من قبل الإدارة."
-                    };
-                }
-
-                // نستخدم نفس SendAsync لكن نمرر الدور Employee
-                var reply = await SendAsync(
-                    userId,
-                    "Employee",
-                    message,
-                    ct);
-
-                return new AiEmployeeChatResponseDTO
-                {
-                    IsEnabled = true,
-                    Reply = reply
+                    IsEmployeeEnabled = isEmployeeEnabled,
+                    IsTechnicianEnabled = isTechnicianEnabled
                 };
+
+                await _settingsRepo.AddAsync(s, ct);
+            }
+            else
+            {
+                s.IsEmployeeEnabled = isEmployeeEnabled;
+                s.IsTechnicianEnabled = isTechnicianEnabled;
             }
 
-            // ========================
-            // 3) إعدادات تشات الموظف
-            // ========================
-            public async Task<AiEmployeeChatSettingsDTO> GetEmployeeSettingsAsync(
-                CancellationToken ct = default)
+            // هون نستعمل الـ UoW بدال _db.SaveChangesAsync
+            await _uow.SaveAndCommitAsync(ct);
+
+            return new AiEmployeeChatSettingsDTO
             {
-                var s = await _db.AiEmployeeChatSettings
-                    .AsNoTracking()
-                    .FirstOrDefaultAsync(ct);
-
-                return new AiEmployeeChatSettingsDTO
-                {
-                    IsEnabled = s?.IsEnabled ?? false
-                };
-            }
-
-            public async Task<AiEmployeeChatSettingsDTO> UpdateEmployeeSettingsAsync(
-                bool isEnabled,
-                CancellationToken ct = default)
-            {
-                var s = await _db.AiEmployeeChatSettings.FirstOrDefaultAsync(ct);
-
-                if (s is null)
-                {
-                    s = new AiEmployeeChatSettings
-                    {
-                        IsEnabled = isEnabled
-                    };
-                    _db.AiEmployeeChatSettings.Add(s);
-                }
-                else
-                {
-                    s.IsEnabled = isEnabled;
-                }
-
-                await _db.SaveChangesAsync(ct);
-
-                return new AiEmployeeChatSettingsDTO
-                {
-                    IsEnabled = s.IsEnabled
-                };
-            }
+                IsEmployeeEnabled = s.IsEmployeeEnabled,
+                IsTechnicianEnabled = s.IsTechnicianEnabled
+            };
         }
     }
+}
 
