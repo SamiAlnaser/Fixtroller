@@ -520,6 +520,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                                                   x.Technicians.Any(t => t.UnassignedAtUtc == null && t.TechnicianUserId == userId)))
                             ),
                         include: q => q
+                             .Include(r => r.OwnerUser)
                             .Include(r => r.Images)
                             .Include(r => r.Notes)
                             .Include(r => r.Technicians.Where(t => t.UnassignedAtUtc == null))
@@ -533,7 +534,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var isOwner = string.Equals(e.OwnerUserId, userId, StringComparison.Ordinal);
 
 
-            var dto = MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner);
+            var dto = MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner, includeOwnerDetails: isAdmin || isManager);
 
             // لو المستخدم الحالي فني: نبحث عن مؤقّت عمل نشط له على هذا الطلب
             if (isTechnician)

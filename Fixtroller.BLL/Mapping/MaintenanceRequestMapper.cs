@@ -44,7 +44,8 @@ namespace Fixtroller.BLL.Mapping
             string role,
             Func<string, string> urlBuilder,
             string language = "ar",
-            bool isOwner = false
+            bool isOwner = false,
+            bool includeOwnerDetails = false
             )
         {
             var effectiveCase =
@@ -82,6 +83,19 @@ namespace Fixtroller.BLL.Mapping
                 LastModifiedAt = e.UpdatedAt,
                 ClosedAtUtc = e.ClosedAtUtc
             };
+
+            if (includeOwnerDetails)
+            {
+                var owner = e.OwnerUser;   // لازم نعمل لها Include من الريبو (الخطوة الجاية)
+                if (owner != null)
+                {
+                    dto.OwnerUserId = owner.Id;
+                    dto.OwnerName = owner.FullName ?? owner.UserName ?? owner.Id;
+
+                    dto.OwnerDepartment = owner.Department;
+
+                }
+            }
 
             if (e.Images is not null && e.Images.Count > 0)
             {

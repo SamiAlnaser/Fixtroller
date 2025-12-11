@@ -46,5 +46,12 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
 
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? CurrentTechnicianActiveSeconds { get; set; }
+
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? OwnerName { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? OwnerDepartment { get; set; }
     }
 }
