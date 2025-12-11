@@ -2,6 +2,8 @@
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Fixtroller.DAL.Entities.ProblemTypeEntity;
 using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
+using Fixtroller.DAL.Entities.AICHAT;
+
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -23,6 +25,7 @@ namespace Fixtroller.DAL.Data
         public DbSet<MaintenanceNote> MaintenanceNotes { get; set; }
         public DbSet<WorkTimeEntry> WorkTimeEntries { get; set; }
         public DbSet<MaintenanceRequestTechnician> MaintenanceRequestTechnicians { get; set; }
+        public DbSet<AiEmployeeChatSettingsEntity> AiEmployeeChatSettings { get; set; } = null!;
 
         public DbSet<Notification> Notifications { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)

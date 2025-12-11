@@ -279,5 +279,6 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(new { message = _localizer[key].Value, data = res });
         }
 
+
     }
 }

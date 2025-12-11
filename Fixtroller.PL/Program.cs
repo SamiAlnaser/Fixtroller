@@ -1,3 +1,4 @@
+using Fixtroller.BLL.Services.AiServices;
 using Fixtroller.BLL.Services.AuthenticationServices;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.BLL.Services.MaintenanceRequestServices;
@@ -84,6 +85,8 @@ namespace Fixtroller.PL
             builder.Services.AddScoped<IMaintenanceRequestTechnicianRepository, MaintenanceRequestTechnicianRepository>();
             builder.Services.AddScoped<IMetricsRepository, MetricsRepository>();
             builder.Services.AddScoped<IMetricsService, MetricsService>();
+            builder.Services.AddScoped<IAiChatService, AiChatService>();
+
 
 
             builder.Services.AddScoped<IMaintenanceReportsService, MaintenanceReportsService>();
