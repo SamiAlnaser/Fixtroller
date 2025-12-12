@@ -563,6 +563,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                              .Include(r => r.OwnerUser)
                             .Include(r => r.Images)
                             .Include(r => r.Notes)
+                            .ThenInclude(n => n.CreatedByUser)
                             .Include(r => r.Technicians.Where(t => t.UnassignedAtUtc == null))
                              .Include(r => r.ProblemType)
                                 .ThenInclude(pt => pt.Translations)
@@ -594,6 +595,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     dto.CurrentTechnicianActiveSeconds = seconds;
                 }
             }
+            await EnrichAssignedTechniciansNamesAsync(dto, ct);
 
             return dto;
         }
@@ -679,56 +681,56 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
-        private async Task EnrichAssignTechnicianResponseAsync(
-    AssignTechnicianResponseDTO? res,
-    CancellationToken ct)
-        {
-            if (res == null) return;
+    //    private async Task EnrichAssignTechnicianResponseAsync(
+    //AssignTechnicianResponseDTO? res,
+    //CancellationToken ct)
+    //    {
+    //        if (res == null) return;
 
-            // اجمع كل IDs (الفني الرئيسي + كل النشطين)
-            var ids = res.ActiveTechnicians
-                .Select(t => t.Id)
-                .Where(id => !string.IsNullOrWhiteSpace(id))
-                .Distinct(StringComparer.Ordinal)
-                .ToList();
+    //        // اجمع كل IDs (الفني الرئيسي + كل النشطين)
+    //        var ids = res.ActiveTechnicians
+    //            .Select(t => t.Id)
+    //            .Where(id => !string.IsNullOrWhiteSpace(id))
+    //            .Distinct(StringComparer.Ordinal)
+    //            .ToList();
 
-            if (res.Technician != null &&
-                !string.IsNullOrWhiteSpace(res.Technician.Id) &&
-                !ids.Contains(res.Technician.Id, StringComparer.Ordinal))
-            {
-                ids.Add(res.Technician.Id);
-            }
+    //        if (res.Technician != null &&
+    //            !string.IsNullOrWhiteSpace(res.Technician.Id) &&
+    //            !ids.Contains(res.Technician.Id, StringComparer.Ordinal))
+    //        {
+    //            ids.Add(res.Technician.Id);
+    //        }
 
-            if (ids.Count == 0) return;
+    //        if (ids.Count == 0) return;
 
-            // حمل بيانات المستخدمين من الـ UserRepository
-            var dict = new Dictionary<string, (string fullName, string email)>(StringComparer.Ordinal);
+    //        // حمل بيانات المستخدمين من الـ UserRepository
+    //        var dict = new Dictionary<string, (string fullName, string email)>(StringComparer.Ordinal);
 
-            foreach (var id in ids)
-            {
-                var user = await _userRepo.GetByIdAsync(id, ct);
-                if (user is null) continue;
+    //        foreach (var id in ids)
+    //        {
+    //            var user = await _userRepo.GetByIdAsync(id, ct);
+    //            if (user is null) continue;
 
-                dict[id] = (user.FullName, user.Email);
-            }
+    //            dict[id] = (user.FullName, user.Email);
+    //        }
 
-            // فانكشن صغيرة لتطبيق البيانات على dto موجود
-            void Apply(TechnicianResponseDTO t)
-            {
-                if (t == null) return;
-                if (dict.TryGetValue(t.Id, out var info))
-                {
-                    t.FullName = info.fullName;
-                    t.Email = info.email;
-                }
-            }
+    //        // فانكشن صغيرة لتطبيق البيانات على dto موجود
+    //        void Apply(TechnicianResponseDTO t)
+    //        {
+    //            if (t == null) return;
+    //            if (dict.TryGetValue(t.Id, out var info))
+    //            {
+    //                t.FullName = info.fullName;
+    //                t.Email = info.email;
+    //            }
+    //        }
 
-            foreach (var t in res.ActiveTechnicians)
-                Apply(t);
+    //        foreach (var t in res.ActiveTechnicians)
+    //            Apply(t);
 
-            if (res.Technician != null)
-                Apply(res.Technician);
-        }
+    //        if (res.Technician != null)
+    //            Apply(res.Technician);
+    //    }
 
         public async Task<(int? RequestId, string MessageKey)> AssignTechnicianAsync(
             int requestId,
@@ -944,8 +946,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             if (r.CaseType == newCase)
             {
-                var respNoChange = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
-                return (respNoChange, "Case_NoChange");
+                var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                return (fresh, "Case_NoChange");
             }
 
             // الحالات اللي بتتغيّر داخلياً فقط
@@ -1013,8 +1015,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     
                     await SendStatusChangeNotificationAsync(r, newCase, ct);
 
-                    var resp = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
-                    return (resp, "Case_Changed");
+                    var fresh2 = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                    return (fresh2, "Case_Changed");
+
                 }
 
                 // ===================== مسار الفني =====================
@@ -1041,8 +1044,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
                     await SendStatusChangeNotificationAsync(r, newCase, ct);
 
-                    var respTech = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
-                    return (respTech, "Case_Changed");
+                    var fresh1 = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                    return (fresh1, "Case_Changed");
                 }
 
                 // ===================== مسار المدير / الآدمن =====================
@@ -1098,8 +1101,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 
                 await SendStatusChangeNotificationAsync(r, newCase, ct);
 
-                var respMgr = MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner);
-                return (respMgr, "Case_Changed");
+                var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                return (fresh, "Case_Changed");
             }
             catch
             {
@@ -1157,8 +1160,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 // 🔔 إشعار بإضافة ملاحظة جديدة على الطلب
                 await SendNoteAddedNotificationAsync(r, noteType, userId, dto.Text!, ct);
 
-                return (MaintenanceRequestMapper.ToResponse(r, userRole, _fileService.GetPublicUrl, language, isOwner),
-                        "Note_Added");
+                var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                return (fresh, "Note_Added");
             }
             catch
             {
@@ -1263,8 +1266,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 await SendRequestUpdatedByOwnerNotificationAsync(r, ct);
 
                 var isOwner = true; // مؤكّد من الفحص أعلاه
-                var response = MaintenanceRequestMapper.ToResponse(r, role, _fileService.GetPublicUrl, language, isOwner);
-                return (response, "Request_Updated");
+
+                //var response = MaintenanceRequestMapper.ToResponse(r, role, _fileService.GetPublicUrl, language, isOwner);
+                //return (response, "Request_Updated");
+                var fresh = await GetByIdAsync(id, userId, role, language, ct);
+                return (fresh, "Request_Updated");
             }
             catch
             {
@@ -1381,12 +1387,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     predicate: x => x.Id == requestId)
                 .FirstOrDefaultAsync(ct);
 
-            var dtoRes = withIncludes is null
-                ? null
-                : MaintenanceRequestMapper.ToResponse(withIncludes, userRole, _fileService.GetPublicUrl, language,
-                      isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
+            //var dtoRes = withIncludes is null
+            //    ? null
+            //    : MaintenanceRequestMapper.ToResponse(withIncludes, userRole, _fileService.GetPublicUrl, language,
+            //          isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
 
-            return (dtoRes, "Images_Added");
+            //return (dtoRes, "Images_Added");
+            var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
+            return (fresh, "Images_Added");
         }
 
 
@@ -1479,17 +1487,20 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     predicate: x => x.Id == requestId)
                 .FirstOrDefaultAsync(ct);
 
-            var dtoRes = withIncludes is null
-                ? null
-                : MaintenanceRequestMapper.ToResponse(
-                      withIncludes,
-                      userRole,
-                      _fileService.GetPublicUrl,
-                      language,
-                      isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
+            //var dtoRes = withIncludes is null
+            //    ? null
+            //    : MaintenanceRequestMapper.ToResponse(
+            //          withIncludes,
+            //          userRole,
+            //          _fileService.GetPublicUrl,
+            //          language,
+            //          isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
 
-            // 🔑 مسج جديدة للترجمة
-            return (dtoRes, "Images_Removed");
+            //// 🔑 مسج جديدة للترجمة
+            //return (dtoRes, "Images_Removed");
+
+            var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
+            return (fresh, "Images_Removed");
         }
 
 
@@ -1698,6 +1709,35 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     Body = body,
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
+            }
+        }
+
+        private async Task EnrichAssignedTechniciansNamesAsync(MaintenanceRequestResponseDTO dto, CancellationToken ct)
+        {
+            if (dto?.AssignedTechnicians == null || dto.AssignedTechnicians.Count == 0) return;
+
+            var ids = dto.AssignedTechnicians
+                .Select(x => x.UserId)
+                .Where(x => !string.IsNullOrWhiteSpace(x))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (ids.Count == 0) return;
+
+            var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            foreach (var id in ids)
+            {
+                var u = await _userRepo.GetByIdAsync(id, ct);
+                if (u is null) continue;
+
+                dict[id] = string.IsNullOrWhiteSpace(u.FullName) ? u.UserName ?? id : u.FullName;
+            }
+
+            foreach (var t in dto.AssignedTechnicians)
+            {
+                if (dict.TryGetValue(t.UserId, out var name))
+                    t.FullName = name;
             }
         }
 

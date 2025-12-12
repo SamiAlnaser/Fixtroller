@@ -132,6 +132,7 @@ namespace Fixtroller.BLL.Mapping
                 .OrderByDescending(t => t.AssignedAtUtc)
                 .Select(t => new AssignedTechnicianDTO
                 {
+                    UserId = t.TechnicianUserId,
                     AssignedAtUtc = t.AssignedAtUtc.Kind == DateTimeKind.Utc
                         ? t.AssignedAtUtc
                         : DateTime.SpecifyKind(t.AssignedAtUtc, DateTimeKind.Utc),

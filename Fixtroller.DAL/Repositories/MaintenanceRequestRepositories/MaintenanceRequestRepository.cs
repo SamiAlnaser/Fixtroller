@@ -61,6 +61,7 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestRepositories
         public Task<MaintenanceRequest?> GetForUpdateAsync(int id, CancellationToken ct = default)
         {
             return _context.MaintenanceRequests
+                .Include(r => r.Technicians.Where(t => t.UnassignedAtUtc == null))
                 .Include(r => r.Images)
                 .Include(r => r.Notes)
                 .FirstOrDefaultAsync(r => r.Id == id, ct);
