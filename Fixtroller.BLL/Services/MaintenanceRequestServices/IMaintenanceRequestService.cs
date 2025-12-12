@@ -53,7 +53,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             CancellationToken ct = default);
 
         // تعيين فني مفرد (توافق خلفي) — يلتف على AssignTechniciansAsync
-        Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(
+        Task<(int? RequestId, string MessageKey)> AssignTechnicianAsync(
             int requestId,
             string technicianUserId,
             int? expectedDuration,
@@ -61,7 +61,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             CancellationToken ct = default);
 
         // NEW: تعيين قائمة فنيين دفعة واحدة (يُضيف/يزيل مقارنةً بالحالي)
-        Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechniciansAsync(
+        Task<(int? RequestId, string MessageKey)> AssignTechniciansAsync(
             int requestId,
             IEnumerable<string> technicianUserIds,
             int? expectedDuration,

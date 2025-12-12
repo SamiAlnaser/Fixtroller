@@ -6,6 +6,8 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
+using System.Data;
+using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.MaintenanceManager
 {
@@ -75,24 +77,57 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var (res, key) = await _requestService.AssignTechnicianAsync(id, dto.TechnicianUserId, dto.ExpectedDuration, language, ct);
+            var (newId, key) = await _requestService.AssignTechnicianAsync(id, dto.TechnicianUserId, dto.ExpectedDuration, language, ct);
 
-            if (res is null)
+            if (newId is null)
                 return BadRequest(new { message = _localizer[key].Value });
 
-            return Ok(new { message = _localizer[key].Value, data = res });
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+             ?? User.FindFirst("Id")?.Value
+             ?? string.Empty;
+
+            var role = User.FindFirst("role")?.Value
+                     ?? "MaintenanceManager"; // قيمة افتراضية آمنة
+
+            var details = await _requestService.GetByIdAsync(id, userId, role, language, ct);
+
+            return CreatedAtRoute("MaintenanceManager_MaintenanceRequest_GetById",
+                new { id = newId.Value },
+                new
+                {
+                    message = _localizer[key].Value,
+                    data = details
+                });
         }
-        [HttpPost("{id:int}/assign-list")]
+            [HttpPost("{id:int}/assign-list")]
         public async Task<IActionResult> AssignList(int id, [FromBody] AssignTechniciansRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var (res, key) = await _requestService
+            var (newId, key) = await _requestService
                 .AssignTechniciansAsync(id, dto.TechnicianUserIds, dto.ExpectedDuration, language, ct);
 
-            if (res is null) return BadRequest(new { message = _localizer[key].Value });
-            return Ok(new { message = _localizer[key].Value, data = res });
+            if (newId is null) return BadRequest(new { message = _localizer[key].Value });
+
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+             ?? User.FindFirst("Id")?.Value
+             ?? string.Empty;
+
+            var role = User.FindFirst("role")?.Value
+                     ?? "MaintenanceManager"; // قيمة افتراضية آمنة
+
+            var details = await _requestService.GetByIdAsync(id, userId, role, language, ct);
+
+            return CreatedAtRoute("MaintenanceManager_MaintenanceRequest_GetById",
+                new { id = newId.Value },
+                new
+                {
+                    message = _localizer[key].Value,
+                    data = details
+                });
         }
 
         [HttpDelete("{id:int}/technicians/{techId}")]

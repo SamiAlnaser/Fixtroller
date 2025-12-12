@@ -598,12 +598,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             return dto;
         }
 
-        public async Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechniciansAsync(
-     int requestId,
-     IEnumerable<string> technicianUserIds,
-     int? expectedDuration,
-     string language = "ar",
-     CancellationToken ct = default)
+        public async Task<(int? RequestId, string MessageKey)> AssignTechniciansAsync(
+      int requestId,
+      IEnumerable<string> technicianUserIds,
+      int? expectedDuration,
+      string language = "ar",
+      CancellationToken ct = default)
         {
             var request = await _repository.GetForAssignmentAsync(requestId, ct);
             if (request is null) return (null, "Request_NotFound");
@@ -670,10 +670,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     }, ct);
                 }
 
-                var loaded = await _repository.GetForAssignmentAsync(requestId, ct);
-                var response = TechnicianMappings.ToAssignTechnicianResponse(loaded!, language);
-                await EnrichAssignTechnicianResponseAsync(response, ct);
-                return (response, "Technicians_Assigned");
+                return (request.Id, "Technicians_Assigned");
             }
             catch
             {
@@ -733,8 +730,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 Apply(res.Technician);
         }
 
-        public async Task<(AssignTechnicianResponseDTO? Response, string MessageKey)> AssignTechnicianAsync(
-            int requestId, string technicianUserId, int? expectedDuration, string language = "ar", CancellationToken ct = default)
+        public async Task<(int? RequestId, string MessageKey)> AssignTechnicianAsync(
+            int requestId,
+            string technicianUserId,
+            int? expectedDuration,
+            string language = "ar",
+            CancellationToken ct = default)
         {
             var request = await _repository.GetForAssignmentAsync(requestId, ct);
             if (request is null) return (null, "Request_NotFound");
@@ -749,10 +750,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var already = await _reqTechRepo.IsActiveAssignedAsync(requestId, technicianUserId, ct);
             if (already)
             {
-                var loadedNoop = await _repository.GetForAssignmentAsync(requestId, ct);
-                var response = TechnicianMappings.ToAssignTechnicianResponse(loadedNoop!, language);
-                await EnrichAssignTechnicianResponseAsync(response, ct);
-                return (response, "Technician_AlreadyAssigned");
+                return (requestId, "Technician_AlreadyAssigned");
             }
 
             await _uow.BeginTransactionAsync(ct);
@@ -767,7 +765,6 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
                 await _uow.SaveAndCommitAsync(ct);
 
-
                 await _notificationService.CreateAsync(new NotificationCreateModel
                 {
                     UserId = technicianUserId,
@@ -779,11 +776,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
 
-
-                var loaded = await _repository.GetForAssignmentAsync(requestId, ct);
-                var response = TechnicianMappings.ToAssignTechnicianResponse(loaded!, language);
-                await EnrichAssignTechnicianResponseAsync(response, ct);
-                return (response, "Technician_Assigned");
+                return (request.Id, "Technician_Assigned");
             }
             catch
             {

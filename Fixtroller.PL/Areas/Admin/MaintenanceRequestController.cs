@@ -76,7 +76,7 @@ namespace Fixtroller.PL.Areas.Admin
                 });
         }
 
-        [HttpGet("{id:int}")]
+        [HttpGet("{id:int}", Name = "MaintenanceRequest_GetById")]
         public async Task<IActionResult> GetById(int id, CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
