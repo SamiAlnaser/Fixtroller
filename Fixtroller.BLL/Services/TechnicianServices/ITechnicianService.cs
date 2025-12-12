@@ -2,6 +2,7 @@
 using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
+using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,11 +15,14 @@ namespace Fixtroller.BLL.Services.TechnicianServices
     {
 
         Task<PagedResultDTO<TechnicianBoardDTO>> GetMyAssignedAsync(
-           string technicianUserId,
-           string language,
-           int pageNumber = 1,
-           int pageSize = 10,
-           CancellationToken ct = default);
+            string technicianUserId,
+            string language,
+            int pageNumber = 1,
+            int pageSize = 10,
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            int? requestId = null,
+            CancellationToken ct = default);
 
         Task<PagedResultDTO<TechnicianResponseDTO>> GetByCategoryAsync(
          int categoryId,

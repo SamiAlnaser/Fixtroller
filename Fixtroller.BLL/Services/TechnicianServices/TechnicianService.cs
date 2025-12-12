@@ -144,19 +144,31 @@ namespace Fixtroller.BLL.Services.TechnicianServices
         }
 
         public async Task<PagedResultDTO<TechnicianBoardDTO>> GetMyAssignedAsync(
-       string technicianUserId,
-       string language,
-       int pageNumber = 1,
-       int pageSize = 10,
-       CancellationToken ct = default)
+      string technicianUserId,
+      string language,
+      int pageNumber = 1,
+      int pageSize = 10,
+      DateTime? createdFrom = null,
+      DateTime? createdTo = null,
+      int? requestId = null,
+      CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
 
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
+            // ✅ Normalize + تأمين نطاق التاريخ
+            static DateTime NormalizeEnd(DateTime d) =>
+                d.TimeOfDay == TimeSpan.Zero ? d.Date.AddDays(1).AddTicks(-1) : d;
+
+            if (createdFrom.HasValue && createdTo.HasValue && createdFrom.Value > createdTo.Value)
+                (createdFrom, createdTo) = (createdTo, createdFrom);
+
+            var end = createdTo.HasValue ? NormalizeEnd(createdTo.Value) : (DateTime?)null;
+
             // 1) الكويري الأساسي + Include لنوع المشكلة وترجماته
-            var q = _reqRepo.Query(
+            IQueryable<MaintenanceRequest> q = _reqRepo.Query(
                     asTracking: false,
                     predicate: x =>
                         x.Status == Status.Active &&
@@ -165,6 +177,16 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                             t.UnassignedAtUtc == null))
                 .Include(x => x.ProblemType)
                     .ThenInclude(pt => pt.Translations);
+
+            if (requestId.HasValue && requestId.Value > 0)
+                q = q.Where(x => x.Id == requestId.Value);
+
+            // ✅ فلترة التاريخ (CreatedAt)
+            if (createdFrom.HasValue)
+                q = q.Where(x => x.CreatedAt >= createdFrom.Value);
+
+            if (end.HasValue)
+                q = q.Where(x => x.CreatedAt <= end.Value);
 
             // 2) إجمالي عدد الطلبات المسندة (لأجل عدد الصفحات)
             var totalCount = await q.CountAsync(ct);
@@ -276,6 +298,7 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                 Data = new List<TechnicianBoardDTO> { board }
             };
         }
+
         public async Task<PagedResultDTO<TechnicianResponseDTO>> GetByCategoryAsync(
     int categoryId,
     string? search,

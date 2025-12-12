@@ -284,21 +284,31 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
 
         public async Task<PagedResultDTO<MaintenanceRequestListMineDTO>> GetMineAsync(
-     string userId,
-     string role,
-     string language,
-     int pageNumber = 1,
-     int pageSize = 10,
-     CancellationToken ct = default)
+            string userId,
+            string role,
+            string language,
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            CaseType? caseType = null,
+            int? requestId = null,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
 
-            // تأمين القيم
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            // 1) أساس الكويري + Include للـ ProblemType وترجماته
-            var q = _repository.Query(
+            static DateTime NormalizeEnd(DateTime d) =>
+                d.TimeOfDay == TimeSpan.Zero ? d.Date.AddDays(1).AddTicks(-1) : d;
+
+            if (createdFrom.HasValue && createdTo.HasValue && createdFrom.Value > createdTo.Value)
+                (createdFrom, createdTo) = (createdTo, createdFrom);
+
+            var end = createdTo.HasValue ? NormalizeEnd(createdTo.Value) : (DateTime?)null;
+
+            IQueryable<MaintenanceRequest> q = _repository.Query(
                     asTracking: false,
                     predicate: x =>
                         x.Status == Status.Active &&
@@ -306,15 +316,25 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 .Include(x => x.ProblemType)
                     .ThenInclude(pt => pt.Translations);
 
-            // 2) إجمالي عدد السجلات
+            // ✅ بحث بالـ Id
+            if (requestId.HasValue && requestId.Value > 0)
+                q = q.Where(x => x.Id == requestId.Value);
+
+            if (createdFrom.HasValue)
+                q = q.Where(x => x.CreatedAt >= createdFrom.Value);
+
+            if (end.HasValue)
+                q = q.Where(x => x.CreatedAt <= end.Value);
+
+            if (caseType.HasValue)
+                q = q.Where(x => x.CaseType == caseType.Value);
+
             var totalCount = await q.CountAsync(ct);
 
-            // 3) عدد الصفحات (لو مافي سجلات = 0 صفحات)
             var totalPages = totalCount == 0
                 ? 0
                 : (int)Math.Ceiling(totalCount / (double)pageSize);
 
-            // 4) جلب الصفحة المطلوبة + نحسب اسم نوع المشكلة
             var pagedRows = await q
                 .OrderByDescending(x => x.CreatedAt)
                 .Skip((pageNumber - 1) * pageSize)
@@ -331,7 +351,6 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         UpdatedAt = x.UpdatedAt,
                         CreatedByUserId = x.CreatedByUserId
                     },
-
                     ProblemTypeName = x.ProblemType != null
                         ? x.ProblemType.Translations
                             .OrderBy(t =>
@@ -340,22 +359,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                             .Select(t => t.Name)
                             .FirstOrDefault()
                         : null,
-
-                    IsOwner = true   // لأنه mine
+                    IsOwner = true
                 })
                 .ToListAsync(ct);
 
-            // 5) المابر إلى DTO
             var data = pagedRows
                 .Select(r => MaintenanceRequestMapper.ToMineListItem(
-                    r.Light,
-                    role,
-                    r.IsOwner,
-                    language,
-                    r.ProblemTypeName))
+                    r.Light, role, r.IsOwner, language, r.ProblemTypeName))
                 .ToList();
 
-            // 6) النتيجة النهائية
             return new PagedResultDTO<MaintenanceRequestListMineDTO>
             {
                 TotalPages = totalPages,
@@ -367,11 +379,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
 
         public async Task<PagedResultDTO<MaintenanceRequestListAllDTO>> GetAllAsync(
-        string role,
-        string language,
-        int pageNumber = 1,
-        int pageSize = 10,
-        CancellationToken ct = default)
+    string role,
+    string language,
+    DateTime? createdFrom = null,
+    DateTime? createdTo = null,
+    CaseType? caseType = null,
+    int? requestId = null,
+    int pageNumber = 1,
+    int pageSize = 10,
+    CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
 
@@ -394,12 +410,35 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
+            // ✅ Normalize + تأمين نطاق التاريخ
+            static DateTime NormalizeEnd(DateTime d) =>
+                d.TimeOfDay == TimeSpan.Zero ? d.Date.AddDays(1).AddTicks(-1) : d;
+
+            if (createdFrom.HasValue && createdTo.HasValue && createdFrom.Value > createdTo.Value)
+                (createdFrom, createdTo) = (createdTo, createdFrom);
+
+            var end = createdTo.HasValue ? NormalizeEnd(createdTo.Value) : (DateTime?)null;
+
             // 1) الكويري الأساسي مع Include للـ ProblemType + Translations
-            var q = _repository.Query(
+            IQueryable<MaintenanceRequest> q = _repository.Query(
                     asTracking: false,
                     predicate: x => x.Status == Status.Active)
                 .Include(x => x.ProblemType)
                     .ThenInclude(pt => pt.Translations);
+
+            // ✅ بحث بالـ Id
+            if (requestId.HasValue && requestId.Value > 0)
+                q = q.Where(x => x.Id == requestId.Value);
+
+            // ✅ تطبيق الفلاتر (CreatedAt + CaseType)
+            if (createdFrom.HasValue)
+                q = q.Where(x => x.CreatedAt >= createdFrom.Value);
+
+            if (end.HasValue)
+                q = q.Where(x => x.CreatedAt <= end.Value);
+
+            if (caseType.HasValue)
+                q = q.Where(x => x.CaseType == caseType.Value);
 
             // 2) إجمالي السجلات
             var totalCount = await q.CountAsync(ct);
@@ -492,6 +531,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 Data = data
             };
         }
+
 
 
 

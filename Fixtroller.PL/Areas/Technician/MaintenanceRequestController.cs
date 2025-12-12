@@ -1,6 +1,7 @@
 ﻿using Fixtroller.BLL.Services.MaintenanceRequestServices;
 using Fixtroller.BLL.Services.TechnicianServices;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
+using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -111,9 +112,13 @@ namespace Fixtroller.PL.Areas.Technician
 
         [HttpGet("mine")]
         public async Task<IActionResult> GetMine(
-      int pageNumber = 1,
-      int pageSize = 10,
-      CancellationToken ct = default)
+                     DateTime? createdFrom = null,
+                     DateTime? createdTo = null,
+                     CaseType? caseType = null,
+                     int pageNumber = 1,
+                     int pageSize = 10,
+                     int? requestId = null,
+                     CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
@@ -128,35 +133,55 @@ namespace Fixtroller.PL.Areas.Technician
                     ?? string.Empty;
 
             var list = await _maintenanceRequestService.GetMineAsync(
-                userId, role, language, pageNumber, pageSize, ct);
+                userId,
+                role,
+                language,
+                createdFrom,
+                createdTo,
+                caseType,
+                requestId,
+                pageNumber,
+                pageSize,
+                ct);
 
             return Ok(list);
         }
 
+        // GET: api/Technician/MaintenanceRequest/assigned
         [HttpGet("assigned")]
-        public async Task<IActionResult> GetAssigned(
-        int pageNumber = 1,
-        int pageSize = 10,
-        CancellationToken ct = default)
+        public async Task<IActionResult> GetMyAssignedAsync(
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            int pageNumber = 1,
+            int pageSize = 10,
+            int? requestId = null,
+            CancellationToken ct = default)
         {
-            // اللغة
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            // ايد الفني من التوكن
             var technicianUserId = User.FindFirst("Id")?.Value
                                ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
 
             if (string.IsNullOrWhiteSpace(technicianUserId))
                 return Unauthorized();
 
-            var result = await _technicianService.GetMyAssignedAsync(technicianUserId,language,pageNumber,pageSize,ct);
+            var result = await _technicianService.GetMyAssignedAsync(
+                technicianUserId,
+                language,
+                pageNumber,
+                pageSize,
+                createdFrom,
+                createdTo,
+                requestId,
+                ct);
 
             return Ok(result);
         }
 
 
-        [HttpPatch("{id:int}/case")]
+
+[HttpPatch("{id:int}/case")]
         public async Task<IActionResult> ChangeCase(int id, [FromBody] ChangeCaseTypeRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();

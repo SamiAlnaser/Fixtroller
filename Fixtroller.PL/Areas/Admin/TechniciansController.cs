@@ -1,4 +1,5 @@
-﻿using Fixtroller.BLL.Services.MaintenanceRequestServices;
+﻿using Azure.Core;
+using Fixtroller.BLL.Services.MaintenanceRequestServices;
 using Fixtroller.BLL.Services.TechnicianServices;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
@@ -41,6 +42,31 @@ namespace Fixtroller.PL.Areas.Admin
 
             var data = await _TechnicianService.GetWithMetricsAsync(language, categoryId, search, pageNumber, pageSize, ct);
             return Ok(data);
+        }
+        [HttpGet("{techId}/assigned")]
+        public async Task<IActionResult> GetAssignedForTechnician(
+    string techId,
+    DateTime? createdFrom = null,
+    DateTime? createdTo = null,
+    int pageNumber = 1,
+    int pageSize = 10,
+    int? requestId = null,
+    CancellationToken ct = default)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var board = await _TechnicianService.GetMyAssignedAsync(
+                techId,
+                language,
+                pageNumber,
+                pageSize,
+                createdFrom,
+                createdTo,
+                requestId,
+                ct);
+
+            return Ok(board);
         }
 
 

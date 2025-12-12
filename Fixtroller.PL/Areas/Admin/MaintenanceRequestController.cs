@@ -1,6 +1,7 @@
 ﻿using Fixtroller.BLL.Services.MaintenanceRequestServices;
 using Fixtroller.BLL.Services.ProblemTypesServices;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
+using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -103,9 +104,13 @@ namespace Fixtroller.PL.Areas.Admin
 
         [HttpGet("mine")]
         public async Task<IActionResult> GetMine(
-            int pageNumber = 1,
-            int pageSize = 10,
-            CancellationToken ct = default)
+              DateTime? createdFrom = null,
+              DateTime? createdTo = null,
+              CaseType? caseType = null,
+              int pageNumber = 1,
+              int pageSize = 10,
+              int? requestId = null,
+              CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
@@ -120,15 +125,28 @@ namespace Fixtroller.PL.Areas.Admin
                     ?? string.Empty;
 
             var list = await _maintenanceRequestService.GetMineAsync(
-                userId, role, language, pageNumber, pageSize, ct);
+                userId,
+                role,
+                language,
+                createdFrom,
+                createdTo,
+                caseType,
+                requestId,
+                pageNumber,
+                pageSize,
+                ct);
 
             return Ok(list);
         }
 
         [HttpGet]
         public async Task<IActionResult> GetAll(
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            CaseType? caseType = null,
             int pageNumber = 1,
             int pageSize = 10,
+            int? requestId = null,
             CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -139,7 +157,15 @@ namespace Fixtroller.PL.Areas.Admin
                     ?? string.Empty;
 
             var list = await _maintenanceRequestService.GetAllAsync(
-                role, language, pageNumber, pageSize, ct);
+                role,
+                language,
+                createdFrom,
+                createdTo,
+                caseType,
+                requestId,
+                pageNumber,
+                pageSize,
+                ct);
 
             return Ok(list);
         }

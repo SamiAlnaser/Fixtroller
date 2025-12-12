@@ -28,11 +28,20 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
 
         Task<PagedResultDTO<MaintenanceRequestListMineDTO>> GetMineAsync(string userId,string role,string language,
+        DateTime? createdFrom = null,
+        DateTime? createdTo = null,
+        CaseType? caseType = null,
+        int? requestId = null,
         int pageNumber = 1,
         int pageSize = 10,
         CancellationToken ct = default);
 
-        Task<PagedResultDTO<MaintenanceRequestListAllDTO>> GetAllAsync(string role,string language,int pageNumber = 1,
+        Task<PagedResultDTO<MaintenanceRequestListAllDTO>> GetAllAsync(string role,string language,
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            CaseType? caseType = null,
+            int? requestId = null,
+            int pageNumber = 1,
             int pageSize = 10,
             CancellationToken ct = default);
 
