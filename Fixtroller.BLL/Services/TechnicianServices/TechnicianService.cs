@@ -143,6 +143,21 @@ namespace Fixtroller.BLL.Services.TechnicianServices
             return true;
         }
 
+        public async Task<bool> ClearTechnicianCategoryAsync(
+          ClearTechnicianCategoryRequestDTO dto,
+          CancellationToken ct = default)
+        {
+            // تأكد أنه فعلاً Technician
+            var isTech = await _repository.IsInRoleAsync(dto.TechnicianUserId, "Technician", ct);
+            if (!isTech) return false;
+
+            var ok = await _repository.ClearCategoryAsync(dto.TechnicianUserId, ct);
+            if (!ok) return false;
+
+            await _uow.SaveAndCommitAsync(ct);
+            return true;
+        }
+
         public async Task<PagedResultDTO<TechnicianBoardDTO>> GetMyAssignedAsync(
       string technicianUserId,
       string language,

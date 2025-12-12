@@ -27,6 +27,9 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             string userId,
             int technicianCategoryId,
             CancellationToken ct = default);
+        Task<bool> ClearCategoryAsync(
+    string userId,
+    CancellationToken ct = default);
 
         Task<IReadOnlyList<ApplicationUser>> GetByCategoryAsync(
             int categoryId,

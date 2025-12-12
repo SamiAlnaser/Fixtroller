@@ -150,6 +150,17 @@ namespace Fixtroller.PL.Areas.Admin
             return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
         }
 
+        // DELETE: api/Admin/Technicians/{techId}/category
+        [HttpDelete("{techId}/category")]
+        public async Task<IActionResult> ClearCategory([FromRoute] string techId, CancellationToken ct)
+        {
+            var ok = await _TechnicianService.ClearTechnicianCategoryAsync(
+                new ClearTechnicianCategoryRequestDTO { TechnicianUserId = techId },
+                ct);
+
+            return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
+        }
+
         [HttpGet("by-category/{categoryId:int}")]
         public async Task<IActionResult> GetByCategory(
             int categoryId,

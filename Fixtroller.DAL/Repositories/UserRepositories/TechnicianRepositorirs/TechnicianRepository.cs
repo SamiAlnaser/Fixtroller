@@ -84,6 +84,18 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             return true;
         }
 
+        public async Task<bool> ClearCategoryAsync(string userId, CancellationToken ct = default)
+        {
+            // لازم Tracking لأننا سنعدّل على الكيان
+            var user = await _dbcontext.Users.FirstOrDefaultAsync(u => u.Id == userId, ct);
+            if (user is null) return false;
+
+            // مسح الربط مع القسم
+            user.TechnicianCategoryId = null;
+            // لا حفظ هنا — UoW سيحفظ
+            return true;
+        }
+
         public async Task<IReadOnlyList<ApplicationUser>> GetByCategoryAsync(int categoryId, string? search, CancellationToken ct = default)
         {
             var q = _dbcontext.Users

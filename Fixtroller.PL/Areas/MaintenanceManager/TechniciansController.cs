@@ -146,6 +146,16 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var ok = await _TechnicianService.UpdateTechnicianCategoryAsync(dto, ct);
             return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
         }
+        // DELETE: api/MaintenanceManager/Technicians/{techId}/category
+        [HttpDelete("{techId}/category")]
+        public async Task<IActionResult> ClearCategory([FromRoute] string techId, CancellationToken ct)
+        {
+            var ok = await _TechnicianService.ClearTechnicianCategoryAsync(
+                new ClearTechnicianCategoryRequestDTO { TechnicianUserId = techId },
+                ct);
+
+            return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
+        }
 
         [HttpGet("by-category/{categoryId:int}")]
         public async Task<IActionResult> GetByCategory(

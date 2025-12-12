@@ -45,6 +45,9 @@ namespace Fixtroller.BLL.Services.TechnicianServices
         Task<bool> UpdateTechnicianCategoryAsync(
             UpdateTechnicianCategoryRequestDTO dto,
             CancellationToken ct = default);
+        Task<bool> ClearTechnicianCategoryAsync(
+    ClearTechnicianCategoryRequestDTO dto,
+    CancellationToken ct = default);
 
 
     }
