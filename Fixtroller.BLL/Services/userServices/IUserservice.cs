@@ -35,5 +35,9 @@ namespace Fixtroller.BLL.Services.UserServices
         Task<(bool IsVacation, string MessageKey)> IsVacationAsync(
             string userId,
             CancellationToken ct = default);
+
+        Task<(bool Success, string MessageKey)> CreateUserByAdminAsync(
+       AdminCreateUserRequestDTO dto,
+       CancellationToken ct);
     }
-}
+    }
