@@ -1,7 +1,7 @@
 ﻿using Azure.Core;
 using Fixtroller.BLL.Services.UserServices;
 using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
-
+using Fixtroller.DAL.Data.DTOs.UsersDTOS.Requset;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -100,5 +100,18 @@ namespace Fixtroller.PL.Areas.Admin
                 data = isVacation
             });
         }
+
+        [HttpPost("create")]
+        public async Task<IActionResult> Create([FromBody] AdminCreateUserRequestDTO dto, CancellationToken ct)
+        {
+            var (success, messageKey) = await _userService.CreateUserByAdminAsync(dto, ct);
+            var message = _localizer[messageKey].Value;
+
+            if (!success)
+                return BadRequest(new { message });
+
+            return Ok(new { message });
+        }
+
     }
 }

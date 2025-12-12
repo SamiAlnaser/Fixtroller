@@ -13,48 +13,40 @@ namespace Fixtroller.DAL.Repositories.UserRepository
     public class UserRepository : IUserRepository
     {
         private readonly UserManager<ApplicationUser> _userManager;
+        private readonly RoleManager<IdentityRole> _roleManager;
 
-        public UserRepository(UserManager<ApplicationUser> userManager)
+        public UserRepository(
+            UserManager<ApplicationUser> userManager,
+            RoleManager<IdentityRole> roleManager)
         {
             _userManager = userManager;
+            _roleManager = roleManager;
         }
 
-        public async Task<List<ApplicationUser>> GetAllAsync(
-            CancellationToken ct = default)
+        public async Task<List<ApplicationUser>> GetAllAsync(CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
-            return await _userManager.Users
-                .ToListAsync(ct);
+            return await _userManager.Users.ToListAsync(ct);
         }
 
-        public async Task<ApplicationUser?> GetByIdAsync(
-            string userId,
-            CancellationToken ct = default)
+        public async Task<ApplicationUser?> GetByIdAsync(string userId, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
             return await _userManager.FindByIdAsync(userId);
         }
 
-        public async Task<List<ApplicationUser>> GetByRoleAsync(
-    string roleName,
-    CancellationToken ct = default)
+        public async Task<List<ApplicationUser>> GetByRoleAsync(string roleName, CancellationToken ct = default)
         {
             if (string.IsNullOrWhiteSpace(roleName))
                 return new List<ApplicationUser>();
 
-            // UserManager ما بدعم CancellationToken هنا، فنطنّش ct
             var usersInRole = await _userManager.GetUsersInRoleAsync(roleName);
-
-            // نرجّع List<ApplicationUser> عادية
             return usersInRole.ToList();
         }
 
-        public async Task<bool> ChangeUserRoleAsync(
-            string userId,
-            string roleName,
-            CancellationToken ct = default)
+        public async Task<bool> ChangeUserRoleAsync(string userId, string roleName, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -72,10 +64,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             return addResult.Succeeded;
         }
 
-        public async Task<bool> VacationUserAsync(
-            string userId,
-            int days,
-            CancellationToken ct = default)
+        public async Task<bool> VacationUserAsync(string userId, int days, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -88,9 +77,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             return result.Succeeded;
         }
 
-        public async Task<bool> UnVacationUserAsync(
-            string userId,
-            CancellationToken ct = default)
+        public async Task<bool> UnVacationUserAsync(string userId, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -103,19 +90,46 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             return result.Succeeded;
         }
 
-        public async Task<bool> IsVacationAsync(
-            string userId,
-            CancellationToken ct = default)
+        public async Task<bool> IsVacationAsync(string userId, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
             var user = await _userManager.FindByIdAsync(userId);
             if (user is null) return false;
 
-            return user.LockoutEnd.HasValue &&
-                   user.LockoutEnd > DateTimeOffset.UtcNow;
+            return user.LockoutEnd.HasValue && user.LockoutEnd > DateTimeOffset.UtcNow;
         }
 
+        // ✅ Implementations for Admin Create User
 
+        public async Task<ApplicationUser?> GetByEmailAsync(string email, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            return await _userManager.FindByEmailAsync(email.Trim());
+        }
+
+        public async Task<bool> RoleExistsAsync(string roleName, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            return await _roleManager.RoleExistsAsync(roleName);
+        }
+
+        public async Task<bool> CreateUserAsync(ApplicationUser user, string password, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            return (await _userManager.CreateAsync(user, password)).Succeeded;
+        }
+
+        public async Task<bool> AddToRoleAsync(ApplicationUser user, string roleName, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            return (await _userManager.AddToRoleAsync(user, roleName)).Succeeded;
+        }
+
+        public async Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            return await _userManager.GetRolesAsync(user);
+        }
     }
 }
