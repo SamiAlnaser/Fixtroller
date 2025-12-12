@@ -9,7 +9,7 @@ using Microsoft.Extensions.Localization;
 
 namespace Fixtroller.PL.Areas.Admin
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Admin")]
     [Authorize(Roles = "Admin")]
@@ -43,7 +43,7 @@ namespace Fixtroller.PL.Areas.Admin
             });
         }
 
-        [HttpPatch("changeRole")]
+        [HttpPatch("ChangeRole")]
         public async Task<IActionResult> ChangeRole(
             [FromBody] ChangeRoleRequsetDTO dto,
             CancellationToken ct)
@@ -72,7 +72,7 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(new { message });
         }
 
-        [HttpPatch("unVacation/{userId}")]
+        [HttpPatch("UnVacation/{userId}")]
         public async Task<IActionResult> UnVacationUser(
             [FromRoute] string userId,
             CancellationToken ct)
@@ -86,7 +86,8 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(new { message });
         }
 
-        [HttpPatch("isVacation/{userId}")]
+        [HttpGet("IsVacation/{userId}")]
+
         public async Task<IActionResult> IsVacationUser(
             [FromRoute] string userId,
             CancellationToken ct)
@@ -101,7 +102,7 @@ namespace Fixtroller.PL.Areas.Admin
             });
         }
 
-        [HttpPost("create")]
+        [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] AdminCreateUserRequestDTO dto, CancellationToken ct)
         {
             var (success, messageKey) = await _userService.CreateUserByAdminAsync(dto, ct);

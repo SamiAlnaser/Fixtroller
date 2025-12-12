@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.Employee
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Employee")]
     [Authorize(Roles = "Employee , SpecialEmployee")]
@@ -19,7 +19,7 @@ namespace Fixtroller.PL.Areas.Employee
             _metricsService = metricsService;
         }
 
-        [HttpGet("employees/me/numbers")]
+        [HttpGet("Employees/Me/Numbers")]
         public async Task<IActionResult> GetMyNumbers(CancellationToken ct)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";

@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
 {
     [Area("MaintenanceManager")]
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Authorize(Roles = "MaintenanceManager,Admin")]
     public class ReportsController : ControllerBase

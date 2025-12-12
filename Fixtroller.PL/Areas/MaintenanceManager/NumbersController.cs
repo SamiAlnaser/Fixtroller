@@ -6,7 +6,7 @@ using Microsoft.Identity.Client;
 
 namespace Fixtroller.PL.Areas.MaintenanceManager
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("MaintenanceManager")]
     [Authorize(Roles = "MaintenanceManager")]
@@ -20,21 +20,21 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
 
-        [HttpGet("technicians/{techId}/numbers")]
+        [HttpGet("Technicians/{techId}/Numbers")]
         public async Task<IActionResult> GetTechnicianNumbers(string techId, CancellationToken ct)
         {
             var dto = await _metricsService.GetTechnicianNumbersAsync(techId, ct);
             return Ok(dto);
         }
 
-        [HttpGet("numbers")]
+        [HttpGet("Numbers")]
         public async Task<IActionResult> GetNumbers(CancellationToken ct)
         {
             var dto = await _metricsService.GetManagerDashboardAsync(ct);
             return Ok(dto);
         }
 
-        [HttpGet("requests/overview")]
+        [HttpGet("Requests/Overview")]
         public async Task<IActionResult> RequestsOverview(
         [FromQuery] DateTimeOffset? fromUtc = null,
         [FromQuery] DateTimeOffset? toUtc = null,

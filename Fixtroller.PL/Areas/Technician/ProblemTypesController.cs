@@ -6,7 +6,7 @@ using Microsoft.Extensions.Localization;
 
 namespace Fixtroller.PL.Areas.Technician
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Technician")]
     [Authorize(Roles = "Technician")]
@@ -22,7 +22,7 @@ namespace Fixtroller.PL.Areas.Technician
         }
 
         // GET: api/ProblemsTypes/active
-        [HttpGet("active")]
+        [HttpGet("Active")]
         public async Task<IActionResult> GetActiveForUserAsync(CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();

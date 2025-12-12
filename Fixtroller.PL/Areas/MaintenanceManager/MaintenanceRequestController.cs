@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.MaintenanceManager
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("MaintenanceManager")]
     [Authorize(Roles = "MaintenanceManager")]
@@ -38,7 +38,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
 
-        [HttpPost("scenario")]
+        [HttpPost("Scenario")]
         public async Task<IActionResult> CreateScenario(
             [FromForm] MaintenanceRequestScenarioRequestDTO dto,
             CancellationToken ct)
@@ -100,7 +100,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                 return Forbid(ex.Message);
             }
         }
-        [HttpGet("mine")]
+        [HttpGet("Mine")]
         public async Task<IActionResult> GetMine(
             DateTime? createdFrom = null,
             DateTime? createdTo = null,
@@ -168,7 +168,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(list);
         }
 
-        [HttpPatch("{id:int}/case")]
+        [HttpPatch("{id:int}/Case")]
         public async Task<IActionResult> ChangeCase(int id, [FromBody] ChangeCaseTypeRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -184,7 +184,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(new { message = _localizer[key].Value, data = res });
         }
 
-        [HttpPatch("{id:int}/caseMine")]
+        [HttpPatch("{id:int}/CaseMine")]
         public async Task<IActionResult> ChangeCaseMine(int id, [FromBody] ChangeCaseTypeRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -200,7 +200,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(new { message = _localizer[key].Value, data = res });
         }
 
-        [HttpPost("{id:int}/notes")]
+        [HttpPost("{id:int}/Notes")]
         public async Task<IActionResult> AddNote(int id, [FromBody] AddNoteRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -217,7 +217,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
 
-        [HttpPost("{id:int}/work/start/{techId}")]
+        [HttpPost("{id:int}/Work/Start/{techId}")]
         public async Task<IActionResult> StartWorkForTech(int id, string techId, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -267,7 +267,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             }
         }
 
-        [HttpPost("{id:int}/images")]
+        [HttpPost("{id:int}/Images")]
         public async Task<IActionResult> AddImages(int id, [FromForm] AddImagesRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -286,7 +286,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(new { message = _localizer[key].Value, data = res });
         }
 
-        [HttpDelete("{id:int}/images")]
+        [HttpDelete("{id:int}/Images")]
         public async Task<IActionResult> RemoveImages(int id, [FromBody] RemoveStaffImagesRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();

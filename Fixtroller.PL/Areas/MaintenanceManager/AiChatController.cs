@@ -10,7 +10,7 @@ using System.Threading.Tasks;
 namespace Fixtroller.PL.Areas.MaintenanceManager
 {
     [Area("MaintenanceManager")]
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Authorize(Roles = "MaintenanceManager")]
     public class AiChatController : ControllerBase

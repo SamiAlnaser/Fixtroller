@@ -6,7 +6,7 @@ using Microsoft.Extensions.Localization;
 
 namespace Fixtroller.PL.Areas.Technician
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Technician")]
     [Authorize(Roles = "Technician")]

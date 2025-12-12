@@ -8,7 +8,7 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.Employee
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Employee")]
     [Authorize(Roles = "Employee")]

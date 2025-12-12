@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas
 {
-    [Route("api/[controller]")]
+    [Route("Api/[controller]")]
     [ApiController]
     [Authorize]
     public class NotificationsController : ControllerBase
@@ -37,7 +37,7 @@ namespace Fixtroller.PL.Areas
         }
 
         // POST: /api/Notifications/{id}/read
-        [HttpPost("{id:int}/read")]
+        [HttpPost("{id:int}/Read")]
         public async Task<IActionResult> MarkRead(int id, CancellationToken ct)
         {
             var userId = GetUserId();
@@ -49,7 +49,7 @@ namespace Fixtroller.PL.Areas
         }
 
         // POST: /api/Notifications/read-all
-        [HttpPost("read-all")]
+        [HttpPost("Read-All")]
         public async Task<IActionResult> MarkAllRead(CancellationToken ct)
         {
             var userId = GetUserId();

@@ -7,7 +7,7 @@ using Microsoft.Extensions.Localization;
 
 namespace Fixtroller.PL.Areas.Admin
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Admin")]
     [Authorize(Roles = "Admin")]
@@ -36,7 +36,7 @@ namespace Fixtroller.PL.Areas.Admin
         }
 
         // GET: api/ProblemsTypes/active
-        [HttpGet("active")]
+        [HttpGet("Active")]
         public async Task<IActionResult> GetActiveProblemsTypes(CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -94,7 +94,7 @@ namespace Fixtroller.PL.Areas.Admin
         }
 
         // PATCH: api/ProblemsTypes/{id}/toggle-status
-        [HttpPatch("{id}/toggle-status")]
+        [HttpPatch("{id}/Toggle-Status")]
         public async Task<IActionResult> ToggleStatus([FromRoute] int id, CancellationToken ct)
         {
             var toggled = await _problemTypesService.ToggleStatusAsync(id, ct);

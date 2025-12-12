@@ -9,7 +9,7 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.Employee
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Employee")]
     [Authorize(Roles = "Employee")]
@@ -63,7 +63,7 @@ namespace Fixtroller.PL.Areas.Employee
             }
         }
 
-        [HttpGet("mine")]
+        [HttpGet("Mine")]
         public async Task<IActionResult> GetMine(
                      DateTime? createdFrom = null,
                      DateTime? createdTo = null,
@@ -100,7 +100,7 @@ namespace Fixtroller.PL.Areas.Employee
             return Ok(list);
         }
 
-        [HttpPatch("{id:int}/caseMine")]
+        [HttpPatch("{id:int}/CaseMine")]
         public async Task<IActionResult> ChangeCaseMine(int id, [FromBody] ChangeCaseTypeRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -118,7 +118,7 @@ namespace Fixtroller.PL.Areas.Employee
             return Ok(new { message = _localizer[key].Value, data = res });
         }
 
-        [HttpPost("{id:int}/notes")]
+        [HttpPost("{id:int}/Notes")]
         public async Task<IActionResult> AddNote(int id, [FromBody] AddNoteRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();

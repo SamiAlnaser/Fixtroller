@@ -11,7 +11,7 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.MaintenanceManager
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("MaintenanceManager")]
     [Authorize(Roles = "MaintenanceManager")]
@@ -46,7 +46,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
 
-        [HttpGet("{techId}/assigned")]
+        [HttpGet("{techId}/Assigned")]
         public async Task<IActionResult> GetAssignedForTechnician(
             string techId,
             DateTime? createdFrom = null,
@@ -71,7 +71,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
 
             return Ok(board);
         }
-        [HttpPost("{id:int}/assign")]
+        [HttpPost("{id:int}/Assign")]
         public async Task<IActionResult> Assign(int id, [FromBody] AssignTechnicianRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -100,7 +100,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                     data = details
                 });
         }
-            [HttpPost("{id:int}/assign-list")]
+            [HttpPost("{id:int}/Assign-List")]
         public async Task<IActionResult> AssignList(int id, [FromBody] AssignTechniciansRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -130,7 +130,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                 });
         }
 
-        [HttpDelete("{id:int}/technicians/{techId}")]
+        [HttpDelete("{id:int}/Technicians/{techId}")]
         public async Task<IActionResult> RemoveTechnician(int id, string techId, CancellationToken ct)
         {
             var (ok, key) = await _requestService
@@ -140,14 +140,14 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(new { message = _localizer[key].Value });
         }
 
-        [HttpPatch("category")]
+        [HttpPatch("Category")]
         public async Task<IActionResult> UpdateCategory([FromBody] UpdateTechnicianCategoryRequestDTO dto, CancellationToken ct)
         {
             var ok = await _TechnicianService.UpdateTechnicianCategoryAsync(dto, ct);
             return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
         }
         // DELETE: api/MaintenanceManager/Technicians/{techId}/category
-        [HttpDelete("{techId}/category")]
+        [HttpDelete("{techId}/Category")]
         public async Task<IActionResult> ClearCategory([FromRoute] string techId, CancellationToken ct)
         {
             var ok = await _TechnicianService.ClearTechnicianCategoryAsync(
@@ -157,7 +157,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
         }
 
-        [HttpGet("by-category/{categoryId:int}")]
+        [HttpGet("By-Category/{categoryId:int}")]
         public async Task<IActionResult> GetByCategory(
             int categoryId,
            [FromQuery] string? search,

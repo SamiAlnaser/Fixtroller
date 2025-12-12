@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.Technician
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Technician")]
     [Authorize(Roles = "Technician")]
@@ -21,7 +21,7 @@ namespace Fixtroller.PL.Areas.Technician
 
 
 
-        [HttpGet("technicians/me/numbers")]
+        [HttpGet("Technicians/Me/Numbers")]
         public async Task<IActionResult> GetMyNumbers(CancellationToken ct)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";

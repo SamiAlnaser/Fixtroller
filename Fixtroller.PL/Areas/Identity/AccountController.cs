@@ -7,7 +7,7 @@ using Microsoft.Extensions.Localization;
 
 namespace Fixtroller.PL.Araes.Identity
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Identity")]
     public class AccountController : ControllerBase

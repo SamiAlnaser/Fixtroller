@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.Admin
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Admin")]
     [Authorize(Roles = "Admin")]
@@ -20,14 +20,14 @@ namespace Fixtroller.PL.Areas.Admin
         }
 
 
-        [HttpGet("technicians/{techId}/numbers")]
+        [HttpGet("Technicians/{techId}/Numbers")]
         public async Task<IActionResult> GetTechnicianNumbers(string techId, CancellationToken ct)
         {
             var dto = await _metricsService.GetTechnicianNumbersAsync(techId, ct);
             return Ok(dto);
         }
 
-        [HttpGet("admin/me/numbers")]
+        [HttpGet("Admin/me/Numbers")]
         public async Task<IActionResult> GetMyNumbers(CancellationToken ct)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";

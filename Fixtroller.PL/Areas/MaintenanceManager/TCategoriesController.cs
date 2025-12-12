@@ -8,7 +8,7 @@ using Microsoft.Extensions.Localization;
 
 namespace Fixtroller.PL.Areas.MaintenanceManager
 {
-    [Route("api/[area]/[controller]")]
+    [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("MaintenanceManager")]
     [Authorize(Roles = "MaintenanceManager")]
@@ -35,7 +35,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         // GET: api/Tcategories/active
-        [HttpGet("active")]
+        [HttpGet("Active")]
         public async Task<IActionResult> GetActiveTCategories(CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
@@ -93,7 +93,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         // PATCH: api/Tcategories/{id}/toggle-status
-        [HttpPatch("{id}/toggle-status")]
+        [HttpPatch("{id}/Toggle-Status")]
         public async Task<IActionResult> ToggleStatus([FromRoute] int id, CancellationToken ct)
         {
             var toggled = await _TcategoryService.ToggleStatusAsync(id, ct);
