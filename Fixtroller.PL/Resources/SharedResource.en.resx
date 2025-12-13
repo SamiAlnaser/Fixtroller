@@ -300,4 +300,7 @@
   <data name="Technician_NotActiveOnRequest" xml:space="preserve">
     <value>This technician is no longer active on this request</value>
   </data>
+  <data name="Image upload failed" xml:space="preserve">
+    <value>Image upload failed. Please try again</value>
+  </data>
 </root>

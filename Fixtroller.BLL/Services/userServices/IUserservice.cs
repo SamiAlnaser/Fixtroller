@@ -2,6 +2,7 @@
 using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
 using Fixtroller.DAL.Data.DTOs.UsersDTOS.Requset;
 using Fixtroller.DAL.Entities;
+using Microsoft.AspNetCore.Http;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -39,5 +40,15 @@ namespace Fixtroller.BLL.Services.UserServices
         Task<(bool Success, string MessageKey)> CreateUserByAdminAsync(
        AdminCreateUserRequestDTO dto,
        CancellationToken ct);
+        Task<(bool Success, string MessageKey, string? ImageUrl, string? ThumbUrl)> UploadMyProfileImageAsync(
+        string userId, IFormFile file, CancellationToken ct = default);
+
+        Task<(bool Success, string MessageKey)> DeleteMyProfileImageAsync(
+            string userId, CancellationToken ct = default);
+
+        Task<(bool Success, string MessageKey, string? ImageUrl, string? ThumbUrl)> GetMyProfileImageAsync(
+            string userId, CancellationToken ct = default);
     }
+
+
     }

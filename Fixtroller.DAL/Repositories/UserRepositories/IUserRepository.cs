@@ -33,6 +33,8 @@ namespace Fixtroller.DAL.Repositories.UserRepository
         Task<bool> AddToRoleAsync(ApplicationUser user, string roleName, CancellationToken ct = default);
 
         Task<IList<string>> GetRolesAsync(ApplicationUser user, CancellationToken ct = default);
+        Task<bool> UpdateAsync(ApplicationUser user, CancellationToken ct = default);
+
     }
 }
 

@@ -131,5 +131,11 @@ namespace Fixtroller.DAL.Repositories.UserRepository
             ct.ThrowIfCancellationRequested();
             return await _userManager.GetRolesAsync(user);
         }
+        public async Task<bool> UpdateAsync(ApplicationUser user, CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+            return (await _userManager.UpdateAsync(user)).Succeeded;
+        }
+
     }
 }

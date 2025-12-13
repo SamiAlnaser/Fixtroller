@@ -1,9 +1,11 @@
-﻿using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
+﻿using Fixtroller.BLL.Services.FileService;
+using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
 using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
 using Fixtroller.DAL.Data.DTOs.UsersDTOS.Requset;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.UserRepository;
 using Mapster;
+using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
 using System;
 using System.Collections.Generic;
@@ -19,10 +21,15 @@ namespace Fixtroller.BLL.Services.UserServices
 
 
 
-        public UserService(IUserRepository userRepository)
+        private readonly IFileService _fileService;
+
+        public UserService(IUserRepository userRepository, IFileService fileService)
         {
             _userRepository = userRepository;
+            _fileService = fileService;
         }
+
+
 
 
         public async Task<List<UserDTO>> GetAllAsync(CancellationToken ct = default)
@@ -176,6 +183,115 @@ namespace Fixtroller.BLL.Services.UserServices
 
             return (true, "USER_CREATED_SUCCESS");
         }
+
+        public async Task<(bool Success, string MessageKey, string? ImageUrl, string? ThumbUrl)> UploadMyProfileImageAsync(
+    string userId, IFormFile file, CancellationToken ct = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId, ct);
+            if (user is null)
+                return (false, "User_NotFound", null, null);
+
+            // ✅ حماية من null file قبل ما نروح على FileService
+            if (file is null || file.Length == 0)
+                return (false, "Images_Empty", null, null);
+
+            try
+            {
+                // احذف القديمة
+                if (!string.IsNullOrWhiteSpace(user.ProfileImagePath))
+                    await _fileService.DeleteAsync(user.ProfileImagePath, ct);
+
+                if (!string.IsNullOrWhiteSpace(user.ProfileImageThumbPath))
+                    await _fileService.DeleteAsync(user.ProfileImageThumbPath, ct);
+
+                // ارفع الجديدة (دويرة + thumb)
+                var (imgPath, thumbPath) = await _fileService.UploadUserAvatarAsync(userId, file, ct);
+
+                user.ProfileImagePath = imgPath;
+                user.ProfileImageThumbPath = thumbPath;
+
+                var updated = await _userRepository.UpdateAsync(user, ct);
+                if (!updated)
+                    return (false, "USER_IMAGE_UPLOAD_FAILED", null, null);
+
+                return (true, "USER_IMAGE_UPLOADED_SUCCESS",
+                    _fileService.GetPublicUrl(imgPath),
+                    _fileService.GetPublicUrl(thumbPath));
+            }
+            catch (InvalidOperationException ex)
+            {
+                // ✅ ربط Exceptions تبعت FileService بـ MessageKeys مترجمة
+                var msg = ex.Message ?? string.Empty;
+
+                if (msg.Contains("Empty", StringComparison.OrdinalIgnoreCase))
+                    return (false, "Images_Empty", null, null);
+
+                if (msg.Contains("Invalid image type", StringComparison.OrdinalIgnoreCase) ||
+                    msg.Contains("Invalid", StringComparison.OrdinalIgnoreCase))
+                    return (false, "Images_InvalidFile", null, null);
+
+                if (msg.Contains("File too large", StringComparison.OrdinalIgnoreCase) ||
+                    msg.Contains("too large", StringComparison.OrdinalIgnoreCase))
+                    return (false, "Images_TooLarge", null, null);
+
+                return (false, "Images_Upload_Failed", null, null);
+            }
+        }
+
+
+        public async Task<(bool Success, string MessageKey)> DeleteMyProfileImageAsync(
+     string userId, CancellationToken ct = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId, ct);
+            if (user is null)
+                return (false, "User_NotFound");
+
+            var hasAny =
+                !string.IsNullOrWhiteSpace(user.ProfileImagePath) ||
+                !string.IsNullOrWhiteSpace(user.ProfileImageThumbPath);
+
+            if (!hasAny)
+                return (false, "USER_IMAGE_NOT_FOUND"); // إذا بدك تعتبرها Success خبرني
+
+            try
+            {
+                if (!string.IsNullOrWhiteSpace(user.ProfileImagePath))
+                    await _fileService.DeleteAsync(user.ProfileImagePath, ct);
+
+                if (!string.IsNullOrWhiteSpace(user.ProfileImageThumbPath))
+                    await _fileService.DeleteAsync(user.ProfileImageThumbPath, ct);
+
+                user.ProfileImagePath = null;
+                user.ProfileImageThumbPath = null;
+
+                var updated = await _userRepository.UpdateAsync(user, ct);
+                if (!updated)
+                    return (false, "USER_IMAGE_DELETE_FAILED");
+
+                return (true, "USER_IMAGE_DELETED_SUCCESS");
+            }
+            catch (InvalidOperationException)
+            {
+                // لو DeleteAsync عندك ممكن يرمي (حسب تعديلك/مستقبلاً)
+                return (false, "USER_IMAGE_DELETE_FAILED");
+            }
+            catch (Exception)
+            {
+                return (false, "USER_IMAGE_DELETE_FAILED");
+            }
+        }
+
+        public async Task<(bool Success, string MessageKey, string? ImageUrl, string? ThumbUrl)> GetMyProfileImageAsync(
+            string userId, CancellationToken ct = default)
+        {
+            var user = await _userRepository.GetByIdAsync(userId, ct);
+            if (user is null) return (false, "User_NotFound", null, null);
+
+            return (true, "Success",
+                string.IsNullOrWhiteSpace(user.ProfileImagePath) ? null : _fileService.GetPublicUrl(user.ProfileImagePath),
+                string.IsNullOrWhiteSpace(user.ProfileImageThumbPath) ? null : _fileService.GetPublicUrl(user.ProfileImageThumbPath));
+        }
+
     }
 
 }
