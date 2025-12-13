@@ -12,7 +12,8 @@ namespace Fixtroller.BLL.Services.FileService
         Task<string> UploadAsync(IFormFile file, CancellationToken ct = default);
         Task DeleteAsync(string fileName, CancellationToken ct = default);
         string GetPublicUrl(string fileName);
-        Task<(string ImagePath, string ThumbPath)> UploadUserAvatarAsync(
+
+        Task<string> UploadUserAvatarAsync(
            string userId,
            IFormFile file,
            CancellationToken ct = default);

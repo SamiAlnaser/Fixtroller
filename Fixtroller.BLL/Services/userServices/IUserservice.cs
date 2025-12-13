@@ -40,13 +40,13 @@ namespace Fixtroller.BLL.Services.UserServices
         Task<(bool Success, string MessageKey)> CreateUserByAdminAsync(
        AdminCreateUserRequestDTO dto,
        CancellationToken ct);
-        Task<(bool Success, string MessageKey, string? ImageUrl, string? ThumbUrl)> UploadMyProfileImageAsync(
-        string userId, IFormFile file, CancellationToken ct = default);
+        Task<(bool Success, string MessageKey, string? ImageUrl)> UploadMyProfileImageAsync(
+            string userId, IFormFile file, CancellationToken ct = default);
 
         Task<(bool Success, string MessageKey)> DeleteMyProfileImageAsync(
             string userId, CancellationToken ct = default);
 
-        Task<(bool Success, string MessageKey, string? ImageUrl, string? ThumbUrl)> GetMyProfileImageAsync(
+        Task<(bool Success, string MessageKey, string? ImageUrl)> GetMyProfileImageAsync(
             string userId, CancellationToken ct = default);
     }
 

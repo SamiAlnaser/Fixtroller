@@ -57,7 +57,23 @@ namespace Fixtroller.BLL.Services.FileService
 
             ct.ThrowIfCancellationRequested();
 
+            // ✅ normalize
+            fileName = fileName.Replace("\\", "/").Trim();
+
+            // ✅ لو انخزن كـ URL
+            if (fileName.StartsWith("/Images/", StringComparison.OrdinalIgnoreCase))
+                fileName = fileName.Substring("/Images/".Length);
+
+            if (fileName.StartsWith("Images/", StringComparison.OrdinalIgnoreCase))
+                fileName = fileName.Substring("Images/".Length);
+
+            // ✅ احذف querystring لو موجود (نادر)
+            var qIndex = fileName.IndexOf("?", StringComparison.Ordinal);
+            if (qIndex >= 0)
+                fileName = fileName.Substring(0, qIndex);
+
             var path = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images", fileName);
+
             if (File.Exists(path))
                 File.Delete(path);
 
@@ -73,17 +89,16 @@ namespace Fixtroller.BLL.Services.FileService
                 : $"{_publicBaseUrl}/Images/{fileName}";
         }
 
-        public async Task<(string ImagePath, string ThumbPath)> UploadUserAvatarAsync(
-    string userId,
-    IFormFile file,
-    CancellationToken ct = default)
+        public async Task<string> UploadUserAvatarAsync(
+        string userId,
+        IFormFile file,
+        CancellationToken ct = default)
         {
             if (file is null || file.Length == 0)
                 throw new InvalidOperationException("Empty file.");
 
             ct.ThrowIfCancellationRequested();
 
-            // ✅ validation بسيط
             var allowed = new[] { "image/jpeg", "image/png", "image/webp" };
             if (!allowed.Contains(file.ContentType))
                 throw new InvalidOperationException("Invalid image type.");
@@ -92,86 +107,40 @@ namespace Fixtroller.BLL.Services.FileService
             if (file.Length > maxBytes)
                 throw new InvalidOperationException("File too large.");
 
-            // ✅ مسارات التخزين داخل wwwroot/Images
             var imagesRoot = Path.Combine(Directory.GetCurrentDirectory(), "wwwroot", "Images");
             var userDir = Path.Combine(imagesRoot, "Users", userId);
-            var thumbsDir = Path.Combine(userDir, "thumbs");
-
             Directory.CreateDirectory(userDir);
-            Directory.CreateDirectory(thumbsDir);
+
+            // ✅ تنظيف أي thumbs قديمة (لو كانت لسا موجودة على السيرفر)
+            var legacyThumbsDir = Path.Combine(userDir, "thumbs");
+            if (Directory.Exists(legacyThumbsDir))
+            {
+                try { Directory.Delete(legacyThumbsDir, recursive: true); }
+                catch { /* ignore */ }
+            }
 
             var stamp = Guid.NewGuid().ToString("N");
             var mainFileName = $"avatar_{stamp}.png";
-            var thumbFileName = $"avatar_thumb_{stamp}.png";
-
             var absMainPath = Path.Combine(userDir, mainFileName);
-            var absThumbPath = Path.Combine(thumbsDir, thumbFileName);
-
-            const int mainSize = 512;
-            const int thumbSize = 128;
 
             await using var stream = file.OpenReadStream();
             using var img = Image.Load<Rgba32>(stream);
 
-            using var main = MakeCircular(img, mainSize);
-            await main.SaveAsync(absMainPath, new PngEncoder(), ct);
-
-            using var thumb = MakeCircular(img, thumbSize);
-            await thumb.SaveAsync(absThumbPath, new PngEncoder(), ct);
-
-            // ✅ نخزن relative path بحيث GetPublicUrl يطلع الرابط صح
-            var relMain = $"Users/{userId}/{mainFileName}";
-            var relThumb = $"Users/{userId}/thumbs/{thumbFileName}";
-
-            return (relMain, relThumb);
-        }
-
-        // ✅ قص مربع + resize + ماسك دائري (خارج الدائرة شفاف)
-        private static Image<Rgba32> MakeCircular(Image<Rgba32> source, int size)
-        {
-            int min = Math.Min(source.Width, source.Height);
-            int x = (source.Width - min) / 2;
-            int y = (source.Height - min) / 2;
-
-            using var square = source.Clone(ctx =>
+            // ✅ بدون دويرة وبدون قص: فقط resize لأقصى حد
+            const int maxSide = 512;
+            if (img.Width > maxSide || img.Height > maxSide)
             {
-                ctx.Crop(new Rectangle(x, y, min, min));
-                ctx.Resize(new ResizeOptions
+                img.Mutate(ctx => ctx.Resize(new ResizeOptions
                 {
-                    Size = new Size(size, size),
-                    Mode = ResizeMode.Crop
-                });
-            });
-
-            var output = new Image<Rgba32>(size, size);
-            output.Mutate(c => c.BackgroundColor(new Rgba32(0, 0, 0, 0)));
-
-            var srcFrame = square.Frames.RootFrame;
-            var dstFrame = output.Frames.RootFrame;
-
-            float radius = size / 2f;
-            float cx = radius - 0.5f;
-            float cy = radius - 0.5f;
-            float r2 = radius * radius;
-
-            for (int j = 0; j < size; j++)
-            {
-                Span<Rgba32> srcRow = srcFrame.DangerousGetPixelRowMemory(j).Span;
-                Span<Rgba32> dstRow = dstFrame.DangerousGetPixelRowMemory(j).Span;
-
-
-                for (int i = 0; i < size; i++)
-                {
-                    float dx = i - cx;
-                    float dy = j - cy;
-
-                    dstRow[i] = (dx * dx + dy * dy) <= r2
-                        ? srcRow[i]
-                        : new Rgba32(0, 0, 0, 0);
-                }
+                    Size = new Size(maxSide, maxSide),
+                    Mode = ResizeMode.Max
+                }));
             }
 
-            return output;
+            await img.SaveAsync(absMainPath, new PngEncoder(), ct);
+
+            // ✅ relative path
+            return $"Users/{userId}/{mainFileName}";
         }
 
 

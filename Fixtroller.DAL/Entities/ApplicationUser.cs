@@ -17,7 +17,6 @@ namespace Fixtroller.DAL.Entities
         public string? Department { get; set; }
         public int? TechnicianCategoryId { get; set; }
         public string? ProfileImagePath { get; set; }
-        public string? ProfileImageThumbPath { get; set; }
 
         public TechnicianCategory TechnicianCategory { get; set; }
         // الطلبات التي "باسمه" كصاحب الطلب

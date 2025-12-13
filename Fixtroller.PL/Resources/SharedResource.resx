@@ -303,4 +303,37 @@
   <data name="Image upload failed" xml:space="preserve">
     <value>فشل رفع الصورة. حاول مرة أخرى.</value>
   </data>
+  <data name="USER_IMAGE_UPLOADED_SUCCESS" xml:space="preserve">
+    <value>تم رفع صورة بنجاح</value>
+  </data>
+  <data name="Images_Upload_Failed" xml:space="preserve">
+    <value>فشل رفع الصورة</value>
+  </data>
+  <data name="ROLE_NOT_FOUND" xml:space="preserve">
+    <value>الدور المطلوب غير موجود</value>
+  </data>
+  <data name="USER_CREATED_SUCCESS" xml:space="preserve">
+    <value>تم إنشاء المستخدم بنجاح</value>
+  </data>
+  <data name="USER_CREATE_FAILED" xml:space="preserve">
+    <value>فشل إنشاء المستخدم</value>
+  </data>
+  <data name="USER_EMAIL_ALREADY_EXISTS" xml:space="preserve">
+    <value>البريد الإلكتروني مستخدم بالفعل</value>
+  </data>
+  <data name="USER_IMAGE_DELETE_FAILED" xml:space="preserve">
+    <value>فشل حذف الصورة</value>
+  </data>
+  <data name="USER_IMAGE_NOT_FOUND" xml:space="preserve">
+    <value>لا توجد صورة للمستخدم</value>
+  </data>
+  <data name="USER_IMAGE_UPLOAD_FAILED" xml:space="preserve">
+    <value>فشل رفع صورة المستخدم</value>
+  </data>
+  <data name="USER_ROLE_ASSIGN_FAILED" xml:space="preserve">
+    <value>فشل تعيين الدور للمستخدم</value>
+  </data>
+  <data name="USER_IMAGE_DELETED_SUCCESS" xml:space="preserve">
+    <value>تم مسح صورة المستخدم بنجاح</value>
+  </data>
 </root>

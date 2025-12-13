@@ -7,15 +7,11 @@ using System.Security.Claims;
 
 namespace Fixtroller.PL.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("Api/[controller]")]
     [ApiController]
     [Authorize]
     public class ProfileController : ControllerBase
-    {
-
-       
-     
-        
+    {   
             private readonly IUserservice _userService;
             private readonly IStringLocalizer<SharedResource> _localizer;
 
@@ -35,7 +31,7 @@ namespace Fixtroller.PL.Controllers
                 if (string.IsNullOrWhiteSpace(userId))
                     return Unauthorized();
 
-                var (success, messageKey, imageUrl, thumbUrl) =
+                var (success, messageKey, imageUrl) =
                     await _userService.UploadMyProfileImageAsync(userId, file, ct);
 
                 var message = _localizer[messageKey].Value;
@@ -46,7 +42,7 @@ namespace Fixtroller.PL.Controllers
                 return Ok(new
                 {
                     message,
-                    data = new { imageUrl, thumbUrl }
+                    data = new { imageUrl }
                 });
             }
 
@@ -60,7 +56,7 @@ namespace Fixtroller.PL.Controllers
                 if (string.IsNullOrWhiteSpace(userId))
                     return Unauthorized();
 
-                var (success, messageKey, imageUrl, thumbUrl) =
+                var (success, messageKey, imageUrl) =
                     await _userService.GetMyProfileImageAsync(userId, ct);
 
                 var message = _localizer[messageKey].Value;
@@ -71,7 +67,7 @@ namespace Fixtroller.PL.Controllers
                 return Ok(new
                 {
                     message,
-                    data = new { imageUrl, thumbUrl }
+                    data = new { imageUrl }
                 });
             }
 
