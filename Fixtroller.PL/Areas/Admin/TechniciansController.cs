@@ -103,7 +103,7 @@ namespace Fixtroller.PL.Areas.Admin
         }
 
 
-        [HttpPost("{id:int}/Assign-list")]
+        [HttpPost("{id:int}/Assign-List")]
         public async Task<IActionResult> AssignList(int id, [FromBody] AssignTechniciansRequestDTO dto, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();

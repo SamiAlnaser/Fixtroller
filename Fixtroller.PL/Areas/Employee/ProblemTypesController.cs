@@ -9,7 +9,7 @@ namespace Fixtroller.PL.Areas.Employee
     [Route("Api/[area]/[controller]")]
     [ApiController]
     [Area("Employee")]
-    [Authorize(Roles = "Employee , SpecialEmployee")]
+    [Authorize(Roles = "Employee")]
     public class ProblemTypesController : ControllerBase
     {
         private readonly IProblemTypesService _problemTypesService;

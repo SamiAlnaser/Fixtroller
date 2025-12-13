@@ -27,7 +27,7 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(dto);
         }
 
-        [HttpGet("Admin/me/Numbers")]
+        [HttpGet("Admin/Me/Numbers")]
         public async Task<IActionResult> GetMyNumbers(CancellationToken ct)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";

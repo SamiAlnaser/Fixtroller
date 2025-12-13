@@ -33,7 +33,7 @@ namespace Fixtroller.PL.Araes.Identity
             return Ok(response);
         }
 
-        [HttpPost("Login")]
+        [HttpPost("LogIn")]
         public async Task<ActionResult<UserResponseDTO>> Login(LoginRequestDTO requestDTO)
         {
             var (response, key) = await _authenticationService.LoginAsync(requestDTO);
