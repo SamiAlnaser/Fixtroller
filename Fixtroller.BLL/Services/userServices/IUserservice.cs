@@ -1,6 +1,8 @@
 ﻿using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
 using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
+using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.UsersDTOS.Requset;
+using Fixtroller.DAL.Data.DTOs.UsersDTOS.Responses;
 using Fixtroller.DAL.Entities;
 using Microsoft.AspNetCore.Http;
 using System;
@@ -48,6 +50,19 @@ namespace Fixtroller.BLL.Services.UserServices
 
         Task<(bool Success, string MessageKey, string? ImageUrl)> GetMyProfileImageAsync(
             string userId, CancellationToken ct = default);
+
+
+        Task<PagedResultDTO<AdminTechnicianListItemDTO>> GetTechniciansForAdminAsync(
+  string language,
+  string? search,
+  string? status,
+  int pageNumber = 1,
+  int pageSize = 10,
+  CancellationToken ct = default);
+
+        Task<AdminTechniciansAvailabilityNumbersDTO> GetTechniciansAvailabilityNumbersAsync(
+    CancellationToken ct = default);
+
     }
 
 

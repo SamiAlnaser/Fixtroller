@@ -348,66 +348,64 @@
   <data name="NOTIF_ASSIGNED_BODY" xml:space="preserve">
     <value>تم تعيينك لطلب الصيانة رقم   {0}</value>
   </data>
-	<data name="NOTIF_REQUEST_CREATED_FOR_YOU_TITLE" xml:space="preserve">
+  <data name="NOTIF_REQUEST_CREATED_FOR_YOU_TITLE" xml:space="preserve">
     <value>تم إنشاء طلب صيانة لك</value>
   </data>
-	<data name="NOTIF_REQUEST_CREATED_FOR_YOU_BODY" xml:space="preserve">
+  <data name="NOTIF_REQUEST_CREATED_FOR_YOU_BODY" xml:space="preserve">
     <value>تم إنشاء طلب صيانة رقم {0} لك.</value>
   </data>
-
-	<data name="NOTIF_REQUEST_CREATED_SCENARIO_TITLE" xml:space="preserve">
+  <data name="NOTIF_REQUEST_CREATED_SCENARIO_TITLE" xml:space="preserve">
     <value>تم إنشاء طلب صيانة (سيناريو)</value>
   </data>
-	<data name="NOTIF_REQUEST_CREATED_SCENARIO_BODY" xml:space="preserve">
+  <data name="NOTIF_REQUEST_CREATED_SCENARIO_BODY" xml:space="preserve">
     <value>تم إنشاء طلب صيانة رقم {0} بواسطة {1}.</value>
   </data>
-
-	<data name="NOTIF_REMOVED_FROM_REQUEST_TITLE" xml:space="preserve">
+  <data name="NOTIF_REMOVED_FROM_REQUEST_TITLE" xml:space="preserve">
     <value>تمت إزالتك من الطلب</value>
   </data>
-	<data name="NOTIF_REMOVED_FROM_REQUEST_BODY" xml:space="preserve">
+  <data name="NOTIF_REMOVED_FROM_REQUEST_BODY" xml:space="preserve">
     <value>تمت إزالتك من طلب الصيانة رقم {0}.</value>
   </data>
-
-	<data name="NOTIF_TECH_REMOVED_TITLE" xml:space="preserve">
+  <data name="NOTIF_TECH_REMOVED_TITLE" xml:space="preserve">
     <value>تم إزالة فني من الطلب</value>
   </data>
-	<data name="NOTIF_TECH_REMOVED_BODY" xml:space="preserve">
+  <data name="NOTIF_TECH_REMOVED_BODY" xml:space="preserve">
     <value>تم إزالة فني من طلب الصيانة رقم {0}.</value>
   </data>
-
-	<data name="NOTIF_WORK_STARTED_TITLE" xml:space="preserve">
+  <data name="NOTIF_WORK_STARTED_TITLE" xml:space="preserve">
     <value>بدء العمل على الطلب</value>
   </data>
-	<data name="NOTIF_WORK_STARTED_BODY" xml:space="preserve">
+  <data name="NOTIF_WORK_STARTED_BODY" xml:space="preserve">
     <value>تم بدء العمل على طلب الصيانة رقم {0}.</value>
   </data>
-
-	<data name="NOTIF_REQUEST_COMPLETED_TITLE" xml:space="preserve">
+  <data name="NOTIF_REQUEST_COMPLETED_TITLE" xml:space="preserve">
     <value>تم إكمال طلب الصيانة</value>
   </data>
-	<data name="NOTIF_REQUEST_COMPLETED_BODY" xml:space="preserve">
+  <data name="NOTIF_REQUEST_COMPLETED_BODY" xml:space="preserve">
     <value>تم إكمال طلب الصيانة رقم {0}.</value>
   </data>
-
-	<data name="NOTIF_REQUEST_STATUS_CHANGED_TITLE" xml:space="preserve">
+  <data name="NOTIF_REQUEST_STATUS_CHANGED_TITLE" xml:space="preserve">
     <value>تغيير حالة طلب الصيانة</value>
   </data>
-	<data name="NOTIF_REQUEST_STATUS_CHANGED_BODY" xml:space="preserve">
+  <data name="NOTIF_REQUEST_STATUS_CHANGED_BODY" xml:space="preserve">
     <value>تم تغيير حالة طلب الصيانة رقم {0} إلى {1}.</value>
   </data>
-
-	<data name="NOTIF_NOTE_ADDED_TITLE" xml:space="preserve">
+  <data name="NOTIF_NOTE_ADDED_TITLE" xml:space="preserve">
     <value>تمت إضافة ملاحظة</value>
   </data>
-	<data name="NOTIF_NOTE_ADDED_BODY" xml:space="preserve">
+  <data name="NOTIF_NOTE_ADDED_BODY" xml:space="preserve">
     <value>تمت إضافة ملاحظة على طلب الصيانة رقم {0}: {1}</value>
   </data>
-
-	<data name="NOTIF_REQUEST_UPDATED_TITLE" xml:space="preserve">
+  <data name="NOTIF_REQUEST_UPDATED_TITLE" xml:space="preserve">
     <value>تم تعديل طلب الصيانة</value>
   </data>
-	<data name="NOTIF_REQUEST_UPDATED_BODY" xml:space="preserve">
+  <data name="NOTIF_REQUEST_UPDATED_BODY" xml:space="preserve">
     <value>قام صاحب الطلب بتعديل طلب الصيانة رقم {0}.</value>
+  </data>
+  <data name="Technician_Status_Available" xml:space="preserve">
+    <value>متاح</value>
+  </data>
+  <data name="Technician_Status_Vacation" xml:space="preserve">
+    <value>في إجازة</value>
   </data>
 </root>

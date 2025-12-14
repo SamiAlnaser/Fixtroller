@@ -1,4 +1,5 @@
-﻿using Fixtroller.DAL.Entities;
+﻿using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
+using Fixtroller.DAL.Entities;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -35,5 +36,13 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             int categoryId,
             string? search,
             CancellationToken ct = default);
+        Task<PagedResultDTO<ApplicationUser>> GetPagedAsync(
+            string? search,
+            string? status,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default);
+        Task<(int Total, int Available, int Vacation)> GetAvailabilityCountsAsync(
+    CancellationToken ct = default);
     }
 }

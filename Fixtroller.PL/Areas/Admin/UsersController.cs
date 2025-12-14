@@ -85,20 +85,55 @@ namespace Fixtroller.PL.Areas.Admin
 
             return Ok(new { message });
         }
-
-        [HttpGet("IsVacation/{userId}")]
-
-        public async Task<IActionResult> IsVacationUser(
-            [FromRoute] string userId,
-            CancellationToken ct)
+        [HttpGet("Technicians")]
+        public async Task<IActionResult> GetTechnicians(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null,
+            CancellationToken ct = default)
         {
-            var (isVacation, messageKey) = await _userService.IsVacationAsync(userId, ct);
-            var message = _localizer[messageKey].Value;
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            if (pageSize > 100) pageSize = 100;
+
+            var result = await _userService.GetTechniciansForAdminAsync(language, search, status, pageNumber, pageSize, ct);
+
+            var items = result.Data.Select(x => new
+            {
+                x.Id,
+                x.FullName,
+                x.ProfileImageUrl,
+                TechnicianCategoryName = x.TechnicianCategoryName,
+                Status = x.IsVacation
+                    ? _localizer["Technician_Status_Vacation"].Value
+                    : _localizer["Technician_Status_Available"].Value
+            }).ToList();
 
             return Ok(new
             {
-                message,
-                data = isVacation
+                message = _localizer["Success"].Value,
+                data = new
+                {
+                    result.TotalPages,
+                    result.CurrentPage,
+                    result.TotalCount,
+                    result.PageSize,
+                    Data = items
+                }
+            });
+        }
+
+        [HttpGet("Technicians/Numbers")]
+        public async Task<IActionResult> GetTechniciansNumbers(CancellationToken ct)
+        {
+            var dto = await _userService.GetTechniciansAvailabilityNumbersAsync(ct);
+
+            return Ok(new
+            {
+                message = _localizer["Success"].Value,
+                data = dto
             });
         }
 

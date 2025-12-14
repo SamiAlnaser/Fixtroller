@@ -1,9 +1,12 @@
 ﻿using Fixtroller.BLL.Services.FileService;
 using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
 using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
+using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.UsersDTOS.Requset;
+using Fixtroller.DAL.Data.DTOs.UsersDTOS.Responses;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.UserRepository;
+using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Mapster;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Identity;
@@ -22,11 +25,13 @@ namespace Fixtroller.BLL.Services.UserServices
 
 
         private readonly IFileService _fileService;
+        private readonly ITechnicianRepository _technicianRepository;
 
-        public UserService(IUserRepository userRepository, IFileService fileService)
+        public UserService(IUserRepository userRepository, IFileService fileService, ITechnicianRepository technicianRepository)
         {
             _userRepository = userRepository;
             _fileService = fileService;
+            _technicianRepository = technicianRepository;
         }
 
 
@@ -277,6 +282,63 @@ namespace Fixtroller.BLL.Services.UserServices
                     ? null
                     : _fileService.GetPublicUrl(user.ProfileImagePath));
         }
+
+        public async Task<PagedResultDTO<AdminTechnicianListItemDTO>> GetTechniciansForAdminAsync(
+            string language,
+            string? search,
+            string? status,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
+
+            var paged = await _technicianRepository.GetPagedAsync(search, status, pageNumber, pageSize, ct);
+            var nowUtc = DateTimeOffset.UtcNow;
+
+            var list = paged.Data.Select(u =>
+            {
+                var categoryName = u.TechnicianCategory?.Translations
+                    ?.OrderBy(tr => tr.Language == language ? 0 : tr.Language == "ar" ? 1 : 2)
+                    .Select(tr => tr.Name)
+                    .FirstOrDefault();
+
+                var isVacation = u.LockoutEnd.HasValue && u.LockoutEnd > nowUtc;
+
+                return new AdminTechnicianListItemDTO
+                {
+                    Id = u.Id,
+                    FullName = u.FullName ?? string.Empty,
+                    ProfileImageUrl = string.IsNullOrWhiteSpace(u.ProfileImagePath)
+                        ? null
+                        : _fileService.GetPublicUrl(u.ProfileImagePath),
+                    TechnicianCategoryName = categoryName,
+                    IsVacation = isVacation
+                };
+            }).ToList();
+
+            return new PagedResultDTO<AdminTechnicianListItemDTO>
+            {
+                TotalPages = paged.TotalPages,
+                CurrentPage = paged.CurrentPage,
+                TotalCount = paged.TotalCount,
+                PageSize = paged.PageSize,
+                Data = list
+            };
+        }
+
+        public async Task<AdminTechniciansAvailabilityNumbersDTO> GetTechniciansAvailabilityNumbersAsync(CancellationToken ct = default)
+        {
+            var (total, available, vacation) = await _technicianRepository.GetAvailabilityCountsAsync(ct);
+
+            return new AdminTechniciansAvailabilityNumbersDTO
+            {
+                TotalTechnicians = total,
+                AvailableTechnicians = available,
+                VacationTechnicians = vacation
+            };
+        }
+
 
     }
 

@@ -1,4 +1,5 @@
 ﻿using Fixtroller.DAL.Data;
+using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Entities;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -118,6 +119,92 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             }
 
             return await q.OrderBy(u => u.FullName).ToListAsync(ct);
+        }
+
+        public async Task<PagedResultDTO<ApplicationUser>> GetPagedAsync(
+            string? search,
+            string? status,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default)
+        {
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+
+            var nowUtc = DateTimeOffset.UtcNow;
+
+            var q = _dbcontext.Users
+                .AsNoTracking()
+                .Include(u => u.TechnicianCategory)
+                    .ThenInclude(c => c.Translations)
+                .Where(u =>
+                    _dbcontext.UserRoles
+                        .Where(ur => ur.UserId == u.Id)
+                        .Select(ur => ur.RoleId)
+                        .Any(roleId => _dbcontext.Roles.Any(r => r.Id == roleId && r.Name == "Technician"))
+                );
+
+            // 🔎 Search by name
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim();
+                q = q.Where(u => u.FullName != null && u.FullName.Contains(s));
+            }
+
+            // ✅ Filter by status: available / vacation
+            if (!string.IsNullOrWhiteSpace(status))
+            {
+                var st = status.Trim().ToLowerInvariant();
+
+                if (st == "vacation")
+                    q = q.Where(u => u.LockoutEnd != null && u.LockoutEnd > nowUtc);
+
+                else if (st == "available")
+                    q = q.Where(u => u.LockoutEnd == null || u.LockoutEnd <= nowUtc);
+            }
+
+            var totalCount = await q.CountAsync(ct);
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var data = await q
+                .OrderBy(u => u.FullName)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync(ct);
+
+            return new PagedResultDTO<ApplicationUser>
+            {
+                TotalPages = totalPages,
+                CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize,
+                Data = data.ToList()
+            };
+        }
+
+        public async Task<(int Total, int Available, int Vacation)> GetAvailabilityCountsAsync(
+    CancellationToken ct = default)
+        {
+            var nowUtc = DateTimeOffset.UtcNow;
+
+            var q = _dbcontext.Users
+                .AsNoTracking()
+                .Where(u =>
+                    _dbcontext.UserRoles
+                        .Where(ur => ur.UserId == u.Id)
+                        .Select(ur => ur.RoleId)
+                        .Any(roleId => _dbcontext.Roles.Any(r => r.Id == roleId && r.Name == "Technician"))
+                );
+
+            var total = await q.CountAsync(ct);
+
+            var vacation = await q
+                .Where(u => u.LockoutEnd != null && u.LockoutEnd > nowUtc)
+                .CountAsync(ct);
+
+            var available = total - vacation;
+
+            return (total, available, vacation);
         }
     }
 
