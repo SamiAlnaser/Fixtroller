@@ -40,7 +40,7 @@ namespace Fixtroller.DAL.Repositories.NotificationRepositories
                 query = query.Where(n => !n.IsRead);
 
             return query
-                .OrderByDescending(n => n.CreatedAt)
+                .OrderByDescending(n => n.CreatedAtUtc)
                 .ToListAsync(ct);
         }
 

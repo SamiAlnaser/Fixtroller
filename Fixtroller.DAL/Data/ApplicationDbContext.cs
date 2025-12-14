@@ -70,7 +70,11 @@ namespace Fixtroller.DAL.Data
                 e.Property(m => m.Title).IsRequired().HasMaxLength(200);
                 e.Property(m => m.Address).IsRequired().HasMaxLength(300);
             });
-            builder.Entity<ApplicationUser>(u =>
+
+
+
+
+builder.Entity<ApplicationUser>(u =>
             {
                 u.HasOne(x => x.TechnicianCategory)
                  .WithMany(c => c.Technicians)

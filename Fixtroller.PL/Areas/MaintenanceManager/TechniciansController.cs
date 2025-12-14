@@ -133,8 +133,10 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         [HttpDelete("{id:int}/Technicians/{techId}")]
         public async Task<IActionResult> RemoveTechnician(int id, string techId, CancellationToken ct)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var (ok, key) = await _requestService
-                .RemoveTechnicianAsync(id, techId, ct);
+                .RemoveTechnicianAsync(id, techId, language, ct);
 
             if (!ok) return BadRequest(new { message = _localizer[key].Value });
             return Ok(new { message = _localizer[key].Value });

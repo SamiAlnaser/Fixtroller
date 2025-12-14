@@ -21,8 +21,6 @@ using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Fixtroller.DAL.UnitOfWork;
 using Fixtroller.DAL.Utils;
-using Fixtroller.PL.Services.Email;
-using Fixtroller.PL.Services.Push;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -30,10 +28,13 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using QuestPDF.Infrastructure;
+using Fixtroller.PL.Services.Notifications;
 using Scalar;
 using Scalar.AspNetCore;
 using System.Globalization;
 using System.Text;
+using Fixtroller.PL.Services.Notifications.Push;
+using Fixtroller.PL.Services.Notifications.Email;
 
 namespace Fixtroller.PL
 {
@@ -111,7 +112,7 @@ namespace Fixtroller.PL
             builder.Services.AddScoped<IPushNotificationSender, NoopPushNotificationSender>();
             builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
             builder.Services.AddScoped<INotificationService, NotificationService>();
-
+            builder.Services.AddScoped<INotificationMessageBuilder,LocalizerNotificationMessageBuilder>();
 
             builder.Services.AddControllers();
             // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi

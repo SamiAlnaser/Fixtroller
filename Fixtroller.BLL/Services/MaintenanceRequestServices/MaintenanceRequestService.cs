@@ -54,7 +54,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             _userRepo = userRepo;
         }
 
-        public async Task<int> CreateWithFile(MaintenanceRequestRequestDTO request, string userId, CancellationToken ct = default)
+        public async Task<int> CreateWithFile(MaintenanceRequestRequestDTO request, string userId, string language = "ar", CancellationToken ct = default)
         {
             // جهّز الكيان
             var entity = MaintenanceRequestMapper.ToEntity(
@@ -104,10 +104,16 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         {
                             UserId = mgr.Id,
                             MaintenanceRequestId = entity.Id,
-                            Type = NotificationType.RequestStatusChanged,   // تقدر تعمل نوع خاص مثلاً RequestCreated لو ضفته في enum
+                            Type = NotificationType.RequestStatusChanged,
                             Severity = NotificationSeverity.Info,
-                            Title = "تم إنشاء طلب صيانة جديد",
-                            Body = $"تم إنشاء طلب صيانة جديد برقم {entity.Id}.",
+
+
+                            Language = language,
+                            // ✅ localization
+                            TitleKey = "NOTIF_REQUEST_CREATED_TITLE",
+                            BodyKey = "NOTIF_REQUEST_CREATED_BODY",
+                            BodyArgs = new object[] { entity.Id },
+
                             Channels = NotificationChannel.InApp | NotificationChannel.Email
                         }, ct);
                     }
@@ -132,12 +138,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             MaintenanceRequestScenarioRequestDTO request,
             string callerUserId,
             string callerRole,
+            string language = "ar",
             CancellationToken ct = default)
         {
             // 1) تأمين الدور
             var isManager = callerRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
             var isAdmin = callerRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
             var isTech = callerRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+
+
 
             if (!isManager && !isAdmin && !isTech)
             {
@@ -154,6 +163,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             var newCase = request.CaseType;
 
+            if (!IsValidCaseType(newCase))
+                return (null, "CaseType_Invalid");
             // 3) القواعد حسب ما طلبت انت 👇
             // الفني: Submitted, Processing, ManagerReview, ResourcesNeeded
             var techAllowed =
@@ -236,8 +247,13 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         MaintenanceRequestId = entity.Id,
                         Type = NotificationType.RequestStatusChanged,
                         Severity = NotificationSeverity.Info,
-                        Title = "تم إنشاء طلب صيانة لك",
-                        Body = $"تم إنشاء طلب صيانة جديد برقم {entity.Id}.",
+                        Language = language,
+
+                        // ✅ localization
+                        TitleKey = "NOTIF_REQUEST_CREATED_FOR_YOU_TITLE",
+                        BodyKey = "NOTIF_REQUEST_CREATED_FOR_YOU_BODY",
+                        BodyArgs = new object[] { entity.Id },
+
                         Channels = NotificationChannel.InApp | NotificationChannel.Email
                     }, ct);
                 }
@@ -255,10 +271,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         {
                             UserId = mgr.Id,
                             MaintenanceRequestId = entity.Id,
-                            Type = NotificationType.RequestStatusChanged,   // تقدر تضيف نوع جديد لاحقاً
+                            Type = NotificationType.RequestStatusChanged,
                             Severity = NotificationSeverity.Info,
-                            Title = "تم إنشاء طلب صيانة جديد (سيناريو)",
-                            Body = $"تم إنشاء طلب صيانة جديد برقم {entity.Id} عن طريق {callerRole}.",
+                            Language = language,
+                            // ✅ localization
+                            TitleKey = "NOTIF_REQUEST_CREATED_SCENARIO_TITLE",
+                            BodyKey = "NOTIF_REQUEST_CREATED_SCENARIO_BODY",
+                            BodyArgs = new object[] { entity.Id, callerRole },
+
                             Channels = NotificationChannel.InApp | NotificationChannel.Email
                         }, ct);
                     }
@@ -666,8 +686,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         MaintenanceRequestId = request.Id,
                         Type = NotificationType.RequestAssigned,
                         Severity = NotificationSeverity.Info,
-                        Title = "تم تعيينك لطلب صيانة جديد",
-                        Body = $"تم تعيينك لطلب الصيانة رقم {request.Id}.",
+                        Language = language,
+                        // ✅ localization
+                        TitleKey = "NOTIF_ASSIGNED_TITLE",
+                        BodyKey = "NOTIF_ASSIGNED_BODY",
+                        BodyArgs = new object[] { request.Id },
+
                         Channels = NotificationChannel.InApp | NotificationChannel.Email
                     }, ct);
                 }
@@ -773,8 +797,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     MaintenanceRequestId = request.Id,
                     Type = NotificationType.RequestAssigned,
                     Severity = NotificationSeverity.Info,
-                    Title = "تم تعيينك لطلب صيانة جديد",
-                    Body = $"تم تعيينك لطلب الصيانة رقم {request.Id}.",
+                    Language = language,
+                    // ✅ localization
+                    TitleKey = "NOTIF_ASSIGNED_TITLE",
+                    BodyKey = "NOTIF_ASSIGNED_BODY",
+                    BodyArgs = new object[] { request.Id },
+
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
 
@@ -788,9 +816,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
 
         public async Task<(bool ok, string messageKey)> RemoveTechnicianAsync(
-      int requestId,
-      string technicianUserId,
-      CancellationToken ct = default)
+            int requestId,
+            string technicianUserId,
+            string language = "ar",
+            CancellationToken ct = default)
         {
             // 1) تأكد الطلب موجود
             var r = await _repository.GetForUpdateAsync(requestId, ct);
@@ -822,8 +851,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     MaintenanceRequestId = r.Id,
                     Type = NotificationType.RequestStatusChanged,
                     Severity = NotificationSeverity.Info,
-                    Title = "تمت إزالتك من طلب صيانة",
-                    Body = $"تمت إزالتك من طلب الصيانة رقم {r.Id}.",
+                    Language = language,
+                    // ✅ localization
+                    TitleKey = "NOTIF_REMOVED_FROM_REQUEST_TITLE",
+                    BodyKey = "NOTIF_REMOVED_FROM_REQUEST_BODY",
+                    BodyArgs = new object[] { r.Id },
+
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
 
@@ -842,8 +875,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                             MaintenanceRequestId = r.Id,
                             Type = NotificationType.RequestStatusChanged,
                             Severity = NotificationSeverity.Info,
-                            Title = "تم إزالة فني من طلب صيانة",
-                            Body = $"تمت إزالة فني من طلب الصيانة رقم {r.Id}.",
+                            Language = language,
+                            // ✅ localization
+                            TitleKey = "NOTIF_TECH_REMOVED_TITLE",
+                            BodyKey = "NOTIF_TECH_REMOVED_BODY",
+                            BodyArgs = new object[] { r.Id },
+
                             Channels = NotificationChannel.InApp | NotificationChannel.Email
                         }, ct);
                     }
@@ -863,6 +900,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
            string technicianUserId,
            string callerUserId,
            string callerRole,
+           string language = "ar",
            CancellationToken ct = default)
         {
             // 1) تحقق الطلب
@@ -905,10 +943,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 {
                     UserId = technicianUserId,
                     MaintenanceRequestId = req.Id,
-                    Type = NotificationType.RequestStatusChanged, // ممكن تعمل نوع خاص لاحقًا
+                    Type = NotificationType.RequestStatusChanged,
                     Severity = NotificationSeverity.Info,
-                    Title = "تم بدء العمل على طلب صيانة",
-                    Body = $"تم بدء العمل على طلب الصيانة رقم {req.Id}.",
+                    Language = language,
+                    // ✅ localization
+                    TitleKey = "NOTIF_WORK_STARTED_TITLE",
+                    BodyKey = "NOTIF_WORK_STARTED_BODY",
+                    BodyArgs = new object[] { req.Id },
+
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
 
@@ -930,6 +972,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
      string language = "ar",
      CancellationToken ct = default)
         {
+            if (!IsValidCaseType(dto.NewCaseType))
+                return (null, "CaseType_Invalid");
             // تحقّقات بدون ترانزاكشن
             var r = await _repository.GetForUpdateAsync(requestId, ct);
             if (r is null) return (null, "Request_NotFound");
@@ -1012,8 +1056,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
                     await _uow.SaveAndCommitAsync(ct);
 
-                    
-                    await SendStatusChangeNotificationAsync(r, newCase, ct);
+
+                    await SendStatusChangeNotificationAsync(r, newCase, language, ct);
 
                     var fresh2 = await GetByIdAsync(requestId, userId, userRole, language, ct);
                     return (fresh2, "Case_Changed");
@@ -1042,7 +1086,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
                     await _uow.SaveAndCommitAsync(ct);
 
-                    await SendStatusChangeNotificationAsync(r, newCase, ct);
+                    await SendStatusChangeNotificationAsync(r, newCase, language, ct);
 
                     var fresh1 = await GetByIdAsync(requestId, userId, userRole, language, ct);
                     return (fresh1, "Case_Changed");
@@ -1098,8 +1142,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
                 await _uow.SaveAndCommitAsync(ct);
 
-                
-                await SendStatusChangeNotificationAsync(r, newCase, ct);
+
+                await SendStatusChangeNotificationAsync(r, newCase, language, ct);
 
                 var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
                 return (fresh, "Case_Changed");
@@ -1158,7 +1202,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 await _uow.SaveAndCommitAsync(ct);
 
                 // 🔔 إشعار بإضافة ملاحظة جديدة على الطلب
-                await SendNoteAddedNotificationAsync(r, noteType, userId, dto.Text!, ct);
+                await SendNoteAddedNotificationAsync(r, noteType, userId, dto.Text!, language, ct);
 
                 var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
                 return (fresh, "Note_Added");
@@ -1263,12 +1307,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
 
                 // 9) إشعارات للمديرين والفنيين أن صاحب الطلب عدّل الطلب 👇
-                await SendRequestUpdatedByOwnerNotificationAsync(r, ct);
+                await SendRequestUpdatedByOwnerNotificationAsync(r, language, ct);
 
                 var isOwner = true; // مؤكّد من الفحص أعلاه
 
-                //var response = MaintenanceRequestMapper.ToResponse(r, role, _fileService.GetPublicUrl, language, isOwner);
-                //return (response, "Request_Updated");
                 var fresh = await GetByIdAsync(id, userId, role, language, ct);
                 return (fresh, "Request_Updated");
             }
@@ -1386,13 +1428,6 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         .Include(x => x.ProblemType).ThenInclude(pt => pt.Translations),
                     predicate: x => x.Id == requestId)
                 .FirstOrDefaultAsync(ct);
-
-            //var dtoRes = withIncludes is null
-            //    ? null
-            //    : MaintenanceRequestMapper.ToResponse(withIncludes, userRole, _fileService.GetPublicUrl, language,
-            //          isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
-
-            //return (dtoRes, "Images_Added");
             var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
             return (fresh, "Images_Added");
         }
@@ -1487,17 +1522,6 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     predicate: x => x.Id == requestId)
                 .FirstOrDefaultAsync(ct);
 
-            //var dtoRes = withIncludes is null
-            //    ? null
-            //    : MaintenanceRequestMapper.ToResponse(
-            //          withIncludes,
-            //          userRole,
-            //          _fileService.GetPublicUrl,
-            //          language,
-            //          isOwner: string.Equals(withIncludes.CreatedByUserId, userId, StringComparison.Ordinal));
-
-            //// 🔑 مسج جديدة للترجمة
-            //return (dtoRes, "Images_Removed");
 
             var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
             return (fresh, "Images_Removed");
@@ -1515,10 +1539,15 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         private async Task SendStatusChangeNotificationAsync(
             MaintenanceRequest r,
             CaseType newCase,
+            string language,
             CancellationToken ct)
         {
             // 1) جهّز قائمة المستلمين بدون تكرار
             var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+            string titleKey;
+            string bodyKey;
+            object[]? bodyArgs;
 
             //  صاحب الطلب: نستثنيه فقط لو الحالة ManagerReview
             if (newCase != CaseType.ManagerReview &&
@@ -1570,6 +1599,19 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 ? $"تم إكمال طلب الصيانة رقم {r.Id}."
                 : $"تم تغيير حالة طلب الصيانة رقم {r.Id} إلى {newCase}.";
 
+            if (newCase == CaseType.Completed)
+            {
+                titleKey = "NOTIF_REQUEST_COMPLETED_TITLE";
+                bodyKey = "NOTIF_REQUEST_COMPLETED_BODY";
+                bodyArgs = new object[] { r.Id };
+            }
+            else
+            {
+                titleKey = "NOTIF_REQUEST_STATUS_CHANGED_TITLE";
+                bodyKey = "NOTIF_REQUEST_STATUS_CHANGED_BODY";
+                bodyArgs = new object[] { r.Id, newCase.ToString() };
+            }
+
             // 3) إرسال نفس الإشعار لكل مستلم
             foreach (var userId in recipients)
             {
@@ -1579,19 +1621,24 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     MaintenanceRequestId = r.Id,
                     Type = type,
                     Severity = severity,
-                    Title = title,
-                    Body = body,
+                    Language = language,
+                    // ✅ localization
+                    TitleKey = titleKey,
+                    BodyKey = bodyKey,
+                    BodyArgs = bodyArgs,
+
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
             }
         }
 
         private async Task SendNoteAddedNotificationAsync(
-    MaintenanceRequest r,
-    NoteType noteType,
-    string authorUserId,
-    string noteText,
-    CancellationToken ct)
+            MaintenanceRequest r,
+            NoteType noteType,
+            string authorUserId,
+            string noteText,
+            string language,
+            CancellationToken ct)
         {
             // جهّز قائمة المستلمين (بدون تكرار)
             var recipients = new HashSet<string>(StringComparer.Ordinal);
@@ -1648,10 +1695,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 {
                     UserId = uid,
                     MaintenanceRequestId = r.Id,
-                    Type = NotificationType.RequestStatusChanged, // لو عندك نوع خاص NoteAdded حاب تضيفه لاحقاً، استعمله هنا
+                    Type = NotificationType.RequestStatusChanged,
                     Severity = NotificationSeverity.Info,
-                    Title = title,
-                    Body = body,
+                    Language = language,
+                    // ✅ localization
+                    TitleKey = "NOTIF_NOTE_ADDED_TITLE",
+                    BodyKey = "NOTIF_NOTE_ADDED_BODY",
+                    BodyArgs = new object[] { r.Id, trimmed },
+
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
             }
@@ -1659,8 +1710,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
 
         private async Task SendRequestUpdatedByOwnerNotificationAsync(
-    MaintenanceRequest r,
-    CancellationToken ct)
+            MaintenanceRequest r,
+            string language,
+            CancellationToken ct)
         {
             // قائمة المستلمين بدون تكرار
             var recipients = new HashSet<string>(StringComparer.Ordinal);
@@ -1703,10 +1755,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 {
                     UserId = uid,
                     MaintenanceRequestId = r.Id,
-                    Type = NotificationType.RequestStatusChanged, // لو حاب لاحقاً تعمل نوع خاص RequestUpdatedByOwner تمام
+                    Type = NotificationType.RequestStatusChanged,
                     Severity = NotificationSeverity.Info,
-                    Title = title,
-                    Body = body,
+                    Language = language,
+                    // ✅ localization
+                    TitleKey = "NOTIF_REQUEST_UPDATED_TITLE",
+                    BodyKey = "NOTIF_REQUEST_UPDATED_BODY",
+                    BodyArgs = new object[] { r.Id },
+
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
             }
@@ -1741,6 +1797,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
+        private static bool IsValidCaseType(CaseType value)
+    => Enum.IsDefined(typeof(CaseType), (int)value);
 
     }
 

@@ -1,6 +1,6 @@
 ﻿using Fixtroller.BLL.Services.NotificationServices;
 
-namespace Fixtroller.PL.Services.Push
+namespace Fixtroller.PL.Services.Notifications.Push
 {
     public class NoopPushNotificationSender : IPushNotificationSender
     {

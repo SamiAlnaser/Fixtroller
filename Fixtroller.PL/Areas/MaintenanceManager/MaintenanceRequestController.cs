@@ -29,12 +29,14 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         [HttpPost("")]
         public async Task<IActionResult> Create([FromForm] MaintenanceRequestRequestDTO dto, CancellationToken ct)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var userId = User.FindFirst("Id")?.Value
                       ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized();
 
-            var id = await _maintenanceRequestService.CreateWithFile(dto, userId, ct);
+            var id = await _maintenanceRequestService.CreateWithFile(dto, userId, language, ct);
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
 
@@ -54,11 +56,8 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var role = User.FindFirst("role")?.Value
                      ?? "MaintenanceManager";
 
-            var (id, key) = await _maintenanceRequestService.CreateScenarioAsync(
-                dto,
-                callerUserId: userId,
-                callerRole: role,
-                ct: ct);
+            var (id, key) = await _maintenanceRequestService.CreateScenarioAsync(dto, userId, role, language, ct);
+
 
             if (id is null)
             {
@@ -235,6 +234,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                 technicianUserId: trimmed!,
                 callerUserId: userId,
                 callerRole: role,
+                language: language,
                 ct: ct);
 
             if (!ok) return BadRequest(new { message = _localizer[key].Value });

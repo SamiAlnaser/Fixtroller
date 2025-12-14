@@ -33,20 +33,21 @@ namespace Fixtroller.PL.Areas.Technician
         [HttpPost("")]
         public async Task<IActionResult> Create([FromForm] MaintenanceRequestRequestDTO dto, CancellationToken ct)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var userId = User.FindFirst("Id")?.Value
                       ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized();
 
-            var id = await _maintenanceRequestService.CreateWithFile(dto, userId, ct);
+            var id = await _maintenanceRequestService.CreateWithFile(dto, userId, language, ct);
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
 
-
         [HttpPost("Scenario")]
         public async Task<IActionResult> CreateScenario(
-                [FromForm] MaintenanceRequestScenarioRequestDTO dto,
-                CancellationToken ct)
+            [FromForm] MaintenanceRequestScenarioRequestDTO dto,
+            CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
@@ -59,19 +60,14 @@ namespace Fixtroller.PL.Areas.Technician
             var role = User.FindFirst("role")?.Value
                      ?? "Technician";
 
-            var (id, key) = await _maintenanceRequestService.CreateScenarioAsync(
-                dto,
-                callerUserId: userId,
-                callerRole: role,
-                ct: ct);
+            var (id, key) = await _maintenanceRequestService.CreateScenarioAsync(dto, userId, role, language, ct);
+
 
             if (id is null)
             {
-                // فشل (حالة غير مسموحة، ownerUserId ناقص، ...الخ)
                 return BadRequest(new { message = _localizer[key].Value });
             }
 
-            // نجاح
             return CreatedAtAction(
                 nameof(GetById),
                 new { id = id.Value },
@@ -232,11 +228,12 @@ namespace Fixtroller.PL.Areas.Technician
 
             // الفني يبدّأ لنفسه
             var (ok, key) = await _maintenanceRequestService.StartWorkAsync(
-                requestId: id,
-                technicianUserId: userId,
-                callerUserId: userId,
-                callerRole: role,
-                ct: ct);
+             requestId: id,
+             technicianUserId: userId,
+             callerUserId: userId,
+             callerRole: role,
+             language: language,
+             ct: ct);
 
             if (!ok) return BadRequest(new { message = _localizer[key].Value });
             return Ok(new { message = _localizer[key].Value });

@@ -3,7 +3,7 @@ using Microsoft.Extensions.Options;
 using System.Net;
 using System.Net.Mail;
 
-namespace Fixtroller.PL.Services.Email
+namespace Fixtroller.PL.Services.Notifications.Email
 {
     public class EmailSettings
     {
@@ -16,7 +16,7 @@ namespace Fixtroller.PL.Services.Email
         public string DisplayName { get; set; } = "Fixtroller";
     }
 
-    public class SmtpEmailSender : IAppEmailSender
+    public sealed class SmtpEmailSender : IAppEmailSender
     {
         private readonly EmailSettings _settings;
 
@@ -25,19 +25,20 @@ namespace Fixtroller.PL.Services.Email
             _settings = options.Value;
         }
 
-        public async Task SendAsync(
+        public async Task<bool> SendAsync(
             string to,
             string subject,
             string body,
             CancellationToken ct = default)
         {
-            // حماية بسيطة لو الإعدادات ناقصة أو to فاضية
+            ct.ThrowIfCancellationRequested();
+
+            // ✅ لو الإعدادات ناقصة أو البريد فاضي: ما نرسل، ونرجّع false
             if (string.IsNullOrWhiteSpace(to) ||
                 string.IsNullOrWhiteSpace(_settings.From) ||
                 string.IsNullOrWhiteSpace(_settings.SmtpHost))
             {
-                // ممكن تحط Log هنا لو حاب
-                return; // ما نبعت إيميل، بس كمان ما نكسر الـ API
+                return false;
             }
 
             using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
@@ -57,6 +58,7 @@ namespace Fixtroller.PL.Services.Email
             mail.To.Add(to);
 
             await client.SendMailAsync(mail);
+            return true;
         }
     }
 }

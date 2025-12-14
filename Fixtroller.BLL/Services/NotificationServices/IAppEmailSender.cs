@@ -8,6 +8,6 @@ namespace Fixtroller.BLL.Services.NotificationServices
 {
     public interface IAppEmailSender
     {
-        Task SendAsync(string to, string subject, string body, CancellationToken ct = default);
+        Task<bool> SendAsync(string to, string subject, string body, CancellationToken ct = default);
     }
 }

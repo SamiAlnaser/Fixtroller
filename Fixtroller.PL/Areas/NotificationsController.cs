@@ -2,7 +2,9 @@
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Localization;
 using System.Security.Claims;
+using System.Text.Json;
 
 namespace Fixtroller.PL.Areas
 {
@@ -12,10 +14,12 @@ namespace Fixtroller.PL.Areas
     public class NotificationsController : ControllerBase
     {
         private readonly INotificationService _notifications;
+        private readonly IStringLocalizer<SharedResource> _localizer;
 
-        public NotificationsController(INotificationService notifications)
+        public NotificationsController(INotificationService notifications, IStringLocalizer<SharedResource> localizer)
         {
             _notifications = notifications;
+            _localizer = localizer;
         }
 
         private string? GetUserId()
@@ -25,15 +29,18 @@ namespace Fixtroller.PL.Areas
         }
 
         // GET: /api/Notifications?onlyUnread=true
-        [HttpGet]
-        public async Task<IActionResult> List([FromQuery] bool onlyUnread, CancellationToken ct)
+        [HttpGet("")]
+        public async Task<IActionResult> Get([FromQuery] bool onlyUnread = false, CancellationToken ct = default)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
             var userId = GetUserId();
-            if (string.IsNullOrEmpty(userId))
+            if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized();
 
-            var data = await _notifications.GetForUserAsync(userId, onlyUnread, ct);
-            return Ok(data);
+            var list = await _notifications.GetForUserAsync(userId, onlyUnread, language, ct);
+            return Ok(list);
         }
 
         // POST: /api/Notifications/{id}/read

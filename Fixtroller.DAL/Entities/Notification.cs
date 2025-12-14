@@ -41,19 +41,18 @@ namespace Fixtroller.DAL.Entities
         public string UserId { get; set; } = default!;
         public ApplicationUser User { get; set; } = default!;
 
-        public string Title { get; set; } = default!;
-        public string Body { get; set; } = default!;
+        public string TitleKey { get; set; } = default!;
+        public string BodyKey { get; set; } = default!;
+        public string? TitleArgsJson { get; set; }
+        public string? BodyArgsJson { get; set; }
 
         public int? MaintenanceRequestId { get; set; }
-        public MaintenanceRequest? MaintenanceRequest { get; set; }
-
         public NotificationType Type { get; set; }
         public NotificationSeverity Severity { get; set; }
         public NotificationChannel Channels { get; set; }
 
         public bool IsRead { get; set; } = false;
         public DateTime CreatedAtUtc { get; set; } = DateTime.UtcNow;
-
         public bool EmailSent { get; set; } = false;
     }
 }

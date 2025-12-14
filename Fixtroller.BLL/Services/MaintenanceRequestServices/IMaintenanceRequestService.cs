@@ -16,16 +16,17 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         : IGenericService<MaintenanceRequestRequestDTO, MaintenanceRequestResponseDTO, MaintenanceRequest>
     {
         Task<int> CreateWithFile(
-            MaintenanceRequestRequestDTO request,
-            string userId,
-            CancellationToken ct = default);
+           MaintenanceRequestRequestDTO request,
+           string userId,
+           string language = "ar",
+           CancellationToken ct = default);
 
         Task<(int? Id, string MessageKey)> CreateScenarioAsync(
             MaintenanceRequestScenarioRequestDTO request,
             string callerUserId,
             string callerRole,
+            string language = "ar",
             CancellationToken ct = default);
-
 
         Task<PagedResultDTO<MaintenanceRequestListMineDTO>> GetMineAsync(string userId,string role,string language,
         DateTime? createdFrom = null,
@@ -72,6 +73,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         Task<(bool ok, string messageKey)> RemoveTechnicianAsync(
             int requestId,
             string technicianUserId,
+            string language = "ar",
             CancellationToken ct = default);
 
         Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> ChangeCaseAsync(
@@ -105,6 +107,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             string technicianUserId,
             string callerUserId,
             string callerRole,
+            string language = "ar",
             CancellationToken ct = default);
 
         Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> AddImagesAsync(

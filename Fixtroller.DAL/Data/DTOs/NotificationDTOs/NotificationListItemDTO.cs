@@ -14,6 +14,12 @@ namespace Fixtroller.DAL.Data.DTOs.NotificationDTOs
         public string Title { get; set; } = default!;
         public string Body { get; set; } = default!;
 
+        // ✅ لازم يكونوا دايمًا موجودين
+        public string TitleKey { get; set; } = default!;
+        public string BodyKey { get; set; } = default!;
+        public string? TitleArgsJson { get; set; }
+        public string? BodyArgsJson { get; set; }
+
         public bool IsRead { get; set; }
         public DateTime CreatedAtUtc { get; set; }
 

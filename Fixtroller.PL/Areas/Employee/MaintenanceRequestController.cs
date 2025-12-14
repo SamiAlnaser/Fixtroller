@@ -29,14 +29,17 @@ namespace Fixtroller.PL.Areas.Employee
         [HttpPost("")]
         public async Task<IActionResult> Create([FromForm] MaintenanceRequestRequestDTO dto, CancellationToken ct)
         {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var userId = User.FindFirst("Id")?.Value
                       ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (string.IsNullOrWhiteSpace(userId))
                 return Unauthorized();
 
-            var id = await _maintenanceRequestService.CreateWithFile(dto, userId, ct);
+            var id = await _maintenanceRequestService.CreateWithFile(dto, userId, language, ct);
             return CreatedAtAction(nameof(GetById), new { id }, id);
         }
+
 
         [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById(int id,  CancellationToken ct = default)

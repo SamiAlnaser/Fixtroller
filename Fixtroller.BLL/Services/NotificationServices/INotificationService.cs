@@ -9,12 +9,12 @@ namespace Fixtroller.BLL.Services.NotificationServices
 {
     public interface INotificationService
     {
-        Task<int> CreateAsync(NotificationCreateModel model, CancellationToken ct = default);
+        Task<int> CreateAsync(
+            NotificationCreateModel model,
+            CancellationToken ct = default);
 
         Task<IReadOnlyList<NotificationListItemDTO>> GetForUserAsync(
-            string userId,
-            bool onlyUnread,
-            CancellationToken ct = default);
+            string userId, bool onlyUnread, string language = "ar", CancellationToken ct = default);
 
         Task MarkAsReadAsync(int id, string userId, CancellationToken ct = default);
 
