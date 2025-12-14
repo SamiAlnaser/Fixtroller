@@ -93,5 +93,20 @@ namespace Fixtroller.PL.Areas
 
             return Ok(page);
         }
+
+        [HttpGet("Unread-Count")]
+        public async Task<IActionResult> GetUnreadCount(CancellationToken ct = default)
+        {
+            var userId = GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized();
+
+            var count = await _notifications.GetUnreadCountAsync(userId, ct);
+
+            return Ok(new
+            {
+                count
+            });
+        }
     }
 }

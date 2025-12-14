@@ -26,5 +26,9 @@ namespace Fixtroller.BLL.Services.NotificationServices
             int? lastId,
             string language = "ar",
             CancellationToken ct = default);
+
+        Task<int> GetUnreadCountAsync(
+    string userId,
+    CancellationToken ct = default);
     }
 }

@@ -213,5 +213,12 @@ namespace Fixtroller.BLL.Services.NotificationServices
         }
 
 
+        public Task<int> GetUnreadCountAsync(
+    string userId,
+    CancellationToken ct = default)
+        {
+            return _notificationRepo.GetUnreadCountForUserAsync(userId, ct);
+        }
+
     }
 }

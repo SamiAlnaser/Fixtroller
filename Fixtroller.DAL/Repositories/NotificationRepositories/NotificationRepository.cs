@@ -86,5 +86,14 @@ namespace Fixtroller.DAL.Repositories.NotificationRepositories
                 .ToListAsync(ct);
         }
 
+        public Task<int> GetUnreadCountForUserAsync(
+    string userId,
+    CancellationToken ct = default)
+        {
+            return QueryBase(false)
+                .Where(n => n.UserId == userId && !n.IsRead)
+                .CountAsync(ct);
+        }
+
     }
 }

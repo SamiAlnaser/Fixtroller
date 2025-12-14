@@ -31,5 +31,9 @@ namespace Fixtroller.DAL.Repositories.NotificationRepositories
             int take,
             int? lastId,
             CancellationToken ct = default);
+        Task<int> GetUnreadCountForUserAsync(
+    string userId,
+    CancellationToken ct = default);
+
     }
 }
