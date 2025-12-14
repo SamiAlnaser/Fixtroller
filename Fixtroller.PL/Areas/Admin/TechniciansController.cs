@@ -44,7 +44,7 @@ namespace Fixtroller.PL.Areas.Admin
             var data = await _TechnicianService.GetWithMetricsAsync(language, categoryId, search, pageNumber, pageSize, ct);
             return Ok(data);
         }
-        [HttpGet("{techId}/assigned")]
+        [HttpGet("{techId}/Assigned")]
         public async Task<IActionResult> GetAssignedForTechnician(
     string techId,
     DateTime? createdFrom = null,
