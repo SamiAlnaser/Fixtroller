@@ -68,7 +68,10 @@ namespace Fixtroller.DAL.Data
                 e.HasIndex(m => m.OwnerUserId);
 
                 e.Property(m => m.Title).IsRequired().HasMaxLength(200);
-                e.Property(m => m.Address).IsRequired().HasMaxLength(300);
+                e.Property(m => m.Address).HasMaxLength(300);
+
+                e.Property(m => m.Latitude).HasColumnType("decimal(9,6)");
+                e.Property(m => m.Longitude).HasColumnType("decimal(9,6)");
             });
 
 

@@ -4,6 +4,7 @@ using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -18,14 +19,33 @@ namespace Fixtroller.BLL.Mapping
             string ownerUserId,
             string createdByUserId)
         {
+            // parse lat/lng (strings) safely with invariant culture
+            decimal? lat = null;
+            decimal? lng = null;
+
+            if (TryParseInvariant(request.Latitude, out var latVal) &&
+                TryParseInvariant(request.Longitude, out var lngVal))
+            {
+                lat = latVal;
+                lng = lngVal;
+            }
+
             return new MaintenanceRequest
             {
                 Title = request.Title?.Trim(),
                 Description = string.IsNullOrWhiteSpace(request.Description)
                     ? null
                     : request.Description.Trim(),
+
                 Priority = request.Priority,
-                Address = request.Address?.Trim(),
+
+                Address = string.IsNullOrWhiteSpace(request.Address)
+                    ? null
+                    : request.Address.Trim(),
+
+                Latitude = lat,
+                Longitude = lng,
+
                 ProblemTypeId = request.ProblemTypeId,
                 CaseType = CaseType.Submitted,
                 OwnerUserId = ownerUserId,
@@ -33,6 +53,8 @@ namespace Fixtroller.BLL.Mapping
                 CreatedAt = DateTime.UtcNow
             };
         }
+
+
 
         // 1) النسخة الافتراضية (تبني URL نسبي)
         public static MaintenanceRequestResponseDTO ToResponse(MaintenanceRequest e, string role)
@@ -74,7 +96,8 @@ namespace Fixtroller.BLL.Mapping
                 ProblemTypeId = e.ProblemTypeId,
                 ProblemTypeName = ptName,
                 Address = e.Address,
-
+                Latitude = e.Latitude,
+                Longitude = e.Longitude,
                 OwnerUserId = e.OwnerUserId,
                 CreatedByUserId = e.CreatedByUserId,
                 IsCreatedByOwner = string.Equals(e.OwnerUserId, e.CreatedByUserId, StringComparison.Ordinal),
@@ -318,6 +341,13 @@ namespace Fixtroller.BLL.Mapping
                 Priority.Low => "Low",
                 _ => p.ToString()
             };
+        }
+        private static bool TryParseInvariant(string? s, out decimal value)
+        {
+            value = 0;
+            if (string.IsNullOrWhiteSpace(s)) return false;
+            var normalized = s.Trim().Replace("،", ",").Replace(',', '.');
+            return decimal.TryParse(normalized, NumberStyles.Float, CultureInfo.InvariantCulture, out value);
         }
 
     }

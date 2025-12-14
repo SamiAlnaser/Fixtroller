@@ -30,7 +30,8 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public int ProblemTypeId { get; set; }
         public string? ProblemTypeName { get; set; }
         public string? Address { get; set; }
-
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
         public string OwnerUserId { get; set; } = default!;
         public string CreatedByUserId { get; set; } = default!;
         public bool IsCreatedByOwner { get; set; }

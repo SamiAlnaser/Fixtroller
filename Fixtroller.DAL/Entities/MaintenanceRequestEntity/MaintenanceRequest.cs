@@ -34,7 +34,10 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         public ICollection<MaintenanceNote> Notes { get; set; } = new List<MaintenanceNote>();
 
 
-        public string Address { get; set; }
+        public string? Address { get; set; }
+
+        public decimal? Latitude { get; set; }
+        public decimal? Longitude { get; set; }
         public Priority Priority { get; set; }
 
 
