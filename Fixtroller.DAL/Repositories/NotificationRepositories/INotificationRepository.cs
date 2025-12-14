@@ -24,5 +24,12 @@ namespace Fixtroller.DAL.Repositories.NotificationRepositories
         Task<List<Notification>> GetUnreadForUserAsync(
             string userId,
             CancellationToken ct = default);
+
+        Task<List<Notification>> GetForUserPageAsync(
+            string userId,
+            bool onlyUnread,
+            int take,
+            int? lastId,
+            CancellationToken ct = default);
     }
 }

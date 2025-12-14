@@ -3,6 +3,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using System.Text;
+using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
 namespace Fixtroller.DAL.Data.DTOs.NotificationDTOs
@@ -15,9 +16,13 @@ namespace Fixtroller.DAL.Data.DTOs.NotificationDTOs
         public string Body { get; set; } = default!;
 
         // ✅ لازم يكونوا دايمًا موجودين
+        [JsonIgnore]
         public string TitleKey { get; set; } = default!;
+        [JsonIgnore]
         public string BodyKey { get; set; } = default!;
+        [JsonIgnore]
         public string? TitleArgsJson { get; set; }
+        [JsonIgnore]
         public string? BodyArgsJson { get; set; }
 
         public bool IsRead { get; set; }

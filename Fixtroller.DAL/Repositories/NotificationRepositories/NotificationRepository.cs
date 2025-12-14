@@ -62,5 +62,29 @@ namespace Fixtroller.DAL.Repositories.NotificationRepositories
                 .Where(n => n.UserId == userId && !n.IsRead)
                 .ToListAsync(ct);
         }
+
+        public Task<List<Notification>> GetForUserPageAsync(
+            string userId,
+            bool onlyUnread,
+            int take,
+            int? lastId,
+            CancellationToken ct = default)
+        {
+            var query = QueryBase(false)
+                .Where(n => n.UserId == userId);
+
+            if (onlyUnread)
+                query = query.Where(n => !n.IsRead);
+
+            // لو مبعوث lastId نجيب أقدم منو
+            if (lastId.HasValue && lastId.Value > 0)
+                query = query.Where(n => n.Id < lastId.Value);
+
+            return query
+                .OrderByDescending(n => n.Id)   // الأحدث أولاً
+                .Take(take + 1)                 // +1 عشان نعرف إذا في كمان
+                .ToListAsync(ct);
+        }
+
     }
 }

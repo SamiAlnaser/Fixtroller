@@ -1,4 +1,5 @@
 ﻿using Fixtroller.BLL.Services.NotificationServices;
+using Fixtroller.DAL.Data.DTOs.NotificationDTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -65,6 +66,32 @@ namespace Fixtroller.PL.Areas
 
             await _notifications.MarkAllAsReadAsync(userId, ct);
             return NoContent();
+        }
+
+
+        [HttpGet("Load-More")]
+        public async Task<IActionResult> GetPage(
+      [FromQuery] bool onlyUnread = false,
+      [FromQuery] int take = 5,
+      [FromQuery] int? lastId = null,
+      CancellationToken ct = default)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var userId = GetUserId();
+            if (string.IsNullOrWhiteSpace(userId))
+                return Unauthorized();
+
+            var page = await _notifications.GetForUserPageAsync(
+                userId,
+                onlyUnread,
+                take,
+                lastId,
+                language,
+                ct);
+
+            return Ok(page);
         }
     }
 }

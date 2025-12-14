@@ -4,6 +4,7 @@ using Fixtroller.DAL.Repositories.NotificationRepositories;
 using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.UnitOfWork;
 using System.Text.Json;
+using Fixtroller.BLL.Mapping;
 
 namespace Fixtroller.BLL.Services.NotificationServices
 {
@@ -148,5 +149,69 @@ namespace Fixtroller.BLL.Services.NotificationServices
 
             await _uow.SaveChangesAsync(ct);
         }
+
+
+        public async Task<NotificationLoadMoreResponseDTO<NotificationListItemDTO>> GetForUserPageAsync(
+    string userId,
+    bool onlyUnread,
+    int take,
+    int? lastId,
+    string language = "ar",
+    CancellationToken ct = default)
+        {
+            // حماية بسيطة للـ page size
+            if (take <= 0) take = 5;
+            if (take > 50) take = 50;
+
+            var list = await _notificationRepo.GetForUserPageAsync(userId, onlyUnread, take, lastId, ct);
+
+            // هل في كمان بعد هاي الدفعة؟
+            var hasMore = list.Count > take;
+            if (hasMore)
+                list = list.Take(take).ToList();
+
+            var items = list.Select(n =>
+            {
+                object[]? titleArgs = string.IsNullOrWhiteSpace(n.TitleArgsJson)
+                    ? null
+                    : JsonSerializer.Deserialize<object[]>(n.TitleArgsJson);
+
+                object[]? bodyArgs = string.IsNullOrWhiteSpace(n.BodyArgsJson)
+                    ? null
+                    : JsonSerializer.Deserialize<object[]>(n.BodyArgsJson);
+
+                var (title, body) = _msgBuilder.Build(
+                    n.TitleKey ?? string.Empty, titleArgs,
+                    n.BodyKey ?? string.Empty, bodyArgs,
+                    language);
+
+                return new NotificationListItemDTO
+                {
+                    Id = n.Id,
+                    Title = title,
+                    Body = body,
+
+                    TitleKey = n.TitleKey,
+                    BodyKey = n.BodyKey,
+                    TitleArgsJson = n.TitleArgsJson,
+                    BodyArgsJson = n.BodyArgsJson,
+
+                    IsRead = n.IsRead,
+                    CreatedAtUtc = n.CreatedAtUtc,
+                    Type = n.Type,
+                    Severity = n.Severity,
+                    MaintenanceRequestId = n.MaintenanceRequestId
+                };
+            }).ToList();
+
+            return new NotificationLoadMoreResponseDTO<NotificationListItemDTO>
+            {
+                Items = items,
+                HasMore = hasMore,
+                NextLastId = items.LastOrDefault()?.Id
+            };
+        }
+
+
     }
 }

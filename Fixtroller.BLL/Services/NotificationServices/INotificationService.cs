@@ -19,5 +19,12 @@ namespace Fixtroller.BLL.Services.NotificationServices
         Task MarkAsReadAsync(int id, string userId, CancellationToken ct = default);
 
         Task MarkAllAsReadAsync(string userId, CancellationToken ct = default);
+        Task<NotificationLoadMoreResponseDTO<NotificationListItemDTO>> GetForUserPageAsync(
+            string userId,
+            bool onlyUnread,
+            int take,
+            int? lastId,
+            string language = "ar",
+            CancellationToken ct = default);
     }
 }
