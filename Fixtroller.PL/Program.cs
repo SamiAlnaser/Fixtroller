@@ -1,31 +1,8 @@
-using Fixtroller.BLL.Reports;
-using Fixtroller.BLL.Services.AiServices;
-using Fixtroller.BLL.Services.AuthenticationServices;
-using Fixtroller.BLL.Services.FileService;
-using Fixtroller.BLL.Services.MaintenanceRequestServices;
-using Fixtroller.BLL.Services.NotificationServices;
-using Fixtroller.BLL.Services.NumbersServices;
-using Fixtroller.BLL.Services.ProblemTypesServices;
-using Fixtroller.BLL.Services.ReportsServices;
-using Fixtroller.BLL.Services.TCategoryServices;
-using Fixtroller.BLL.Services.TechnicianServices;
-using Fixtroller.BLL.Services.UserServices;
-using Fixtroller.DAL.Data;
+﻿using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
-using Fixtroller.DAL.Repositories.AIChatRepositories;
-using Fixtroller.DAL.Repositories.MaintenanceRequestRepositories;
-using Fixtroller.DAL.Repositories.NotificationRepositories;
-using Fixtroller.DAL.Repositories.NumbersRepositories;
-using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
-using Fixtroller.DAL.Repositories.TCategoryRepositories;
-using Fixtroller.DAL.Repositories.UserRepository;
-using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
-using Fixtroller.DAL.UnitOfWork;
 using Fixtroller.DAL.Utils;
-using Fixtroller.PL.Services.Notifications;
+using Fixtroller.PL.GlobalException;
 using Fixtroller.PL.Services.Notifications.Email;
-using Fixtroller.PL.Services.Notifications.Push;
-using Fixtroller.PL.Services.Reports;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -33,8 +10,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using QuestPDF.Infrastructure;
-using Scalar;
 using Scalar.AspNetCore;
+using Serilog;
+using Serilog.Events;
 using System.Globalization;
 using System.Text;
 
@@ -44,9 +22,66 @@ namespace Fixtroller.PL
     {
         public static async Task Main(string[] args)
         {
-            var builder = WebApplication.CreateBuilder(args);
-            QuestPDF.Settings.EnableDebugging = true;
-            QuestPDF.Settings.License = LicenseType.Community;
+            var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
+            Log.Logger = new LoggerConfiguration()
+                // أقل مستوى عالميًا
+                .MinimumLevel.Debug()
+                .MinimumLevel.Override("Microsoft", LogEventLevel.Warning)
+                .Enrich.FromLogContext()
+
+                .WriteTo.Console(
+                    restrictedToMinimumLevel:
+                        env == "Development" ? LogEventLevel.Debug : LogEventLevel.Information,
+                    outputTemplate:
+                    "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {SourceContext} | {Message:lj}{NewLine}{Exception}")
+
+                .WriteTo.File(
+                    path: "Logs/errors-.txt",
+                    rollingInterval: RollingInterval.Day,
+                    retainedFileCountLimit: 7,
+                    restrictedToMinimumLevel: LogEventLevel.Error, 
+                    outputTemplate:
+                    "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {SourceContext} | {Message:lj}{NewLine}{Exception}")
+
+                .CreateLogger();
+
+
+            try
+            {
+                Log.Information("Starting up application");
+
+
+                var builder = WebApplication.CreateBuilder(args);
+
+                builder.Host.UseSerilog();
+
+
+                builder.Services.AddControllers();
+            builder.Services.AddEndpointsApiExplorer();
+            builder.Services.AddOpenApi();
+
+            builder.Services.AddCors(options =>
+            {
+                options.AddDefaultPolicy(policy =>
+                {
+                    policy.AllowAnyOrigin()
+                          .AllowAnyHeader()
+                          .AllowAnyMethod();
+                });
+            });
+
+            var connectionStringName = builder.Environment.IsDevelopment()
+                                    ? "DevConnection"
+                                    : "DefaultConnection";
+            builder.Services.AddDbContext<ApplicationDbContext>(options =>
+                    options.UseSqlServer(builder.Configuration.GetConnectionString(connectionStringName)));
+
+            builder.Services.AddIdentity<ApplicationUser, IdentityRole>().AddEntityFrameworkStores<ApplicationDbContext>()
+                    .AddDefaultTokenProviders();
+
+            builder.Services.AddConfig();
+
 
             const string defaultCulture = "ar";
             var supportedCultures = new[]
@@ -58,81 +93,12 @@ namespace Fixtroller.PL
                 options.DefaultRequestCulture = new RequestCulture(defaultCulture);
                 options.SupportedCultures = supportedCultures;
                 options.SupportedUICultures = supportedCultures;
-            
-             });
 
-
-
-
-            // Add services to the container.
-            builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
-            var connectionStringName = builder.Environment.IsDevelopment()
-                ? "DevConnection"
-                : "DefaultConnection";
-
-
-
-            builder.Services.AddDbContext<ApplicationDbContext>(options =>
-                options.UseSqlServer(builder.Configuration.GetConnectionString(connectionStringName)));
-            builder.Services.AddScoped<ITechnicianRepository, TechnicianRepository>();
-            builder.Services.AddScoped<IMaintenanceRequestRepository, MaintenanceRequestRepository>();
-            builder.Services.AddScoped<ITCategoryRepository, TCategorRepository>();
-            builder.Services.AddScoped<ITCategoryService, TCategoryService>();
-            builder.Services.AddScoped<IFileService, FileService>();
-            builder.Services.AddScoped<IMaintenanceRequestService, MaintenanceRequestService>();
-            builder.Services.AddScoped<IProblemTypesService, ProblemTypesService>();
-            builder.Services.AddScoped<IProblemTypeRepository, ProblemTypeRepository>();
-            builder.Services.AddScoped<ISeedData, SeedData>();
-            builder.Services.AddScoped<IAuthenticationService, AuthenticationService>();
-            builder.Services.AddScoped<ITechnicianService, TechnicianService>();
-            builder.Services.AddScoped<IMaintenanceNoteRepository, MaintenanceNoteRepository>();
-            builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
-            builder.Services.AddScoped<IWorkTimeRepository, WorkTimeRepository>();
-            builder.Services.AddScoped<IMaintenanceRequestTechnicianRepository, MaintenanceRequestTechnicianRepository>();
-            builder.Services.AddScoped<IMetricsRepository, MetricsRepository>();
-            builder.Services.AddScoped<IMetricsService, MetricsService>();
-            builder.Services.AddScoped<IAiEmployeeChatSettingsRepository, AiEmployeeChatSettingsRepository>();
-            builder.Services.AddScoped<IAiChatService, AiChatService>();
-            builder.Services.AddScoped<IReportsTextBuilder, LocalizerReportsTextBuilder>();
-
-
-            builder.Services.AddScoped<IMaintenanceReportsService, MaintenanceReportsService>();
-
-            builder.Services.AddScoped<IUserservice, UserService>();
-            builder.Services.AddScoped<IUserRepository, UserRepository>();
-
-
-            builder.Services.AddIdentity<ApplicationUser, IdentityRole>()
-                .AddEntityFrameworkStores<ApplicationDbContext>()
-                .AddDefaultTokenProviders();
-
-
-            // Email settings
-            builder.Services.Configure<EmailSettings>(
-                builder.Configuration.GetSection("Email"));
-
-            // Email + Notifications
-            builder.Services.AddScoped<IAppEmailSender, SmtpEmailSender>();
-            builder.Services.AddScoped<IPushNotificationSender, NoopPushNotificationSender>();
-            builder.Services.AddScoped<INotificationRepository, NotificationRepository>();
-            builder.Services.AddScoped<INotificationService, NotificationService>();
-            builder.Services.AddScoped<INotificationMessageBuilder,LocalizerNotificationMessageBuilder>();
-
-            builder.Services.AddControllers();
-            // Learn more about configuring OpenAPI at https://aka.ms/aspnet/openapi
-            builder.Services.AddOpenApi();
-            var userPolicy = "UserPolicy";
-
-            builder.Services.AddCors(options =>
-            {
-                options.AddPolicy(name: userPolicy, policy =>
-                {
-                    policy.AllowAnyOrigin()
-                          .AllowAnyHeader()
-                          .AllowAnyMethod();
-                });
             });
+            builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
+            builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
+            QuestPDF.Settings.License = LicenseType.Community;
 
 
             builder.Services.AddAuthentication(options =>
@@ -140,21 +106,27 @@ namespace Fixtroller.PL
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
             })
+               .AddJwtBearer(options =>
+                 {
+                  options.TokenValidationParameters = new TokenValidationParameters
+                   {
+                     ValidateIssuer = false,
+                     ValidateAudience = false,
+                     ValidateLifetime = true,
+                     ValidateIssuerSigningKey = true,
+                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["jwtOptions:SecretKey"]!))
+                   };
+                 });
 
-        .AddJwtBearer(options =>
-        {
-            options.TokenValidationParameters = new TokenValidationParameters
-            {
-                ValidateIssuer = false,
-                ValidateAudience = false,
-                ValidateLifetime = true,
-                ValidateIssuerSigningKey = true,
-                IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration.GetSection("jwtOptions")["SecretKey"]))
-            };
-        });
-            
+
+
+            builder.Services.AddExceptionHandler<GlobalExceptionHandler>();
+            builder.Services.AddProblemDetails();
+
 
             var app = builder.Build();
+
+            app.UseExceptionHandler();
 
             // Configure the HTTP request pipeline.
             if (app.Environment.IsDevelopment())
@@ -162,27 +134,46 @@ namespace Fixtroller.PL
                 app.MapOpenApi();
                 app.MapScalarApiReference();
             }
+            //var scope = app.Services.CreateScope();
+                try
+                {
+                    Log.Information("Starting database seeding...");
 
+                    using (var scope = app.Services.CreateScope())
+                    {
+                        var seed = scope.ServiceProvider.GetRequiredService<ISeedData>();
+                        await seed.IdentityDataSeedingAsync();
+                        await seed.DataSeedingAsync();
+                    }
 
-            var scope = app.Services.CreateScope();
-            var objectOfSeedData = scope.ServiceProvider.GetRequiredService<ISeedData>();
-            await objectOfSeedData.IdentityDataSeedingAsync();
-            await objectOfSeedData.DataSeedingAsync();
+                    Log.Information("Database seeding finished successfully.");
+                }
+                catch (Exception ex)
+                {
+                    Log.Fatal(ex, "Error occurred while seeding the database.");
+                    throw; // خليه يفجّر عشان تعرف إن الخلل من seeding
+                }
 
-            app.UseDeveloperExceptionPage();
+                Log.Information("Starting HTTP pipeline...");
 
-
-            app.UseHttpsRedirection();
+                app.UseHttpsRedirection();
             app.UseAuthentication();
-            app.UseCors(userPolicy);
-
+            app.UseCors();
             app.UseAuthorization();
             app.UseRequestLocalization(app.Services.GetRequiredService<IOptions<RequestLocalizationOptions>>().Value);
             app.UseStaticFiles();
             app.MapControllers();
-
             app.Run();
-
+            }
+            catch (Exception ex)
+            {
+                Log.Fatal(ex, "Application start-up failed");
+                throw;
+            }
+            finally
+            {
+                Log.CloseAndFlush();
+            }
         }
     }
 }
