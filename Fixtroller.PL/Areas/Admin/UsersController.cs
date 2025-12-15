@@ -1,7 +1,7 @@
 ﻿using Azure.Core;
 using Fixtroller.BLL.Services.UserServices;
 using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
-using Fixtroller.DAL.Data.DTOs.UsersDTOS.Requset;
+using Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

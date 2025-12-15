@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Entities.AICHAT
+namespace Fixtroller.DAL.Entities.AIChat
 {
     public class AiEmployeeChatSettingsEntity
     {

@@ -1,4 +1,4 @@
-﻿using Fixtroller.DAL.Entities.AICHAT;
+﻿using Fixtroller.DAL.Entities.AIChat;
 using System;
 using System.Collections.Generic;
 using System.Linq;

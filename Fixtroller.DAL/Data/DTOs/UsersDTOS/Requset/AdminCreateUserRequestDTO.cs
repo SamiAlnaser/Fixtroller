@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Data.DTOs.UsersDTOS.Requset
+namespace Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset
 {
     public sealed class AdminCreateUserRequestDTO
     {

@@ -2,7 +2,7 @@
 using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
-using Fixtroller.DAL.Data.DTOs.UsersDTOS.Responses;
+using Fixtroller.DAL.Data.DTOs.UsersDTOs.Responses;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using System;
 using System.Collections.Generic;

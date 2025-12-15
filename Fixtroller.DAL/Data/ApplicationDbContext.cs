@@ -2,7 +2,7 @@
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Fixtroller.DAL.Entities.ProblemTypeEntity;
 using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
-using Fixtroller.DAL.Entities.AICHAT;
+using Fixtroller.DAL.Entities.AIChat;
 
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;

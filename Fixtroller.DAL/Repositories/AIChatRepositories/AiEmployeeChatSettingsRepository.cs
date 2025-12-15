@@ -1,5 +1,5 @@
 ﻿using Fixtroller.DAL.Data;
-using Fixtroller.DAL.Entities.AICHAT;
+using Fixtroller.DAL.Entities.AIChat;
 using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
