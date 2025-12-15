@@ -1,5 +1,5 @@
 ﻿using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
-using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
+using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset;
 using Fixtroller.DAL.Data.DTOs.UsersDTOs.Responses;
@@ -15,15 +15,15 @@ namespace Fixtroller.BLL.Services.UserServices
 {
     public interface IUserservice
     {
-        Task<List<UserDTO>> GetAllAsync(
+        Task<List<UserListItemDTO>> GetAllAsync(
             CancellationToken ct = default);
 
-        Task<UserDTO?> GetByIdAsync(
+        Task<UserListItemDTO?> GetByIdAsync(
             string userId,
             CancellationToken ct = default);
 
         Task<(bool Success, string MessageKey)> ChangeUserRoleAsync(
-            ChangeRoleRequsetDTO dto,
+            ChangeRoleRequestDTO dto,
             CancellationToken ct = default);
 
         Task<(bool Success, string MessageKey)> VacationUserAsync(

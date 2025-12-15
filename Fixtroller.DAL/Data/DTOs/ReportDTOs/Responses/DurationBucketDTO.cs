@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 
-namespace Fixtroller.DAL.Data.DTOs.Reports
+namespace Fixtroller.DAL.Data.DTOs.Reports.Responses
 {
     public class DurationBucketDTO
     {

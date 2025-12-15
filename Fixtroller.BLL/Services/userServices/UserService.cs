@@ -1,6 +1,6 @@
 ﻿using Fixtroller.BLL.Services.FileService;
 using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
-using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
+using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset;
 using Fixtroller.DAL.Data.DTOs.UsersDTOs.Responses;
@@ -37,10 +37,10 @@ namespace Fixtroller.BLL.Services.UserServices
 
 
 
-        public async Task<List<UserDTO>> GetAllAsync(CancellationToken ct = default)
+        public async Task<List<UserListItemDTO>> GetAllAsync(CancellationToken ct = default)
         {
             var users = await _userRepository.GetAllAsync(ct);
-            var userDtos = new List<UserDTO>(users.Count);
+            var userDtos = new List<UserListItemDTO>(users.Count);
 
             foreach (var user in users)
             {
@@ -49,7 +49,7 @@ namespace Fixtroller.BLL.Services.UserServices
                 // ✅ السيرفس ما بحكي مع UserManager — الريبو هو اللي برجع الرولز
                 var userRoles = await _userRepository.GetRolesAsync(user, ct);
 
-                userDtos.Add(new UserDTO
+                userDtos.Add(new UserListItemDTO
                 {
                     Id = user.Id,
                     FullName = user.FullName,
@@ -61,7 +61,7 @@ namespace Fixtroller.BLL.Services.UserServices
         }
 
 
-        public async Task<UserDTO?> GetByIdAsync(
+        public async Task<UserListItemDTO?> GetByIdAsync(
        string userId,
        CancellationToken ct = default)
         {
@@ -72,7 +72,7 @@ namespace Fixtroller.BLL.Services.UserServices
             // ✅ الريبو هو اللي بجيب الرولز
             var userRoles = await _userRepository.GetRolesAsync(user, ct);
 
-            return new UserDTO
+            return new UserListItemDTO
             {
                 Id = user.Id,
                 FullName = user.FullName,
@@ -82,7 +82,7 @@ namespace Fixtroller.BLL.Services.UserServices
 
 
         public async Task<(bool Success, string MessageKey)> ChangeUserRoleAsync(
-      ChangeRoleRequsetDTO dto,
+      ChangeRoleRequestDTO dto,
       CancellationToken ct = default)
         {
             if (dto is null || string.IsNullOrWhiteSpace(dto.UserId))

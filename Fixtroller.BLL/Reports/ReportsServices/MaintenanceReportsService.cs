@@ -2,7 +2,7 @@
 using Fixtroller.BLL.Reports;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
-using Fixtroller.DAL.Data.DTOs.Reports;
+using Fixtroller.DAL.Data.DTOs.Reports.Responses;
 using Fixtroller.DAL.Repositories.MaintenanceRequestRepositories;
 using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;

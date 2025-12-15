@@ -1,4 +1,4 @@
-﻿using Fixtroller.DAL.Data.DTOs.Reports;
+﻿using Fixtroller.DAL.Data.DTOs.Reports.Responses;
 using System;
 using System.Threading;
 using System.Threading.Tasks;

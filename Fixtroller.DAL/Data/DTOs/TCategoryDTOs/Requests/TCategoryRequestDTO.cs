@@ -6,7 +6,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.DTOs.TCategoryDTOs.Requests
+namespace Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Requests
 {
     public class TCategoryRequestDTO
     {

@@ -1,6 +1,6 @@
 ﻿using Azure.Core;
 using Fixtroller.BLL.Services.UserServices;
-using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs;
+using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
@@ -45,7 +45,7 @@ namespace Fixtroller.PL.Areas.Admin
 
         [HttpPatch("ChangeRole")]
         public async Task<IActionResult> ChangeRole(
-            [FromBody] ChangeRoleRequsetDTO dto,
+            [FromBody] ChangeRoleRequestDTO dto,
             CancellationToken ct)
         {
             var (success, messageKey) = await _userService.ChangeUserRoleAsync(dto, ct);

@@ -1,5 +1,5 @@
 ﻿using Fixtroller.BLL.Services.TCategoryServices;
-using Fixtroller.DAL.DTOs.TCategoryDTOs.Requests;
+using Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Requests;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

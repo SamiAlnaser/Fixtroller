@@ -5,9 +5,9 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset
+namespace Fixtroller.DAL.Data.DTOs.UsersDTOs.Responses
 {
-    public  class UserDTO
+    public  class UserListItemDTO
     {
         public string Id { get; set; }
         public string FullName { get; set; }

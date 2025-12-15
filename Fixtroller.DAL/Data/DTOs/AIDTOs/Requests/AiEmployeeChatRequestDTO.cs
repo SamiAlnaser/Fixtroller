@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
@@ -8,6 +9,8 @@ namespace Fixtroller.DAL.Data.DTOs.AIDTOs.Requests
 {
     public sealed class AiEmployeeChatRequestDTO
     {
+        [Required]
+        [StringLength(2000)]
         public string Message { get; set; } = string.Empty;
 
         public List<AiChatHistoryItemDTO>? History { get; set; }

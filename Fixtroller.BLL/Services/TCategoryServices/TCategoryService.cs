@@ -1,8 +1,8 @@
 ﻿using Fixtroller.BLL.Services.GenericService;
 using Fixtroller.DAL.Data.DTOs.ProblemTypeDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Responses;
-using Fixtroller.DAL.DTOs.TCategoryDTOs.Requests;
-using Fixtroller.DAL.DTOs.TCategoryDTOs.Responses;
+using Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Responses;
+using Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Requests;
 using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
 using Fixtroller.DAL.Repositories.TCategoryRepositories;
 using Fixtroller.DAL.UnitOfWork;

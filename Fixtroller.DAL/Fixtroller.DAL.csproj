@@ -24,7 +24,7 @@
   </ItemGroup>
 
   <ItemGroup>
-    <None Include="Data\DTOs\ChangeRoleDTOs\ChangeRoleRequsetDTO.cs" />
+    <None Include="Data\DTOs\ChangeRoleDTOs\Requests\ChangeRoleRequsetDTO.cs" />
   </ItemGroup>
 
 </Project>

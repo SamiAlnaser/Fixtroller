@@ -5,7 +5,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.DTOs.TCategoryDTOs.Responses
+namespace Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Responses
 {
     public class TCategoryResponseDTO
     {

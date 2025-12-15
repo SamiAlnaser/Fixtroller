@@ -2,7 +2,6 @@
 using Fixtroller.DAL.Data.DTOs.ProblemTypeDTOs.Responses;
 using Fixtroller.DAL.DTOs.ProblemTypeDTOs.Requests;
 using Fixtroller.DAL.DTOs.ProblemTypeDTOs.Responses;
-using Fixtroller.DAL.DTOs.TCategoryDTOs.Responses;
 using Fixtroller.DAL.Entities.ProblemTypeEntity;
 using Fixtroller.DAL.Repositories.ProblemTypeRepositories;
 using Fixtroller.DAL.UnitOfWork;

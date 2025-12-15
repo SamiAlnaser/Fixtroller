@@ -5,19 +5,19 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs
+namespace Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs.Requests
 {
-   public enum roletype
+   public enum RoleType
     {
         Admin=1,
         Employee=2,
         Technician=3,
-        manager= 4
+        MaintenanceManager = 4
     }
-    public class ChangeRoleRequsetDTO
+    public class ChangeRoleRequestDTO
     {
         [Required]
-        public roletype NewRoleName { get; set; }
+        public RoleType NewRoleName { get; set; }
         
 
         [Required]
