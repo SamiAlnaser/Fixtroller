@@ -1,5 +1,4 @@
 ﻿using Fixtroller.BLL.Services.NotificationServices;
-using Fixtroller.DAL.Data.DTOs.NotificationDTOs;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;

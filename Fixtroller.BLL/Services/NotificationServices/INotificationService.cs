@@ -1,4 +1,4 @@
-﻿using Fixtroller.DAL.Data.DTOs.NotificationDTOs;
+﻿using Fixtroller.DAL.Data.DTOs.NotificationDTOs.Responses;
 using System;
 using System.Collections.Generic;
 using System.Linq;

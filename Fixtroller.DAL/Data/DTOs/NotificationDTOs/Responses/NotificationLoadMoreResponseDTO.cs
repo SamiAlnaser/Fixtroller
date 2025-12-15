@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Data.DTOs.NotificationDTOs
+namespace Fixtroller.DAL.Data.DTOs.NotificationDTOs.Responses
 {
     public sealed class NotificationLoadMoreResponseDTO<TItem>
     {

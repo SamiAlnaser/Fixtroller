@@ -6,7 +6,7 @@ using System.Text;
 using System.Text.Json.Serialization;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Data.DTOs.NotificationDTOs
+namespace Fixtroller.DAL.Data.DTOs.NotificationDTOs.Responses
 {
     public class NotificationListItemDTO
     {

@@ -4,7 +4,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 
-namespace Fixtroller.DAL.Data.DTOs.AIDTOs
+namespace Fixtroller.DAL.Data.DTOs.AIDTOs.Requests
 {
     public sealed class AiEmployeeChatRequestDTO
     {
@@ -13,17 +13,6 @@ namespace Fixtroller.DAL.Data.DTOs.AIDTOs
         public List<AiChatHistoryItemDTO>? History { get; set; }
     }
 
-    public sealed class AiEmployeeChatResponseDTO
-    {
-        public bool IsEnabled { get; set; }
-        public string Reply { get; set; } = string.Empty;
-    }
-
-    public sealed class AiEmployeeChatSettingsDTO
-    {
-        public bool IsEmployeeEnabled { get; set; }
-        public bool IsTechnicianEnabled { get; set; }
-    }
 
     public sealed class AiChatHistoryItemDTO
     {
@@ -31,4 +20,5 @@ namespace Fixtroller.DAL.Data.DTOs.AIDTOs
 
         public string Content { get; set; } = string.Empty;
     }
+
 }

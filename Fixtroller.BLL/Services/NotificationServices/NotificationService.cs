@@ -1,10 +1,10 @@
-﻿using Fixtroller.DAL.Data.DTOs.NotificationDTOs;
-using Fixtroller.DAL.Entities;
+﻿using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.NotificationRepositories;
 using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.UnitOfWork;
 using System.Text.Json;
 using Fixtroller.BLL.Mapping;
+using Fixtroller.DAL.Data.DTOs.NotificationDTOs.Responses;
 
 namespace Fixtroller.BLL.Services.NotificationServices
 {

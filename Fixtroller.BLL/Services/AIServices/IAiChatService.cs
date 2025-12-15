@@ -1,4 +1,5 @@
-﻿using Fixtroller.DAL.Data.DTOs.AIDTOs;
+﻿using Fixtroller.DAL.Data.DTOs.AIDTOs.Requests;
+using Fixtroller.DAL.Data.DTOs.AIDTOs.Responses;
 using System.Threading;
 using System.Threading.Tasks;
 

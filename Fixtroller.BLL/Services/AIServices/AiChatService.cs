@@ -1,5 +1,6 @@
 ﻿using Fixtroller.DAL.Data;
-using Fixtroller.DAL.Data.DTOs.AIDTOs;
+using Fixtroller.DAL.Data.DTOs.AIDTOs.Requests;
+using Fixtroller.DAL.Data.DTOs.AIDTOs.Responses;
 using Fixtroller.DAL.Entities.AIChat;
 using Fixtroller.DAL.Repositories.AIChatRepositories;
 using Fixtroller.DAL.UnitOfWork;

@@ -1,5 +1,6 @@
 ﻿using Fixtroller.BLL.Services.AiServices;
-using Fixtroller.DAL.Data.DTOs.AIDTOs;
+using Fixtroller.DAL.Data.DTOs.AIDTOs.Requests;
+using Fixtroller.DAL.Data.DTOs.AIDTOs.Responses;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
