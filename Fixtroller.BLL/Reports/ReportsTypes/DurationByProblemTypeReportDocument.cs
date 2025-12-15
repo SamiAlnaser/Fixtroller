@@ -4,16 +4,26 @@ using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
 
-namespace Fixtroller.BLL.Reports
+namespace Fixtroller.BLL.Reports.ReportsTypes
 {
     public class DurationByProblemTypeReportDocument : IDocument
     {
         private readonly DurationByProblemTypeReportDTO _model;
+        private readonly IReportsTextBuilder _text;
+        private readonly string _language;
 
-        public DurationByProblemTypeReportDocument(DurationByProblemTypeReportDTO model)
+        public DurationByProblemTypeReportDocument(
+            DurationByProblemTypeReportDTO model,
+            IReportsTextBuilder text,
+            string language)
         {
             _model = model;
+            _text = text;
+            _language = language;
         }
+
+        private string T(string key, params object[] args)
+            => _text.Get(key, _language, args);
 
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
@@ -25,33 +35,35 @@ namespace Fixtroller.BLL.Reports
 
                 page.Header().Column(col =>
                 {
-                    // العنوان
+                    // العنوان: "تقرير التصنيفات حسب مدة الإغلاق ونوع المشكلة"
                     col.Item()
                         .AlignCenter()
                         .Text(t =>
                         {
-                            t.Span("تقرير التصنيفات حسب مدة الإغلاق ونوع المشكلة")
+                            t.Span(T("Report.DurationByProblemType.Header.Title"))
                              .FontSize(18)
                              .SemiBold();
                         });
 
-                    // الفترة
+                    // الفترة: "من: {0} إلى: {1}"
                     col.Item()
                         .AlignCenter()
                         .Text(text =>
                         {
-                            text.Span("من: ").SemiBold();
+                            text.Span(T("Report.Common.FromLabel") + ": ").SemiBold();
                             text.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            text.Span("   إلى: ").SemiBold();
+                            text.Span("   ");
+                            text.Span(T("Report.Common.ToLabel") + ": ").SemiBold();
                             text.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
                         });
 
-                    // إجمالي المكتملة
+                    // إجمالي المكتملة: "إجمالي الطلبات المكتملة في الفترة: {0}"
                     col.Item()
                         .AlignCenter()
                         .Text(text =>
                         {
-                            text.Span("إجمالي الطلبات المكتملة في الفترة: ").SemiBold();
+                            text.Span(T("Report.DurationByProblemType.Header.TotalCompleted") + ": ")
+                                .SemiBold();
                             text.Span(_model.TotalCompleted.ToString());
                         });
                 });
@@ -66,9 +78,14 @@ namespace Fixtroller.BLL.Reports
 
                 page.Footer().AlignCenter().Text(txt =>
                 {
-                    txt.Span("Fixtroller - Duration by Problem Type Report  ");
+                    // "Fixtroller - Duration by Problem Type Report"
+                    txt.Span(T("Report.DurationByProblemType.Footer.Text"));
+                    txt.Span("  ");
                     txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                    txt.Span("  |  صفحة ");
+                    txt.Span("  |  ");
+                    // "صفحة"
+                    txt.Span(T("Report.Common.PageLabel"));
+                    txt.Span(" ");
                     txt.CurrentPageNumber();
                     txt.Span(" / ");
                     txt.TotalPages();
@@ -80,9 +97,10 @@ namespace Fixtroller.BLL.Reports
         {
             if (_model.Buckets == null || _model.Buckets.Count == 0)
             {
+                // "لا توجد طلبات مكتملة ضمن الفترة المحددة."
                 container.Text(t =>
                 {
-                    t.Span("لا توجد طلبات مكتملة ضمن الفترة المحددة.")
+                    t.Span(T("Report.DurationByProblemType.Buckets.NoData"))
                      .Italic();
                 });
                 return;
@@ -92,10 +110,10 @@ namespace Fixtroller.BLL.Reports
             {
                 col.Spacing(4);
 
-                // عنوان القسم
+                // عنوان القسم: "تقسيم الطلبات المكتملة حسب مدة الإغلاق"
                 col.Item().Text(t =>
                 {
-                    t.Span("تقسيم الطلبات المكتملة حسب مدة الإغلاق")
+                    t.Span(T("Report.DurationByProblemType.Buckets.Title"))
                      .FontSize(14)
                      .SemiBold();
                 });
@@ -111,9 +129,9 @@ namespace Fixtroller.BLL.Reports
 
                     table.Header(header =>
                     {
-                        header.Cell().Text(t => t.Span("مدة الإغلاق").SemiBold());
-                        header.Cell().Text(t => t.Span("العدد").SemiBold());
-                        header.Cell().Text(t => t.Span("النسبة %").SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Duration")).SemiBold());   // "مدة الإغلاق"
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Count")).SemiBold());      // "العدد"
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Percent")).SemiBold());    // "النسبة %"
                     });
 
                     foreach (var b in _model.Buckets.OrderBy(b => b.BucketKey))
@@ -130,9 +148,10 @@ namespace Fixtroller.BLL.Reports
         {
             if (_model.ProblemTypes == null || _model.ProblemTypes.Count == 0)
             {
+                // "لا توجد بيانات لأنواع المشاكل ضمن الفترة المحددة."
                 container.Text(t =>
                 {
-                    t.Span("لا توجد بيانات لأنواع المشاكل ضمن الفترة المحددة.")
+                    t.Span(T("Report.DurationByProblemType.ProblemTypes.NoData"))
                      .Italic();
                 });
                 return;
@@ -142,10 +161,10 @@ namespace Fixtroller.BLL.Reports
             {
                 col.Spacing(4);
 
-                // عنوان القسم
+                // عنوان القسم: "مؤشرات الأداء لكل نوع مشكلة"
                 col.Item().Text(t =>
                 {
-                    t.Span("مؤشرات الأداء لكل نوع مشكلة")
+                    t.Span(T("Report.DurationByProblemType.ProblemTypes.Title"))
                      .FontSize(14)
                      .SemiBold();
                 });
@@ -164,10 +183,10 @@ namespace Fixtroller.BLL.Reports
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span("نوع المشكلة").SemiBold());
-                        header.Cell().Text(t => t.Span("عدد مكتملة").SemiBold());
-                        header.Cell().Text(t => t.Span("متوسط زمن الإغلاق (س)").SemiBold());
-                        header.Cell().Text(t => t.Span("نسبة المتأخرة %").SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.ProblemType")).SemiBold());  // "نوع المشكلة"
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.CompletedCount")).SemiBold()); // "عدد مكتملة"
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.AvgClosureHours")).SemiBold()); // "متوسط زمن الإغلاق (س)"
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.OverdueRate")).SemiBold());    // "نسبة المتأخرة %"
                     });
 
                     int index = 1;
@@ -193,4 +212,5 @@ namespace Fixtroller.BLL.Reports
             });
         }
     }
+
 }

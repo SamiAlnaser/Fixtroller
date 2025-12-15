@@ -4,16 +4,26 @@ using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
 
-namespace Fixtroller.BLL.Reports
+namespace Fixtroller.BLL.Reports.ReportsTypes
 {
     public class MaintenanceDepartmentReportDocument : IDocument
     {
         private readonly MaintenanceDepartmentReportDTO _model;
+        private readonly IReportsTextBuilder _text;
+        private readonly string _language;
 
-        public MaintenanceDepartmentReportDocument(MaintenanceDepartmentReportDTO model)
+        public MaintenanceDepartmentReportDocument(
+            MaintenanceDepartmentReportDTO model,
+            IReportsTextBuilder text,
+            string language)
         {
             _model = model;
+            _text = text;
+            _language = language;
         }
+
+        private string T(string key, params object[] args)
+            => _text.Get(key, _language, args);
 
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
@@ -25,24 +35,28 @@ namespace Fixtroller.BLL.Reports
 
                 page.Header().Column(col =>
                 {
-                    // العنوان
+                    // العنوان: "تقرير قسم الصيانة ككل"
                     col.Item()
                         .AlignCenter()
                         .Text(t =>
                         {
-                            t.Span("تقرير قسم الصيانة ككل")
+                            t.Span(T("Report.MaintenanceDepartment.Header.Title"))
                              .FontSize(18)
                              .SemiBold();
                         });
 
-                    // الفترة
+                    // الفترة: "الفترة: من {from} إلى {to}"
                     col.Item()
                         .AlignCenter()
                         .Text(t =>
                         {
-                            t.Span("الفترة: ").SemiBold();
+                            t.Span(T("Report.MaintenanceDepartment.Header.PeriodLabel") + ": ")
+                             .SemiBold();
+
+                            t.Span(T("Report.Common.FromLabel") + " ");
                             t.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            t.Span("  إلى  ");
+                            t.Span("  ");
+                            t.Span(T("Report.Common.ToLabel") + " ");
                             t.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
                         });
                 });
@@ -61,9 +75,14 @@ namespace Fixtroller.BLL.Reports
                     .AlignCenter()
                     .Text(txt =>
                     {
-                        txt.Span("Fixtroller - Maintenance Department Report  ");
+                        // "Fixtroller - Maintenance Department Report"
+                        txt.Span(T("Report.MaintenanceDepartment.Footer.Text"));
+                        txt.Span("  ");
                         txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                        txt.Span("  |  صفحة ");
+                        txt.Span("  |  ");
+                        // "صفحة"
+                        txt.Span(T("Report.Common.PageLabel"));
+                        txt.Span(" ");
                         txt.CurrentPageNumber();
                         txt.Span(" / ");
                         txt.TotalPages();
@@ -82,40 +101,51 @@ namespace Fixtroller.BLL.Reports
                 {
                     col.Spacing(4);
 
+                    // "الأرقام العامة للقسم"
                     col.Item().Text(t =>
                     {
-                        t.Span("الأرقام العامة للقسم")
+                        t.Span(T("Report.MaintenanceDepartment.Summary.Title"))
                          .SemiBold()
                          .FontSize(14);
                     });
 
                     col.Item().Text(t =>
                     {
-                        t.Span("إجمالي الطلبات في الفترة: ").SemiBold();
+                        // "إجمالي الطلبات في الفترة: "
+                        t.Span(T("Report.MaintenanceDepartment.Summary.TotalRequests") + ": ")
+                         .SemiBold();
                         t.Span(s.TotalRequests.ToString());
                     });
 
                     col.Item().Text(t =>
                     {
-                        t.Span("عدد الطلبات الجديدة: ").SemiBold();
+                        // "عدد الطلبات الجديدة: "
+                        t.Span(T("Report.MaintenanceDepartment.Summary.NewRequests") + ": ")
+                         .SemiBold();
                         t.Span(s.NewRequests.ToString());
                     });
 
                     col.Item().Text(t =>
                     {
-                        t.Span("عدد الطلبات المغلقة: ").SemiBold();
+                        // "عدد الطلبات المغلقة: "
+                        t.Span(T("Report.MaintenanceDepartment.Summary.ClosedRequests") + ": ")
+                         .SemiBold();
                         t.Span(s.ClosedRequests.ToString());
                     });
 
                     col.Item().Text(t =>
                     {
-                        t.Span("عدد الطلبات المتبقية (المفتوحة): ").SemiBold();
+                        // "عدد الطلبات المتبقية (المفتوحة): "
+                        t.Span(T("Report.MaintenanceDepartment.Summary.RemainingRequests") + ": ")
+                         .SemiBold();
                         t.Span(s.RemainingRequests.ToString());
                     });
 
                     col.Item().Text(t =>
                     {
-                        t.Span("عدد الطلبات المتأخرة (حسب SLA): ").SemiBold();
+                        // "عدد الطلبات المتأخرة (حسب SLA): "
+                        t.Span(T("Report.MaintenanceDepartment.Summary.OverdueRequests") + ": ")
+                         .SemiBold();
                         t.Span(s.OverdueRequests.ToString());
                     });
 
@@ -123,7 +153,9 @@ namespace Fixtroller.BLL.Reports
                     {
                         col.Item().Text(t =>
                         {
-                            t.Span("نسبة الإنجاز: ").SemiBold();
+                            // "نسبة الإنجاز: "
+                            t.Span(T("Report.MaintenanceDepartment.Summary.CompletionRate") + ": ")
+                             .SemiBold();
                             t.Span($"{s.CompletionRate.Value:0.##}%");
                         });
                     }
@@ -132,7 +164,9 @@ namespace Fixtroller.BLL.Reports
                     {
                         col.Item().Text(t =>
                         {
-                            t.Span("نسبة التأخير: ").SemiBold();
+                            // "نسبة التأخير: "
+                            t.Span(T("Report.MaintenanceDepartment.Summary.OverdueRate") + ": ")
+                             .SemiBold();
                             t.Span($"{s.OverdueRate.Value:0.##}%");
                         });
                     }
@@ -141,7 +175,9 @@ namespace Fixtroller.BLL.Reports
                     {
                         col.Item().Text(t =>
                         {
-                            t.Span("نسبة الالتزام بالـ SLA (من الطلبات المغلقة ذات SLA): ").SemiBold();
+                            // "نسبة الالتزام بالـ SLA (من الطلبات المغلقة ذات SLA): "
+                            t.Span(T("Report.MaintenanceDepartment.Summary.SlaComplianceRate") + ": ")
+                             .SemiBold();
                             t.Span($"{s.SlaComplianceRate.Value:0.##}%");
                         });
                     }
@@ -150,14 +186,19 @@ namespace Fixtroller.BLL.Reports
                     {
                         col.Item().Text(t =>
                         {
-                            t.Span("متوسط زمن الإغلاق: ").SemiBold();
-                            t.Span($"{s.AverageClosureHours.Value:0.##} ساعة");
+                            // "متوسط زمن الإغلاق: "
+                            t.Span(T("Report.MaintenanceDepartment.Summary.AverageClosureHours") + ": ")
+                             .SemiBold();
+                            t.Span($"{s.AverageClosureHours.Value:0.##} " +
+                                   T("Report.Common.HoursSuffix")); // "ساعة"
                         });
                     }
 
                     col.Item().Text(t =>
                     {
-                        t.Span("عدد الفنيين الكلي: ").SemiBold();
+                        // "عدد الفنيين الكلي: "
+                        t.Span(T("Report.MaintenanceDepartment.Summary.TotalTechnicians") + ": ")
+                         .SemiBold();
                         t.Span(_model.TotalTechnicians.ToString());
                     });
                 });
@@ -167,9 +208,10 @@ namespace Fixtroller.BLL.Reports
         {
             if (_model.Categories == null || _model.Categories.Count == 0)
             {
+                // "لا توجد بيانات للفنيين أو الفئات ضمن هذه الفترة."
                 container.Text(t =>
                 {
-                    t.Span("لا توجد بيانات للفنيين أو الفئات ضمن هذه الفترة.")
+                    t.Span(T("Report.MaintenanceDepartment.Categories.NoData"))
                      .Italic();
                 });
                 return;
@@ -179,9 +221,10 @@ namespace Fixtroller.BLL.Reports
             {
                 col.Spacing(4);
 
+                // "توزيع الفنيين والطلبات على الفئات (Categories)"
                 col.Item().Text(t =>
                 {
-                    t.Span("توزيع الفنيين والطلبات على الفئات (Categories)")
+                    t.Span(T("Report.MaintenanceDepartment.Categories.Title"))
                      .SemiBold()
                      .FontSize(14);
                 });
@@ -199,9 +242,9 @@ namespace Fixtroller.BLL.Reports
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span("الفئة").SemiBold());
-                        header.Cell().Text(t => t.Span("عدد الفنيين").SemiBold());
-                        header.Cell().Text(t => t.Span("عدد الطلبات").SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.MaintenanceDepartment.Categories.Header.Category")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.MaintenanceDepartment.Categories.Header.TechniciansCount")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.MaintenanceDepartment.Categories.Header.RequestsCount")).SemiBold());
                     });
 
                     int index = 1;
@@ -221,9 +264,10 @@ namespace Fixtroller.BLL.Reports
         {
             if (_model.TopProblemTypes == null || _model.TopProblemTypes.Count == 0)
             {
+                // "لا توجد بيانات كافية عن أكثر أنواع المشاكل تكرارًا."
                 container.Text(t =>
                 {
-                    t.Span("لا توجد بيانات كافية عن أكثر أنواع المشاكل تكرارًا.")
+                    t.Span(T("Report.MaintenanceDepartment.TopProblemTypes.NoData"))
                      .Italic();
                 });
                 return;
@@ -233,9 +277,10 @@ namespace Fixtroller.BLL.Reports
             {
                 col.Spacing(4);
 
+                // "أكثر أنواع المشاكل تكرارًا (Top 3)"
                 col.Item().Text(t =>
                 {
-                    t.Span("أكثر أنواع المشاكل تكرارًا (Top 3)")
+                    t.Span(T("Report.MaintenanceDepartment.TopProblemTypes.Title"))
                      .SemiBold()
                      .FontSize(14);
                 });
@@ -246,14 +291,14 @@ namespace Fixtroller.BLL.Reports
                     {
                         columns.ConstantColumn(40);  // #
                         columns.RelativeColumn();    // نوع المشكلة
-                        columns.ConstantColumn(80);  // العدد
+                        columns.ConstantColumn(80);  // عدد الطلبات
                     });
 
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span("نوع المشكلة").SemiBold());
-                        header.Cell().Text(t => t.Span("عدد الطلبات").SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.MaintenanceDepartment.TopProblemTypes.Header.ProblemType")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.MaintenanceDepartment.TopProblemTypes.Header.RequestsCount")).SemiBold());
                     });
 
                     int index = 1;
@@ -272,9 +317,10 @@ namespace Fixtroller.BLL.Reports
         {
             if (_model.TopCategoriesByRequests == null || _model.TopCategoriesByRequests.Count == 0)
             {
+                // "لا توجد بيانات كافية عن أكثر الفئات (Categories) من حيث عدد الطلبات."
                 container.Text(t =>
                 {
-                    t.Span("لا توجد بيانات كافية عن أكثر الفئات (Categories) من حيث عدد الطلبات.")
+                    t.Span(T("Report.MaintenanceDepartment.TopCategories.NoData"))
                      .Italic();
                 });
                 return;
@@ -284,9 +330,10 @@ namespace Fixtroller.BLL.Reports
             {
                 col.Spacing(4);
 
+                // "أكثر الفئات (Categories) من حيث عدد الطلبات (Top 3)"
                 col.Item().Text(t =>
                 {
-                    t.Span("أكثر الفئات (Categories) من حيث عدد الطلبات (Top 3)")
+                    t.Span(T("Report.MaintenanceDepartment.TopCategories.Title"))
                      .SemiBold()
                      .FontSize(14);
                 });
@@ -303,8 +350,8 @@ namespace Fixtroller.BLL.Reports
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span("الفئة").SemiBold());
-                        header.Cell().Text(t => t.Span("عدد الطلبات").SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.MaintenanceDepartment.TopCategories.Header.Category")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.MaintenanceDepartment.TopCategories.Header.RequestsCount")).SemiBold());
                     });
 
                     int index = 1;
@@ -319,4 +366,5 @@ namespace Fixtroller.BLL.Reports
             });
         }
     }
+
 }

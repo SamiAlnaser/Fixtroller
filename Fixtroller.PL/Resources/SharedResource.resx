@@ -408,4 +408,446 @@
   <data name="Technician_Status_Vacation" xml:space="preserve">
     <value>في إجازة</value>
   </data>
+  <data name="Report.Common.PageLabel" xml:space="preserve">
+    <value>صفحة</value>
+  </data>
+  <data name="Report.Common.FromLabel" xml:space="preserve">
+    <value>من</value>
+  </data>
+  <data name="Report.Common.ToLabel" xml:space="preserve">
+    <value>إلى</value>
+  </data>
+  <data name="Report.Common.HoursSuffix" xml:space="preserve">
+    <value>ساعة</value>
+  </data>
+  <data name="Report.Common.Yes" xml:space="preserve">
+    <value>نعم</value>
+  </data>
+  <data name="Report.Common.No" xml:space="preserve">
+    <value>لا</value>
+  </data>
+  <data name="Report.Common.Footer.AppLabel" xml:space="preserve">
+    <value>Fixtroller - تقرير صيانة</value>
+  </data>
+  <data name="Report.SingleRequest.Header.Title" xml:space="preserve">
+    <value>تقرير طلب صيانة رقم {0}</value>
+  </data>
+  <data name="Report.SingleRequest.Section.Summary" xml:space="preserve">
+    <value>معلومات الطلب</value>
+  </data>
+  <data name="Report.SingleRequest.Label.ProblemType" xml:space="preserve">
+    <value>نوع المشكلة</value>
+  </data>
+  <data name="Report.SingleRequest.Label.Priority" xml:space="preserve">
+    <value>الأولوية</value>
+  </data>
+  <data name="Report.SingleRequest.Label.CaseType" xml:space="preserve">
+    <value>الحالة الحالية</value>
+  </data>
+  <data name="Report.SingleRequest.Label.Description" xml:space="preserve">
+    <value>وصف المشكلة</value>
+  </data>
+  <data name="Report.SingleRequest.Section.Owner" xml:space="preserve">
+    <value>صاحب الطلب</value>
+  </data>
+  <data name="Report.SingleRequest.Label.OwnerName" xml:space="preserve">
+    <value>الاسم</value>
+  </data>
+  <data name="Report.SingleRequest.Label.OwnerDepartment" xml:space="preserve">
+    <value>القسم</value>
+  </data>
+  <data name="Report.SingleRequest.Label.OwnerLocation" xml:space="preserve">
+    <value>موقع الموظف</value>
+  </data>
+  <data name="Report.SingleRequest.Label.RequestAddress" xml:space="preserve">
+    <value>موقع المشكلة (مبنى / غرفة)</value>
+  </data>
+  <data name="Report.SingleRequest.Label.CreatedBy" xml:space="preserve">
+    <value>منشئ الطلب</value>
+  </data>
+  <data name="Report.SingleRequest.CreatedBy.SameAsOwner" xml:space="preserve">
+    <value>نفس صاحب الطلب</value>
+  </data>
+  <data name="Report.SingleRequest.CreatedBy.OtherUser" xml:space="preserve">
+    <value>مستخدم آخر (فني / مدير)</value>
+  </data>
+  <data name="Report.SingleRequest.Section.Timing" xml:space="preserve">
+    <value>الأوقات والـ SLA</value>
+  </data>
+  <data name="Report.SingleRequest.Label.CreatedAt" xml:space="preserve">
+    <value>تاريخ إنشاء الطلب</value>
+  </data>
+  <data name="Report.SingleRequest.Label.FirstAssignedAt" xml:space="preserve">
+    <value>تاريخ أول تعيين لفني</value>
+  </data>
+  <data name="Report.SingleRequest.Label.FirstWorkStartedAt" xml:space="preserve">
+    <value>تاريخ أول بدء عمل فعلي</value>
+  </data>
+  <data name="Report.SingleRequest.Label.ClosedAt" xml:space="preserve">
+    <value>تاريخ الإغلاق</value>
+  </data>
+  <data name="Report.SingleRequest.Duration.Expected.Format" xml:space="preserve">
+    <value>{0:0.##} ساعة</value>
+  </data>
+  <data name="Report.SingleRequest.Label.ExpectedDuration" xml:space="preserve">
+    <value>المدة المتوقعة (SLA)</value>
+  </data>
+  <data name="Report.SingleRequest.Duration.Actual.Format" xml:space="preserve">
+    <value>{0:0.##} ساعة</value>
+  </data>
+  <data name="Report.SingleRequest.Label.ActualDuration" xml:space="preserve">
+    <value>المدة الفعلية للإغلاق</value>
+  </data>
+  <data name="Report.SingleRequest.SlaStatus.Within" xml:space="preserve">
+    <value>داخل الـ SLA</value>
+  </data>
+  <data name="Report.SingleRequest.SlaStatus.Late" xml:space="preserve">
+    <value>متأخر عن الـ SLA</value>
+  </data>
+  <data name="Report.SingleRequest.Label.SlaStatus" xml:space="preserve">
+    <value>حالة الالتزام بالـ SLA</value>
+  </data>
+  <data name="Report.SingleRequest.Section.Technicians" xml:space="preserve">
+    <value>الفنيون المشاركون</value>
+  </data>
+  <data name="Report.SingleRequest.Message.NoTechnicians" xml:space="preserve">
+    <value>لا يوجد فنيون معيّنون على هذا الطلب.</value>
+  </data>
+  <data name="Report.SingleRequest.Technicians.Header.Name" xml:space="preserve">
+    <value>الفني</value>
+  </data>
+  <data name="Report.SingleRequest.Technicians.Header.Category" xml:space="preserve">
+    <value>الفئة</value>
+  </data>
+  <data name="Report.SingleRequest.Technicians.Header.AssignedAt" xml:space="preserve">
+    <value>تعيين</value>
+  </data>
+  <data name="Report.SingleRequest.Technicians.Header.StartAt" xml:space="preserve">
+    <value>بدء</value>
+  </data>
+  <data name="Report.SingleRequest.Technicians.Header.EndAt" xml:space="preserve">
+    <value>انتهاء</value>
+  </data>
+  <data name="Report.SingleRequest.Technicians.Header.WorkMinutes" xml:space="preserve">
+    <value>دقائق عمل</value>
+  </data>
+  <data name="Report.SingleRequest.Technicians.Header.SlaHours" xml:space="preserve">
+    <value>SLA (س)</value>
+  </data>
+  <data name="Report.SingleRequest.Section.Notes" xml:space="preserve">
+    <value>الملاحظات</value>
+  </data>
+  <data name="Report.SingleRequest.Message.NoNotes" xml:space="preserve">
+    <value>لا توجد ملاحظات على هذا الطلب.</value>
+  </data>
+  <data name="Report.SingleRequest.Notes.HeaderFormat" xml:space="preserve">
+    <value>{0:yyyy-MM-dd HH:mm} - {1}</value>
+  </data>
+  <data name="Report.DurationByProblemType.Header.Title" xml:space="preserve">
+    <value>تقرير التصنيفات حسب مدة الإغلاق ونوع المشكلة</value>
+  </data>
+  <data name="Report.DurationByProblemType.Header.TotalCompleted" xml:space="preserve">
+    <value>إجمالي الطلبات المكتملة في الفترة</value>
+  </data>
+  <data name="Report.DurationByProblemType.Footer.Text" xml:space="preserve">
+    <value>Fixtroller - Duration by Problem Type Report</value>
+  </data>
+  <data name="Report.DurationByProblemType.Buckets.NoData" xml:space="preserve">
+    <value>لا توجد طلبات مكتملة ضمن الفترة المحددة.</value>
+  </data>
+  <data name="Report.DurationByProblemType.Buckets.Title" xml:space="preserve">
+    <value>تقسيم الطلبات المكتملة حسب مدة الإغلاق</value>
+  </data>
+  <data name="Report.DurationByProblemType.Buckets.Header.Duration" xml:space="preserve">
+    <value>مدة الإغلاق</value>
+  </data>
+  <data name="Report.DurationByProblemType.Buckets.Header.Count" xml:space="preserve">
+    <value>العدد</value>
+  </data>
+  <data name="Report.DurationByProblemType.Buckets.Header.Percent" xml:space="preserve">
+    <value>النسبة %</value>
+  </data>
+  <data name="Report.DurationByProblemType.ProblemTypes.NoData" xml:space="preserve">
+    <value>لا توجد بيانات لأنواع المشاكل ضمن الفترة المحددة.</value>
+  </data>
+  <data name="Report.DurationByProblemType.ProblemTypes.Title" xml:space="preserve">
+    <value>مؤشرات الأداء لكل نوع مشكلة</value>
+  </data>
+  <data name="Report.DurationByProblemType.ProblemTypes.Header.ProblemType" xml:space="preserve">
+    <value>نوع المشكلة</value>
+  </data>
+  <data name="Report.DurationByProblemType.ProblemTypes.Header.CompletedCount" xml:space="preserve">
+    <value>عدد مكتملة</value>
+  </data>
+  <data name="Report.DurationByProblemType.ProblemTypes.Header.AvgClosureHours" xml:space="preserve">
+    <value>متوسط زمن الإغلاق (س)</value>
+  </data>
+  <data name="Report.DurationByProblemType.ProblemTypes.Header.OverdueRate" xml:space="preserve">
+    <value>نسبة المتأخرة %</value>
+  </data>
+  <data name="Report.KpiRequests.Header.Title" xml:space="preserve">
+    <value>تقرير الأرقام العامة (KPI)</value>
+  </data>
+  <data name="Report.KpiRequests.Header.ProblemTypeFilterLabel" xml:space="preserve">
+    <value>نوع المشكلة المفلتر</value>
+  </data>
+  <data name="Report.KpiRequests.Footer.Text" xml:space="preserve">
+    <value>Fixtroller - KPI Report</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.Title" xml:space="preserve">
+    <value>الأرقام العامة</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.TotalRequests" xml:space="preserve">
+    <value>إجمالي الطلبات في الفترة</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.NewRequests" xml:space="preserve">
+    <value>عدد الطلبات الجديدة</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.ClosedRequests" xml:space="preserve">
+    <value>عدد الطلبات المغلقة</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.RemainingRequests" xml:space="preserve">
+    <value>عدد الطلبات المتبقية (المفتوحة)</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.OverdueRequests" xml:space="preserve">
+    <value>عدد الطلبات المتأخرة (حسب SLA)</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.CompletionRate" xml:space="preserve">
+    <value>نسبة الإنجاز</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.OverdueRate" xml:space="preserve">
+    <value>نسبة التأخير</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.SlaComplianceRate" xml:space="preserve">
+    <value>نسبة الالتزام بالـ SLA (من الطلبات المغلقة ذات SLA)</value>
+  </data>
+  <data name="Report.KpiRequests.Summary.AverageClosureHours" xml:space="preserve">
+    <value>متوسط زمن الإغلاق</value>
+  </data>
+  <data name="Report.KpiRequests.TopProblemTypes.NoData" xml:space="preserve">
+    <value>لا توجد بيانات كافية لحساب أكثر أنواع المشاكل تكرارًا.</value>
+  </data>
+  <data name="Report.KpiRequests.TopProblemTypes.Title" xml:space="preserve">
+    <value>أكثر أنواع المشاكل تكرارًا</value>
+  </data>
+  <data name="Report.KpiRequests.TopProblemTypes.Header.ProblemType" xml:space="preserve">
+    <value>نوع المشكلة</value>
+  </data>
+  <data name="Report.KpiRequests.TopProblemTypes.Header.Count" xml:space="preserve">
+    <value>العدد</value>
+  </data>
+  <data name="Report.KpiRequests.TopDepartments.NoData" xml:space="preserve">
+    <value>لا توجد بيانات كافية لحساب أكثر الأقسام تكرارًا.</value>
+  </data>
+  <data name="Report.KpiRequests.TopDepartments.Title" xml:space="preserve">
+    <value>أكثر الأقسام تكرارًا</value>
+  </data>
+  <data name="Report.KpiRequests.TopDepartments.Header.Department" xml:space="preserve">
+    <value>القسم</value>
+  </data>
+  <data name="Report.KpiRequests.TopDepartments.Header.Count" xml:space="preserve">
+    <value>العدد</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Header.Title" xml:space="preserve">
+    <value>تقرير قسم الصيانة ككل</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Header.PeriodLabel" xml:space="preserve">
+    <value>الفترة</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Footer.Text" xml:space="preserve">
+    <value>Fixtroller - Maintenance Department Report</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.Title" xml:space="preserve">
+    <value>الأرقام العامة للقسم</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.TotalRequests" xml:space="preserve">
+    <value>إجمالي الطلبات في الفترة</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.NewRequests" xml:space="preserve">
+    <value>عدد الطلبات الجديدة</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.ClosedRequests" xml:space="preserve">
+    <value>عدد الطلبات المغلقة</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.RemainingRequests" xml:space="preserve">
+    <value>عدد الطلبات المتبقية (المفتوحة)</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.OverdueRequests" xml:space="preserve">
+    <value>عدد الطلبات المتأخرة (حسب SLA)</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.CompletionRate" xml:space="preserve">
+    <value>نسبة الإنجاز</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.OverdueRate" xml:space="preserve">
+    <value>نسبة التأخير</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.SlaComplianceRate" xml:space="preserve">
+    <value>نسبة الالتزام بالـ SLA (من الطلبات المغلقة ذات SLA)</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.AverageClosureHours" xml:space="preserve">
+    <value>متوسط زمن الإغلاق</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Summary.TotalTechnicians" xml:space="preserve">
+    <value>عدد الفنيين الكلي</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Categories.NoData" xml:space="preserve">
+    <value>لا توجد بيانات للفنيين أو الفئات ضمن هذه الفترة.</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Categories.Title" xml:space="preserve">
+    <value>توزيع الفنيين والطلبات على الفئات (Categories)</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Categories.Header.Category" xml:space="preserve">
+    <value>الفئة</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Categories.Header.TechniciansCount" xml:space="preserve">
+    <value>عدد الفنيين</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.Categories.Header.RequestsCount" xml:space="preserve">
+    <value>عدد الطلبات</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.TopProblemTypes.NoData" xml:space="preserve">
+    <value>لا توجد بيانات كافية عن أكثر أنواع المشاكل تكرارًا.</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.TopProblemTypes.Title" xml:space="preserve">
+    <value>أكثر أنواع المشاكل تكرارًا (Top 3)</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.TopProblemTypes.Header.ProblemType" xml:space="preserve">
+    <value>نوع المشكلة</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.TopProblemTypes.Header.RequestsCount" xml:space="preserve">
+    <value>عدد الطلبات</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.TopCategories.NoData" xml:space="preserve">
+    <value>لا توجد بيانات كافية عن أكثر الفئات من حيث عدد الطلبات.</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.TopCategories.Title" xml:space="preserve">
+    <value>أكثر الفئات من حيث عدد الطلبات (Top 3)</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.TopCategories.Header.Category" xml:space="preserve">
+    <value>الفئة</value>
+  </data>
+  <data name="Report.MaintenanceDepartment.TopCategories.Header.RequestsCount" xml:space="preserve">
+    <value>عدد الطلبات</value>
+  </data>
+  <data name="Report.TechCategories.Header.Title" xml:space="preserve">
+    <value>تقرير الفنيين حسب الفئة (Category)</value>
+  </data>
+  <data name="Report.TechCategories.Header.PeriodLabel" xml:space="preserve">
+    <value>الفترة</value>
+  </data>
+  <data name="Report.TechCategories.Footer.Text" xml:space="preserve">
+    <value>Fixtroller - Technicians by Category Report</value>
+  </data>
+  <data name="Report.TechCategories.NoData" xml:space="preserve">
+    <value>لا توجد بيانات للفنيين ضمن الفترة المحددة.</value>
+  </data>
+  <data name="Report.TechCategories.Summary.TechniciansCount" xml:space="preserve">
+    <value>عدد الفنيين</value>
+  </data>
+  <data name="Report.TechCategories.Summary.TotalAssigned" xml:space="preserve">
+    <value>عدد الطلبات في الفترة</value>
+  </data>
+  <data name="Report.TechCategories.Summary.TotalCompleted" xml:space="preserve">
+    <value>عدد الطلبات المكتملة</value>
+  </data>
+  <data name="Report.TechCategories.Summary.TotalOverdue" xml:space="preserve">
+    <value>عدد الطلبات المتأخرة</value>
+  </data>
+  <data name="Report.TechCategories.Summary.CompletionRate" xml:space="preserve">
+    <value>نسبة الإنجاز</value>
+  </data>
+  <data name="Report.TechCategories.Summary.OverdueRate" xml:space="preserve">
+    <value>نسبة التأخير</value>
+  </data>
+  <data name="Report.TechCategories.Summary.AverageClosureHours" xml:space="preserve">
+    <value>متوسط زمن الإغلاق</value>
+  </data>
+  <data name="Report.TechCategories.Summary.AverageRequestsPerTechnician" xml:space="preserve">
+    <value>متوسط عدد الطلبات لكل فني</value>
+  </data>
+  <data name="Report.TechCategories.Table.Header.Technician" xml:space="preserve">
+    <value>الفني</value>
+  </data>
+  <data name="Report.TechCategories.Table.Header.Assigned" xml:space="preserve">
+    <value>الطلبات</value>
+  </data>
+  <data name="Report.TechCategories.Table.Header.Completed" xml:space="preserve">
+    <value>المكتملة</value>
+  </data>
+  <data name="Report.TechCategories.Table.Header.Overdue" xml:space="preserve">
+    <value>المتأخرة</value>
+  </data>
+  <data name="Report.TechCategories.Table.Header.AvgClosureHours" xml:space="preserve">
+    <value>متوسط زمن الإغلاق (س)</value>
+  </data>
+  <data name="Report.TechCategories.Category.NoTechnicians" xml:space="preserve">
+    <value>لا يوجد فنيون ضمن هذه الفئة في الفترة المحددة.</value>
+  </data>
+  <data name="Report.TechPerformance.Header.Title" xml:space="preserve">
+    <value>تقرير أداء الفني</value>
+  </data>
+  <data name="Report.TechPerformance.Header.TechnicianLabel" xml:space="preserve">
+    <value>الفني</value>
+  </data>
+  <data name="Report.TechPerformance.Header.PeriodLabel" xml:space="preserve">
+    <value>الفترة</value>
+  </data>
+  <data name="Report.TechPerformance.Footer.Text" xml:space="preserve">
+    <value>Fixtroller - Technician Performance Report</value>
+  </data>
+  <data name="Report.TechPerformance.Summary.Title" xml:space="preserve">
+    <value>الأرقام العامة للفني</value>
+  </data>
+  <data name="Report.TechPerformance.Summary.AssignedCount" xml:space="preserve">
+    <value>عدد الطلبات المعيّنة في الفترة</value>
+  </data>
+  <data name="Report.TechPerformance.Summary.CompletedCount" xml:space="preserve">
+    <value>عدد الطلبات التي أُغلقت</value>
+  </data>
+  <data name="Report.TechPerformance.Summary.OverdueCount" xml:space="preserve">
+    <value>عدد الطلبات المتأخرة (SLA)</value>
+  </data>
+  <data name="Report.TechPerformance.Summary.OverdueRate" xml:space="preserve">
+    <value>نسبة الطلبات المتأخرة (من الطلبات ذات SLA)</value>
+  </data>
+  <data name="Report.TechPerformance.Summary.AverageClosureHours" xml:space="preserve">
+    <value>متوسط زمن الإغلاق</value>
+  </data>
+  <data name="Report.TechPerformance.Summary.AverageStartDelayHours" xml:space="preserve">
+    <value>متوسط زمن بدء العمل بعد التعيين</value>
+  </data>
+  <data name="Report.TechPerformance.Items.NoData" xml:space="preserve">
+    <value>لا توجد طلبات لهذا الفني ضمن الفترة المحددة.</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Title" xml:space="preserve">
+    <value>تفاصيل الطلبات</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.RequestId" xml:space="preserve">
+    <value>رقم</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.CreatedAt" xml:space="preserve">
+    <value>إنشاء</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.ProblemType" xml:space="preserve">
+    <value>نوع المشكلة</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.CaseType" xml:space="preserve">
+    <value>الحالة</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.AssignedAt" xml:space="preserve">
+    <value>تعيين</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.StartedAt" xml:space="preserve">
+    <value>بدء</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.ClosedAt" xml:space="preserve">
+    <value>إغلاق</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.SlaHours" xml:space="preserve">
+    <value>SLA</value>
+  </data>
+  <data name="Report.TechPerformance.Items.Header.IsOverdue" xml:space="preserve">
+    <value>متأخر</value>
+  </data>
+
 </root>

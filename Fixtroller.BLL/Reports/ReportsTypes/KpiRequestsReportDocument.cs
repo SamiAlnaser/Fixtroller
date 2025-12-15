@@ -4,16 +4,23 @@ using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
 
-namespace Fixtroller.BLL.Reports
+namespace Fixtroller.BLL.Reports.ReportsTypes
 {
     public class KpiRequestsReportDocument : IDocument
     {
         private readonly KpiRequestsReportDTO _model;
+        private readonly IReportsTextBuilder _text;
+        private readonly string _language;
 
-        public KpiRequestsReportDocument(KpiRequestsReportDTO model)
+        public KpiRequestsReportDocument(KpiRequestsReportDTO model, IReportsTextBuilder text, string language)
         {
             _model = model;
+            _text = text;
+            _language = language;
         }
+
+        private string T(string key, params object[] args)
+            => _text.Get(key, _language, args);
 
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
@@ -25,24 +32,25 @@ namespace Fixtroller.BLL.Reports
 
                 page.Header().Column(col =>
                 {
-                    // العنوان
+                    // العنوان: "تقرير الأرقام العامة (KPI)"
                     col.Item()
                         .AlignCenter()
                         .Text(t =>
                         {
-                            t.Span("تقرير الأرقام العامة (KPI)")
+                            t.Span(T("Report.KpiRequests.Header.Title"))
                              .FontSize(20)
                              .SemiBold();
                         });
 
-                    // الفترة
+                    // الفترة: "من: {0}   إلى: {1}"
                     col.Item()
                         .AlignCenter()
                         .Text(text =>
                         {
-                            text.Span("من: ").SemiBold();
+                            text.Span(T("Report.Common.FromLabel") + ": ").SemiBold();
                             text.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            text.Span("   إلى: ").SemiBold();
+                            text.Span("   ");
+                            text.Span(T("Report.Common.ToLabel") + ": ").SemiBold();
                             text.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
                         });
 
@@ -54,7 +62,8 @@ namespace Fixtroller.BLL.Reports
                            .AlignCenter()
                            .Text(text =>
                            {
-                               text.Span("نوع المشكلة المفلتر: ").SemiBold();
+                               text.Span(T("Report.KpiRequests.Header.ProblemTypeFilterLabel") + ": ")
+                                   .SemiBold();
                                text.Span(_model.ProblemTypeName!);
                            });
                     }
@@ -71,9 +80,14 @@ namespace Fixtroller.BLL.Reports
 
                 page.Footer().AlignCenter().Text(txt =>
                 {
-                    txt.Span("Fixtroller - KPI Report  ");
+                    // "Fixtroller - KPI Report"
+                    txt.Span(T("Report.KpiRequests.Footer.Text"));
+                    txt.Span("  ");
                     txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                    txt.Span("  |  صفحة ");
+                    txt.Span("  |  ");
+                    // "صفحة"
+                    txt.Span(T("Report.Common.PageLabel"));
+                    txt.Span(" ");
                     txt.CurrentPageNumber();
                     txt.Span(" / ");
                     txt.TotalPages();
@@ -92,40 +106,51 @@ namespace Fixtroller.BLL.Reports
                 {
                     col.Spacing(4);
 
+                    // "الأرقام العامة"
                     col.Item().Text(t =>
                     {
-                        t.Span("الأرقام العامة")
+                        t.Span(T("Report.KpiRequests.Summary.Title"))
                          .FontSize(14)
                          .SemiBold();
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("إجمالي الطلبات في الفترة: ").SemiBold();
+                        // "إجمالي الطلبات في الفترة: "
+                        text.Span(T("Report.KpiRequests.Summary.TotalRequests") + ": ")
+                            .SemiBold();
                         text.Span(s.TotalRequests.ToString());
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("عدد الطلبات الجديدة: ").SemiBold();
+                        // "عدد الطلبات الجديدة: "
+                        text.Span(T("Report.KpiRequests.Summary.NewRequests") + ": ")
+                            .SemiBold();
                         text.Span(s.NewRequests.ToString());
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("عدد الطلبات المغلقة: ").SemiBold();
+                        // "عدد الطلبات المغلقة: "
+                        text.Span(T("Report.KpiRequests.Summary.ClosedRequests") + ": ")
+                            .SemiBold();
                         text.Span(s.ClosedRequests.ToString());
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("عدد الطلبات المتبقية (المفتوحة): ").SemiBold();
+                        // "عدد الطلبات المتبقية (المفتوحة): "
+                        text.Span(T("Report.KpiRequests.Summary.RemainingRequests") + ": ")
+                            .SemiBold();
                         text.Span(s.RemainingRequests.ToString());
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("عدد الطلبات المتأخرة (حسب SLA): ").SemiBold();
+                        // "عدد الطلبات المتأخرة (حسب SLA): "
+                        text.Span(T("Report.KpiRequests.Summary.OverdueRequests") + ": ")
+                            .SemiBold();
                         text.Span(s.OverdueRequests.ToString());
                     });
 
@@ -133,7 +158,9 @@ namespace Fixtroller.BLL.Reports
                     {
                         col.Item().Text(text =>
                         {
-                            text.Span("نسبة الإنجاز: ").SemiBold();
+                            // "نسبة الإنجاز: "
+                            text.Span(T("Report.KpiRequests.Summary.CompletionRate") + ": ")
+                                .SemiBold();
                             text.Span($"{s.CompletionRate.Value:0.##}%");
                         });
                     }
@@ -142,7 +169,9 @@ namespace Fixtroller.BLL.Reports
                     {
                         col.Item().Text(text =>
                         {
-                            text.Span("نسبة التأخير: ").SemiBold();
+                            // "نسبة التأخير: "
+                            text.Span(T("Report.KpiRequests.Summary.OverdueRate") + ": ")
+                                .SemiBold();
                             text.Span($"{s.OverdueRate.Value:0.##}%");
                         });
                     }
@@ -151,7 +180,9 @@ namespace Fixtroller.BLL.Reports
                     {
                         col.Item().Text(text =>
                         {
-                            text.Span("نسبة الالتزام بالـ SLA (من الطلبات المغلقة ذات SLA): ").SemiBold();
+                            // "نسبة الالتزام بالـ SLA (من الطلبات المغلقة ذات SLA): "
+                            text.Span(T("Report.KpiRequests.Summary.SlaComplianceRate") + ": ")
+                                .SemiBold();
                             text.Span($"{s.SlaComplianceRate.Value:0.##}%");
                         });
                     }
@@ -160,8 +191,11 @@ namespace Fixtroller.BLL.Reports
                     {
                         col.Item().Text(text =>
                         {
-                            text.Span("متوسط زمن الإغلاق: ").SemiBold();
-                            text.Span($"{s.AverageClosureHours.Value:0.##} ساعة");
+                            // "متوسط زمن الإغلاق: "
+                            text.Span(T("Report.KpiRequests.Summary.AverageClosureHours") + ": ")
+                                .SemiBold();
+                            text.Span($"{s.AverageClosureHours.Value:0.##} " +
+                                      T("Report.Common.HoursSuffix")); // "ساعة" مثلاً
                         });
                     }
                 });
@@ -171,9 +205,10 @@ namespace Fixtroller.BLL.Reports
         {
             if (_model.TopProblemTypes == null || _model.TopProblemTypes.Count == 0)
             {
+                // "لا توجد بيانات كافية لحساب أكثر أنواع المشاكل تكرارًا."
                 container.Text(t =>
                 {
-                    t.Span("لا توجد بيانات كافية لحساب أكثر أنواع المشاكل تكرارًا.")
+                    t.Span(T("Report.KpiRequests.TopProblemTypes.NoData"))
                      .Italic();
                 });
                 return;
@@ -183,9 +218,10 @@ namespace Fixtroller.BLL.Reports
             {
                 col.Spacing(4);
 
+                // "أكثر أنواع المشاكل تكرارًا"
                 col.Item().Text(t =>
                 {
-                    t.Span("أكثر أنواع المشاكل تكرارًا")
+                    t.Span(T("Report.KpiRequests.TopProblemTypes.Title"))
                      .FontSize(14)
                      .SemiBold();
                 });
@@ -202,8 +238,8 @@ namespace Fixtroller.BLL.Reports
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span("نوع المشكلة").SemiBold());
-                        header.Cell().Text(t => t.Span("العدد").SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopProblemTypes.Header.ProblemType")).SemiBold()); // "نوع المشكلة"
+                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopProblemTypes.Header.Count")).SemiBold());      // "العدد"
                     });
 
                     int index = 1;
@@ -222,9 +258,10 @@ namespace Fixtroller.BLL.Reports
         {
             if (_model.TopDepartments == null || _model.TopDepartments.Count == 0)
             {
+                // "لا توجد بيانات كافية لحساب أكثر الأقسام تكرارًا."
                 container.Text(t =>
                 {
-                    t.Span("لا توجد بيانات كافية لحساب أكثر الأقسام تكرارًا.")
+                    t.Span(T("Report.KpiRequests.TopDepartments.NoData"))
                      .Italic();
                 });
                 return;
@@ -234,9 +271,10 @@ namespace Fixtroller.BLL.Reports
             {
                 col.Spacing(4);
 
+                // "أكثر الأقسام تكرارًا"
                 col.Item().Text(t =>
                 {
-                    t.Span("أكثر الأقسام تكرارًا")
+                    t.Span(T("Report.KpiRequests.TopDepartments.Title"))
                      .FontSize(14)
                      .SemiBold();
                 });
@@ -253,8 +291,8 @@ namespace Fixtroller.BLL.Reports
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span("القسم").SemiBold());
-                        header.Cell().Text(t => t.Span("العدد").SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopDepartments.Header.Department")).SemiBold()); // "القسم"
+                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopDepartments.Header.Count")).SemiBold());      // "العدد"
                     });
 
                     int index = 1;
@@ -269,4 +307,5 @@ namespace Fixtroller.BLL.Reports
             });
         }
     }
+
 }

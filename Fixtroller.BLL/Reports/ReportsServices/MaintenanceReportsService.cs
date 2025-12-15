@@ -6,6 +6,7 @@ using Fixtroller.DAL.Data.DTOs.Reports;
 using Fixtroller.DAL.Repositories.MaintenanceRequestRepositories;
 using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
+using Fixtroller.BLL.Reports.ReportsTypes;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using System;
@@ -24,19 +25,22 @@ namespace Fixtroller.BLL.Services.ReportsServices
         private readonly IUserRepository _userRepository;
         private readonly ITechnicianRepository _technicianRepository;
         private readonly IFileService _fileService;
+        private readonly IReportsTextBuilder _reportsText;
 
         public MaintenanceReportsService(
             IMaintenanceRequestRepository requestRepository,
             IWorkTimeRepository workTimeRepository,
             IUserRepository userRepository,
             ITechnicianRepository technicianRepository,
-            IFileService fileService)
+            IFileService fileService,
+            IReportsTextBuilder reportsText)
         {
             _requestRepository = requestRepository;
             _workTimeRepository = workTimeRepository;
             _userRepository = userRepository;
             _technicianRepository = technicianRepository;
             _fileService = fileService;
+            _reportsText = reportsText;
         }
 
         public async Task<(SingleRequestReportDTO? Report, string MessageKey)> GetSingleRequestAsync(
@@ -55,24 +59,25 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             // تحميل الطلب مع العلاقات المهمة
             var query = _requestRepository.Query(
-                asTracking: false,
-                include: q => q
-                    .Include(r => r.ProblemType)
-                        .ThenInclude(pt => pt.Translations)
-                    .Include(r => r.OwnerUser)
-                    .Include(r => r.CreatedByUser)
-                    .Include(r => r.Technicians)
-                    .Include(r => r.Notes)
-                    .ThenInclude(n => n.CreatedByUser),
-                predicate: x =>
-                    x.Id == requestId &&
-                    (
-                        isAdmin ||
-                        isManager ||
-                        (isEmployee && x.OwnerUserId == userId) ||
-                        (isTechnician && (x.CreatedByUserId == userId ||
-                                          x.Technicians.Any(t => t.TechnicianUserId == userId && t.UnassignedAtUtc == null)))
-                    ));
+     asTracking: false,
+     include: q => q
+         .Include(r => r.ProblemType)
+             .ThenInclude(pt => pt.Translations)
+         .Include(r => r.OwnerUser)
+         .Include(r => r.CreatedByUser)
+         .Include(r => r.Technicians)
+         .Include(r => r.Notes)
+             .ThenInclude(n => n.CreatedByUser),
+     predicate: x =>
+         x.Id == requestId &&
+         (
+             // Admin و MaintenanceManager لهم وصول كامل
+             isAdmin ||
+             isManager ||
+
+             // الموظف والفني: فقط إذا كان مالك الطلب
+             ((isEmployee || isTechnician) && x.OwnerUserId == userId)
+         ));
 
             var entity = await query.FirstOrDefaultAsync(ct);
             if (entity is null)
@@ -239,7 +244,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
             if (report is null)
                 return (null, string.Empty, string.Empty, msg);
 
-            var document = new SingleRequestReportDocument(report);
+            var document = new SingleRequestReportDocument(report, _reportsText, language);
             var bytes = document.GeneratePdf();
 
             var fileName = $"MaintenanceRequest_{report.RequestId}.pdf";
@@ -611,7 +616,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
         {
             var (report, msg) = await GetKpiRequestsAsync(fromUtc, toUtc, problemTypeId, userId, userRole, language, ct);
 
-            var document = new KpiRequestsReportDocument(report);
+            var document = new KpiRequestsReportDocument(report, _reportsText, language);
             var bytes = document.GeneratePdf();
 
             var fileName = $"KpiRequests_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";
@@ -805,7 +810,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 fromUtc, toUtc, userId, userRole, language, ct);
 
             // حتى لو كان التقرير فاضي، يتم إصدار PDF
-            var document = new DurationByProblemTypeReportDocument(report);
+            var document = new DurationByProblemTypeReportDocument(report, _reportsText, language);
             var bytes = document.GeneratePdf();
 
             var fileName = $"DurationByProblemType_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";
@@ -1045,7 +1050,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
             var (report, msg) = await GetTechnicianPerformanceAsync(
                 technicianUserId, fromUtc, toUtc, callerUserId, callerRole, language, ct);
 
-            var document = new TechnicianPerformanceReportDocument(report);
+            var document = new TechnicianPerformanceReportDocument(report, _reportsText, language);
             var bytes = document.GeneratePdf();
 
             var fileName = $"Technician_{technicianUserId}_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";
@@ -1268,7 +1273,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
             var (report, msg) = await GetTechnicianCategoriesPerformanceAsync(
                 fromUtc, toUtc, callerUserId, callerRole, language, ct);
 
-            var document = new TechnicianCategoriesPerformanceReportDocument(report);
+            var document = new TechnicianCategoriesPerformanceReportDocument(report, _reportsText, language);
             var bytes = document.GeneratePdf();
 
             var fileName = $"TechniciansByCategory_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";
@@ -1558,7 +1563,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
         {
             var (report, msg) = await GetMaintenanceDepartmentAsync(fromUtc, toUtc, userId, userRole, language, ct);
 
-            var document = new MaintenanceDepartmentReportDocument(report);
+            var document = new MaintenanceDepartmentReportDocument(report, _reportsText, language);
             var bytes = document.GeneratePdf();
 
             var fileName = $"MaintenanceDepartment_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";

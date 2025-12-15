@@ -1,5 +1,4 @@
 ﻿using Fixtroller.BLL.Services.ReportsServices;
-
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
@@ -8,12 +7,12 @@ using System.Security.Claims;
 using System.Threading;
 using System.Threading.Tasks;
 
-namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
+namespace Fixtroller.PL.Areas
 {
     [Area("MaintenanceManager")]
     [Route("Api/[area]/[controller]")]
     [ApiController]
-    [Authorize(Roles = "MaintenanceManager,Admin")]
+    [Authorize(Roles = "Admin,MaintenanceManager,Employee,Technician")]
     public class ReportsController : ControllerBase
     {
         private readonly IMaintenanceReportsService _reportsService;
@@ -69,6 +68,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير الطلبات لفترة زمنية
         // GET: api/MaintenanceManager/Reports/requests-period?from=2025-01-01&to=2025-01-31&problemTypeId=1
         // GET: api/MaintenanceManager/Reports/requests-period?from=2025-01-01&to=2025-01-31&format=pdf
+        [Authorize(Roles = "Admin,MaintenanceManager")]
         [HttpGet("Requests-Period")]
         public async Task<IActionResult> GetRequestsPeriodReport(
             [FromQuery] DateTime from,
@@ -111,6 +111,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير الأرقام العامة (KPI)
         // GET: api/MaintenanceManager/Reports/kpi-requests?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/kpi-requests?from=2025-01-01&to=2025-01-31&format=pdf
+        [Authorize(Roles = "Admin,MaintenanceManager")]
         [HttpGet("Kpi-Requests")]
         public async Task<IActionResult> GetKpiRequestsReport(
             [FromQuery] DateTime from,
@@ -150,6 +151,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير التصنيفات حسب مدة الإغلاق ونوع المشكلة
         // GET: api/MaintenanceManager/Reports/duration-problem-types?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/duration-problem-types?from=2025-01-01&to=2025-01-31&format=pdf
+        [Authorize(Roles = "Admin,MaintenanceManager")]
         [HttpGet("Duration-Problem-Types")]
         public async Task<IActionResult> GetDurationByProblemTypeReport(
             [FromQuery] DateTime from,
@@ -190,6 +192,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير الفني الواحد
         // GET: api/MaintenanceManager/Reports/technicians/tech-001?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/technicians/tech-001?from=2025-01-01&to=2025-01-31&format=pdf
+        [Authorize(Roles = "Admin,MaintenanceManager")]
         [HttpGet("Technicians/{technicianUserId}")]
         public async Task<IActionResult> GetTechnicianPerformanceReport(
             string technicianUserId,
@@ -239,6 +242,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير الفنيين حسب الـ Category
         // GET: api/MaintenanceManager/Reports/technicians-by-category?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/technicians-by-category?from=2025-01-01&to=2025-01-31&format=pdf
+        [Authorize(Roles = "Admin,MaintenanceManager")]
         [HttpGet("Technicians-By-Category")]
         public async Task<IActionResult> GetTechniciansByCategoryReport(
             [FromQuery] DateTime from,
@@ -285,6 +289,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager.Controllers
         // تقرير قسم الصيانة ككل
         // GET: api/MaintenanceManager/Reports/maintenance-department?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/maintenance-department?from=2025-01-01&to=2025-01-31&format=pdf
+        [Authorize(Roles = "Admin,MaintenanceManager")]
         [HttpGet("Maintenance-Department")]
         public async Task<IActionResult> GetMaintenanceDepartmentReport(
             [FromQuery] DateTime from,

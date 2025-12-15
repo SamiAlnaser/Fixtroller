@@ -1,3 +1,4 @@
+using Fixtroller.BLL.Reports;
 using Fixtroller.BLL.Services.AiServices;
 using Fixtroller.BLL.Services.AuthenticationServices;
 using Fixtroller.BLL.Services.FileService;
@@ -21,6 +22,10 @@ using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Fixtroller.DAL.UnitOfWork;
 using Fixtroller.DAL.Utils;
+using Fixtroller.PL.Services.Notifications;
+using Fixtroller.PL.Services.Notifications.Email;
+using Fixtroller.PL.Services.Notifications.Push;
+using Fixtroller.PL.Services.Reports;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
@@ -28,13 +33,10 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using QuestPDF.Infrastructure;
-using Fixtroller.PL.Services.Notifications;
 using Scalar;
 using Scalar.AspNetCore;
 using System.Globalization;
 using System.Text;
-using Fixtroller.PL.Services.Notifications.Push;
-using Fixtroller.PL.Services.Notifications.Email;
 
 namespace Fixtroller.PL
 {
@@ -91,7 +93,7 @@ namespace Fixtroller.PL
             builder.Services.AddScoped<IMetricsService, MetricsService>();
             builder.Services.AddScoped<IAiEmployeeChatSettingsRepository, AiEmployeeChatSettingsRepository>();
             builder.Services.AddScoped<IAiChatService, AiChatService>();
-
+            builder.Services.AddScoped<IReportsTextBuilder, LocalizerReportsTextBuilder>();
 
 
             builder.Services.AddScoped<IMaintenanceReportsService, MaintenanceReportsService>();
