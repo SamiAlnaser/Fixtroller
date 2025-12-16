@@ -57,18 +57,17 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(new { message });
         }
 
+
         [HttpPatch("Vacation/{userId}")]
         public async Task<IActionResult> VacationUser(
             [FromRoute] string userId,
-            [FromBody] int days,
+            [FromBody] VacationUserRequestDTO dto,
             CancellationToken ct)
         {
-            var (success, messageKey) = await _userService.VacationUserAsync(userId, days, ct);
+            var (success, messageKey) = await _userService.VacationUserAsync(userId, dto.Days, ct);
             var message = _localizer[messageKey].Value;
 
-            if (!success)
-                return BadRequest(new { message });
-
+            if (!success) return BadRequest(new { message });
             return Ok(new { message });
         }
 
