@@ -29,17 +29,12 @@ namespace Fixtroller.PL.Areas.Admin
         [HttpGet("Employees")]
         public async Task<IActionResult> List(CancellationToken ct)
         {
-            var language = Request.Headers["Accept-Language"].ToString();
-            if (string.IsNullOrWhiteSpace(language)) language = "ar";
-
             var users = await _userService.GetAllAsync(ct);
-
-            var employees = users.ToList();
 
             return Ok(new
             {
                 message = _localizer["Success"].Value,
-                data = employees
+                data = users
             });
         }
 
@@ -48,15 +43,12 @@ namespace Fixtroller.PL.Areas.Admin
             [FromBody] ChangeRoleRequestDTO dto,
             CancellationToken ct)
         {
-            var (success, messageKey) = await _userService.ChangeUserRoleAsync(dto, ct);
-            var message = _localizer[messageKey].Value;
+            var (ok, key) = await _userService.ChangeUserRoleAsync(dto, ct);
+            if (!ok)
+                return BadRequest(new { message = _localizer[key].Value });
 
-            if (!success)
-                return BadRequest(new { message });
-
-            return Ok(new { message });
+            return Ok(new { message = _localizer[key].Value });
         }
-
 
         [HttpPatch("Vacation/{userId}")]
         public async Task<IActionResult> VacationUser(
@@ -64,11 +56,11 @@ namespace Fixtroller.PL.Areas.Admin
             [FromBody] VacationUserRequestDTO dto,
             CancellationToken ct)
         {
-            var (success, messageKey) = await _userService.VacationUserAsync(userId, dto.Days, ct);
-            var message = _localizer[messageKey].Value;
+            var (ok, key) = await _userService.VacationUserAsync(userId, dto.Days, ct);
+            if (!ok)
+                return BadRequest(new { message = _localizer[key].Value });
 
-            if (!success) return BadRequest(new { message });
-            return Ok(new { message });
+            return Ok(new { message = _localizer[key].Value });
         }
 
         [HttpPatch("UnVacation/{userId}")]
@@ -76,14 +68,30 @@ namespace Fixtroller.PL.Areas.Admin
             [FromRoute] string userId,
             CancellationToken ct)
         {
-            var (success, messageKey) = await _userService.UnVacationUserAsync(userId, ct);
-            var message = _localizer[messageKey].Value;
+            var (ok, key) = await _userService.UnVacationUserAsync(userId, ct);
+            if (!ok)
+                return BadRequest(new { message = _localizer[key].Value });
 
-            if (!success)
-                return BadRequest(new { message });
-
-            return Ok(new { message });
+            return Ok(new { message = _localizer[key].Value });
         }
+
+        [HttpGet("IsVacation/{userId}")]
+        public async Task<IActionResult> IsVacationUser(
+            [FromRoute] string userId,
+            CancellationToken ct)
+        {
+            var (isVacation, key) = await _userService.IsVacationAsync(userId, ct);
+
+            if (string.Equals(key, "User_NotFound", StringComparison.OrdinalIgnoreCase))
+                return BadRequest(new { message = _localizer[key].Value });
+
+            return Ok(new
+            {
+                message = _localizer[key].Value,
+                data = new { isVacation }
+            });
+        }
+
         [HttpGet("Technicians")]
         public async Task<IActionResult> GetTechnicians(
             [FromQuery] int pageNumber = 1,
@@ -139,13 +147,11 @@ namespace Fixtroller.PL.Areas.Admin
         [HttpPost("Create")]
         public async Task<IActionResult> Create([FromBody] AdminCreateUserRequestDTO dto, CancellationToken ct)
         {
-            var (success, messageKey) = await _userService.CreateUserByAdminAsync(dto, ct);
-            var message = _localizer[messageKey].Value;
+            var (ok, key) = await _userService.CreateUserByAdminAsync(dto, ct);
+            if (!ok)
+                return BadRequest(new { message = _localizer[key].Value });
 
-            if (!success)
-                return BadRequest(new { message });
-
-            return Ok(new { message });
+            return Ok(new { message = _localizer[key].Value });
         }
 
     }

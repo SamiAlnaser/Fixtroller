@@ -1,4 +1,5 @@
-﻿using Fixtroller.DAL.Data.DTOs.Authentication.Requests;
+﻿using Fixtroller.BLL.Services.FileService;
+using Fixtroller.DAL.Data.DTOs.Authentication.Requests;
 using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
 using Fixtroller.DAL.Entities;
 using Microsoft.AspNetCore.Identity;
@@ -18,11 +19,13 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
     {
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _configuration;
+        private readonly IFileService _fileService;
 
-        public AuthenticationService(UserManager<ApplicationUser> userManager, IConfiguration configuration) 
+        public AuthenticationService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IFileService fileService) 
         {
             _userManager = userManager;
             _configuration = configuration;
+            _fileService = fileService;
         }
         public async Task<(UserResponseDTO Response, string MessageKey)> LoginAsync(LoginRequestDTO loginRequest)
         {
@@ -97,6 +100,16 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
                 new Claim("PhoneNumber", user.PhoneNumber),
                 new Claim("Location", user.Location)
              };
+            if (!string.IsNullOrWhiteSpace(user.ProfileImagePath))
+            {
+                var profileImageUrl = _fileService.GetPublicUrl(user.ProfileImagePath);
+
+                // لو بدك تعتبرها null لما ما في صورة، بس لا تضيف الكليم أبداً
+                if (!string.IsNullOrWhiteSpace(profileImageUrl))
+                {
+                    Claims.Add(new Claim("ProfileImageUrl", profileImageUrl));
+                }
+            }
 
             var Roles = await _userManager.GetRolesAsync(user);
             foreach (var role in Roles)

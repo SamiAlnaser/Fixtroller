@@ -99,6 +99,9 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                     TechnicianUserId = t.Id,
                     TechnicianName = t.FullName ?? string.Empty,
                     TechnicianCategory = catName,
+                    ProfileImageUrl = string.IsNullOrWhiteSpace(t.ProfileImagePath)
+                                    ? null
+                                    : _fileService.GetPublicUrl(t.ProfileImagePath),
                     AssignedCount = assigned,
                     CompletedCount = completed,
                     AvgCompletionMinutes = avg

@@ -10,7 +10,8 @@ namespace Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses
     {
         public string TechnicianUserId { get; set; } = "";
         public string TechnicianName { get; set; } = "";
-        public string? TechnicianCategory { get; set; }  
+        public string? TechnicianCategory { get; set; }
+        public string? ProfileImageUrl { get; set; }
         public int AssignedCount { get; set; }        
         public int CompletedCount { get; set; }        
         public int AvgCompletionMinutes { get; set; }     

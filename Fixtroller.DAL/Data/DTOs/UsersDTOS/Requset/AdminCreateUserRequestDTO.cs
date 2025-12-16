@@ -20,10 +20,13 @@ namespace Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset
 
         public string? Department { get; set; }
 
-        [Required]
+        [Required,Phone]
         public string PhoneNumber { get; set; } = string.Empty;
 
         [Required, MinLength(6)]
+        [RegularExpression(
+                        @"^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[\W_]).{6,}$",
+                        ErrorMessage = "PasswordNotComplex")]
         public string Password { get; set; } = string.Empty;
 
         [Required]

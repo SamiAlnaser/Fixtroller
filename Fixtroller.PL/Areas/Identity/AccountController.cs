@@ -36,7 +36,6 @@ namespace Fixtroller.PL.Araes.Identity
         [HttpPost("LogIn")]
         public async Task<ActionResult<UserResponseDTO>> Login(LoginRequestDTO requestDTO)
         {
-            throw new UnauthorizedAccessException();
             var (response, key) = await _authenticationService.LoginAsync(requestDTO);
             response.Message = _localizer[key];
 
