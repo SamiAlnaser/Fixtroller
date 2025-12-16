@@ -114,9 +114,6 @@ namespace Fixtroller.BLL.Services.UserServices
             if (user is null)
                 return (false, "User_NotFound");
 
-            if (days <= 0)
-                return (false, "User_Vacation_InvalidDays");
-
             var success = await _userRepository.VacationUserAsync(userId, days, ct);
             if (!success)
                 return (false, "User_Vacation_Failed");
