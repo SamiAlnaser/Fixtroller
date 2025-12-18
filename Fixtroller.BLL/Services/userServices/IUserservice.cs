@@ -15,7 +15,12 @@ namespace Fixtroller.BLL.Services.UserServices
 {
     public interface IUserservice
     {
-        Task<List<UserListItemDTO>> GetAllAsync(string language = "ar", CancellationToken ct = default);
+        Task<PagedResultDTO<UserListItemDTO>> GetAllAsync(
+            string language = "ar",
+            string? search = null,
+            int pageNumber = 1,
+            int pageSize = 10,
+            CancellationToken ct = default);
         Task<UserListItemDTO?> GetByIdAsync(string userId, string language = "ar", CancellationToken ct = default);
 
         Task<(bool Success, string MessageKey)> ChangeUserRoleAsync(
