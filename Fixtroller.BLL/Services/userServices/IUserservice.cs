@@ -15,12 +15,8 @@ namespace Fixtroller.BLL.Services.UserServices
 {
     public interface IUserservice
     {
-        Task<List<UserListItemDTO>> GetAllAsync(
-            CancellationToken ct = default);
-
-        Task<UserListItemDTO?> GetByIdAsync(
-            string userId,
-            CancellationToken ct = default);
+        Task<List<UserListItemDTO>> GetAllAsync(string language = "ar", CancellationToken ct = default);
+        Task<UserListItemDTO?> GetByIdAsync(string userId, string language = "ar", CancellationToken ct = default);
 
         Task<(bool Success, string MessageKey)> ChangeUserRoleAsync(
             ChangeRoleRequestDTO dto,
