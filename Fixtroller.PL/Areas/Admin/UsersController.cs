@@ -25,19 +25,38 @@ namespace Fixtroller.PL.Areas.Admin
             _userService = userService;
             _localizer = localizer;
         }
-
         [HttpGet("Employees")]
-        public async Task<IActionResult> List(CancellationToken ct)
+        public async Task<IActionResult> List(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var result = await _userService.GetAllAsync(language, ct);
+            var result = await _userService.GetAllAsync(language, search, pageNumber, pageSize, ct);
+
+            // نجهّز ليست الصفحة (page object)
+            var page = new
+            {
+                result.TotalPages,
+                result.CurrentPage,
+                result.TotalCount,
+                result.PageSize,
+                Data = result.Data.Select(u => new
+                {
+                    u.Id,
+                    u.FullName,
+                    u.RoleName,
+                    u.Email
+                })
+            };
 
             return Ok(new
             {
                 message = _localizer["Success"].Value,
-                data = result
+                data = page
             });
         }
 

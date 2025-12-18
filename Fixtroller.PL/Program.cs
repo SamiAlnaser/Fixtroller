@@ -165,7 +165,7 @@ namespace Fixtroller.PL
 
                 Log.Information("Starting HTTP pipeline...");
 
-                app.UseHttpsRedirection();
+            app.UseHttpsRedirection();
             app.UseAuthentication();
             app.UseCors();
             app.UseAuthorization();

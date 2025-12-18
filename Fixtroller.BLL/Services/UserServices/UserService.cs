@@ -38,28 +38,67 @@ namespace Fixtroller.BLL.Services.UserServices
 
 
 
-        public async Task<List<UserListItemDTO>> GetAllAsync(
+        public async Task<PagedResultDTO<UserListItemDTO>> GetAllAsync(
             string language = "ar",
+            string? search = null,
+            int pageNumber = 1,
+            int pageSize = 10,
             CancellationToken ct = default)
         {
+            language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
+
+            if (pageNumber < 1) pageNumber = 1;
+            if (pageSize <= 0) pageSize = 10;
+            if (pageSize > 100) pageSize = 100;
+
             var users = await _userRepository.GetAllAsync(ct);
-            var userDtos = new List<UserListItemDTO>(users.Count);
+
+            var list = new List<UserListItemDTO>(users.Count);
 
             foreach (var user in users)
             {
                 ct.ThrowIfCancellationRequested();
 
-                // الريبو يرجّع الرولز
                 var userRoles = await _userRepository.GetRolesAsync(user, ct);
 
-                userDtos.Add(new UserListItemDTO
+                list.Add(new UserListItemDTO
                 {
                     Id = user.Id,
                     FullName = user.GetDisplayName(language),
-                    RoleName = userRoles.FirstOrDefault() ?? string.Empty
+                    RoleName = userRoles.FirstOrDefault() ?? string.Empty,
+                    Email = user.Email ?? string.Empty
                 });
             }
-            return userDtos;
+
+            // 🔍 بحث بالاسم
+            if (!string.IsNullOrWhiteSpace(search))
+            {
+                var s = search.Trim();
+
+                list = list
+                    .Where(u =>
+                        !string.IsNullOrWhiteSpace(u.FullName) &&
+                        u.FullName.Contains(s, StringComparison.OrdinalIgnoreCase))
+                    .ToList();
+            }
+
+            var totalCount = list.Count;
+            var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
+
+            var pagedData = list
+                .OrderBy(u => u.FullName)
+                .Skip((pageNumber - 1) * pageSize)
+                .Take(pageSize)
+                .ToList();
+
+            return new PagedResultDTO<UserListItemDTO>
+            {
+                TotalPages = totalPages,
+                CurrentPage = pageNumber,
+                TotalCount = totalCount,
+                PageSize = pageSize,
+                Data = pagedData
+            };
         }
 
 
@@ -79,7 +118,8 @@ namespace Fixtroller.BLL.Services.UserServices
             {
                 Id = user.Id,
                 FullName = user.GetDisplayName(language), 
-                RoleName = userRoles.FirstOrDefault() ?? string.Empty
+                RoleName = userRoles.FirstOrDefault() ?? string.Empty,
+                Email = user.Email ?? string.Empty
             };
         }
 
