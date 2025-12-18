@@ -61,14 +61,23 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
                     Message = null
                 }, "EmailAlreadyExists");
             }
-            var user = new ApplicationUser()
+
+            var user = new ApplicationUser
             {
-                FullName = RegisterRequest.FullName,
-                Email = RegisterRequest.Email,
-                PhoneNumber = RegisterRequest.PhoneNumber,
-                UserName = RegisterRequest.UserName ?? RegisterRequest.Email,
-                Location = RegisterRequest.Location 
+                // 👈 تعبئة العربي والإنجليزي من الـ DTO الجديد
+                FullNameAr = RegisterRequest.FullNameAr.Trim(),
+                FullNameEn = RegisterRequest.FullNameEn.Trim(),
+
+                Email = RegisterRequest.Email.Trim(),
+                PhoneNumber = RegisterRequest.PhoneNumber?.Trim(),
+                UserName = string.IsNullOrWhiteSpace(RegisterRequest.UserName)
+                    ? RegisterRequest.Email.Trim()
+                    : RegisterRequest.UserName.Trim(),
+                Location = RegisterRequest.Location?.Trim() ?? string.Empty
             };
+
+            // لو عندك Password في RegisterRequestDTO الأفضل تستخدم هذا الأوفرلود:
+            // var result = await _userManager.CreateAsync(user, RegisterRequest.Password);
 
             var result = await _userManager.CreateAsync(user);
 
@@ -82,6 +91,7 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
             }
 
             await _userManager.AddToRoleAsync(user, "Employee");
+
             return (new UserResponseDTO
             {
                 Token = await CreateTokenAsync(user),
@@ -90,13 +100,14 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
             }, "RegisterSuccess");
         }
 
+
         private async Task<string> CreateTokenAsync(ApplicationUser user)
         {
             var Claims = new List<Claim>()
              {
                 new Claim("Email", user.Email),
                 new Claim("Name", user.UserName),//
-                new Claim("Id", user.Id.ToString()),
+                new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim("PhoneNumber", user.PhoneNumber),
                 new Claim("Location", user.Location)
              };
@@ -114,7 +125,7 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
             var Roles = await _userManager.GetRolesAsync(user);
             foreach (var role in Roles)
             {
-                Claims.Add(new Claim("role", role));
+                Claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
             var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("jwtOptions")["SecretKey"]));

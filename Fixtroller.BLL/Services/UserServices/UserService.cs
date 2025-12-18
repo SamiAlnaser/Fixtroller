@@ -1,4 +1,5 @@
-﻿using Fixtroller.BLL.Services.FileService;
+﻿using Fixtroller.BLL.Helpers;
+using Fixtroller.BLL.Services.FileService;
 using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
 using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
@@ -37,7 +38,9 @@ namespace Fixtroller.BLL.Services.UserServices
 
 
 
-        public async Task<List<UserListItemDTO>> GetAllAsync(CancellationToken ct = default)
+        public async Task<List<UserListItemDTO>> GetAllAsync(
+            string language = "ar",
+            CancellationToken ct = default)
         {
             var users = await _userRepository.GetAllAsync(ct);
             var userDtos = new List<UserListItemDTO>(users.Count);
@@ -46,36 +49,36 @@ namespace Fixtroller.BLL.Services.UserServices
             {
                 ct.ThrowIfCancellationRequested();
 
-                // ✅ السيرفس ما بحكي مع UserManager — الريبو هو اللي برجع الرولز
+                // الريبو يرجّع الرولز
                 var userRoles = await _userRepository.GetRolesAsync(user, ct);
 
                 userDtos.Add(new UserListItemDTO
                 {
                     Id = user.Id,
-                    FullName = user.FullName,
+                    FullName = user.GetDisplayName(language),
                     RoleName = userRoles.FirstOrDefault() ?? string.Empty
                 });
             }
-
             return userDtos;
         }
 
 
         public async Task<UserListItemDTO?> GetByIdAsync(
-       string userId,
-       CancellationToken ct = default)
+            string userId,
+            string language = "ar",
+            CancellationToken ct = default)
         {
             var user = await _userRepository.GetByIdAsync(userId, ct);
             if (user is null)
                 return null;
 
-            // ✅ الريبو هو اللي بجيب الرولز
+            // الريبو هو اللي بجيب الرولز
             var userRoles = await _userRepository.GetRolesAsync(user, ct);
 
             return new UserListItemDTO
             {
                 Id = user.Id,
-                FullName = user.FullName,
+                FullName = user.GetDisplayName(language), 
                 RoleName = userRoles.FirstOrDefault() ?? string.Empty
             };
         }
@@ -86,18 +89,25 @@ namespace Fixtroller.BLL.Services.UserServices
       CancellationToken ct = default)
         {
             if (dto is null || string.IsNullOrWhiteSpace(dto.UserId))
-                return (false, "User_NotFound"); // أو Key خاص لو عندك
+                return (false, "User_NotFound");
 
             var user = await _userRepository.GetByIdAsync(dto.UserId, ct);
             if (user is null)
                 return (false, "User_NotFound");
 
-            var roleName = dto.NewRoleName.ToString();
+            // 1) نحول enum لاسم الرول
+            var roleName = dto.NewRoleName.ToString(); // "Admin" / "Employee" / "Technician" / "MaintenanceManager"
+
             if (string.IsNullOrWhiteSpace(roleName))
-                return (false, "User_ChangeRole_Failed"); // أو Key خاص
+                return (false, "User_ChangeRole_Failed");
 
+            // 2) نتأكد إن الرول موجود فعلياً في AspNetRoles
+            var roleExists = await _userRepository.RoleExistsAsync(roleName, ct);
+            if (!roleExists)
+                return (false, "ROLE_NOT_FOUND");
+
+            // 3) نغيّر الرول
             var success = await _userRepository.ChangeUserRoleAsync(dto.UserId, roleName, ct);
-
             if (!success)
                 return (false, "User_ChangeRole_Failed");
 
@@ -153,20 +163,27 @@ namespace Fixtroller.BLL.Services.UserServices
 
 
         public async Task<(bool Success, string MessageKey)> CreateUserByAdminAsync(
-            AdminCreateUserRequestDTO dto,
-            CancellationToken ct)
+    AdminCreateUserRequestDTO dto,
+    CancellationToken ct)
         {
             var existing = await _userRepository.GetByEmailAsync(dto.Email, ct);
             if (existing != null)
                 return (false, "USER_EMAIL_ALREADY_EXISTS");
 
-            var roleExists = await _userRepository.RoleExistsAsync(dto.Role, ct);
+            // 👈 حول enum إلى string اسم الرول
+            var roleName = dto.Role.ToString(); // "Admin", "Employee", ...
+
+            // تأكيد أن الرول من الأربعة المعروفة + موجود في Identity
+            var roleExists = await _userRepository.RoleExistsAsync(roleName, ct);
             if (!roleExists)
                 return (false, "ROLE_NOT_FOUND");
 
             var user = new ApplicationUser
             {
-                FullName = dto.FullName.Trim(),
+                FullNameAr = dto.FullNameAr.Trim(),
+                FullNameEn = string.IsNullOrWhiteSpace(dto.FullNameEn)
+                            ? null
+                            : dto.FullNameEn.Trim(),
                 Email = dto.Email.Trim(),
                 UserName = dto.Email.Trim(),
                 Location = dto.Location.Trim(),
@@ -179,12 +196,13 @@ namespace Fixtroller.BLL.Services.UserServices
             if (!created)
                 return (false, "USER_CREATE_FAILED");
 
-            var roleAdded = await _userRepository.AddToRoleAsync(user, dto.Role, ct);
+            var roleAdded = await _userRepository.AddToRoleAsync(user, roleName, ct);
             if (!roleAdded)
                 return (false, "USER_ROLE_ASSIGN_FAILED");
 
             return (true, "USER_CREATED_SUCCESS");
         }
+
 
         public async Task<(bool Success, string MessageKey, string? ImageUrl)> UploadMyProfileImageAsync(
         string userId, IFormFile file, CancellationToken ct = default)
@@ -305,7 +323,7 @@ namespace Fixtroller.BLL.Services.UserServices
                 return new AdminTechnicianListItemDTO
                 {
                     Id = u.Id,
-                    FullName = u.FullName ?? string.Empty,
+                    FullName = u.GetDisplayName(language),
                     ProfileImageUrl = string.IsNullOrWhiteSpace(u.ProfileImagePath)
                         ? null
                         : _fileService.GetPublicUrl(u.ProfileImagePath),

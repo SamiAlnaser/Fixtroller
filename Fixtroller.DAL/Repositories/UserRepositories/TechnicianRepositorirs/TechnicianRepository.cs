@@ -40,15 +40,19 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim();
+
                 q = q.Where(u =>
-                    (u.FullName != null && u.FullName.Contains(s)) ||
-                    (u.Email != null && u.Email.Contains(s)));
+                    (!string.IsNullOrEmpty(u.FullNameAr) && u.FullNameAr.Contains(s)) ||
+                    (!string.IsNullOrEmpty(u.FullNameEn) && u.FullNameEn.Contains(s)) ||
+                    (!string.IsNullOrEmpty(u.Email) && u.Email.Contains(s))
+                );
             }
 
             return await q
-                .OrderBy(u => u.FullName)
+                .OrderBy(u => u.FullNameAr ?? u.FullNameEn ?? u.Email ?? u.UserName)
                 .ToListAsync(ct);
         }
+
 
         public Task<ApplicationUser?> GetByIdAsync(string userId, CancellationToken ct = default)
         {
@@ -97,7 +101,10 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             return true;
         }
 
-        public async Task<IReadOnlyList<ApplicationUser>> GetByCategoryAsync(int categoryId, string? search, CancellationToken ct = default)
+        public async Task<IReadOnlyList<ApplicationUser>> GetByCategoryAsync(
+            int categoryId,
+            string? search,
+            CancellationToken ct = default)
         {
             var q = _dbcontext.Users
                 .AsNoTracking()
@@ -113,13 +120,18 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim();
+
                 q = q.Where(u =>
-                    (u.FullName != null && u.FullName.Contains(s)) ||
-                    (u.Email != null && u.Email.Contains(s)));
+                    (!string.IsNullOrEmpty(u.FullNameAr) && u.FullNameAr.Contains(s)) ||
+                    (!string.IsNullOrEmpty(u.FullNameEn) && u.FullNameEn.Contains(s)) ||
+                    (!string.IsNullOrEmpty(u.Email) && u.Email.Contains(s)));
             }
 
-            return await q.OrderBy(u => u.FullName).ToListAsync(ct);
+            return await q
+                .OrderBy(u => u.FullNameAr ?? u.FullNameEn ?? u.Email ?? u.UserName)
+                .ToListAsync(ct);
         }
+
 
         public async Task<PagedResultDTO<ApplicationUser>> GetPagedAsync(
             string? search,
@@ -144,11 +156,16 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
                         .Any(roleId => _dbcontext.Roles.Any(r => r.Id == roleId && r.Name == "Technician"))
                 );
 
-            // 🔎 Search by name
+            // 🔎 Search by name (AR / EN) أو الإيميل
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim();
-                q = q.Where(u => u.FullName != null && u.FullName.Contains(s));
+
+                q = q.Where(u =>
+                    (!string.IsNullOrEmpty(u.FullNameAr) && u.FullNameAr.Contains(s)) ||
+                    (!string.IsNullOrEmpty(u.FullNameEn) && u.FullNameEn.Contains(s)) ||
+                    (!string.IsNullOrEmpty(u.Email) && u.Email.Contains(s))
+                );
             }
 
             // ✅ Filter by status: available / vacation
@@ -158,7 +175,6 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
 
                 if (st == "vacation")
                     q = q.Where(u => u.LockoutEnd != null && u.LockoutEnd > nowUtc);
-
                 else if (st == "available")
                     q = q.Where(u => u.LockoutEnd == null || u.LockoutEnd <= nowUtc);
             }
@@ -167,7 +183,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             var totalPages = (int)Math.Ceiling(totalCount / (double)pageSize);
 
             var data = await q
-                .OrderBy(u => u.FullName)
+                .OrderBy(u => u.FullNameAr ?? u.FullNameEn ?? u.Email ?? u.UserName)
                 .Skip((pageNumber - 1) * pageSize)
                 .Take(pageSize)
                 .ToListAsync(ct);
@@ -181,6 +197,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
                 Data = data.ToList()
             };
         }
+
 
         public async Task<(int Total, int Available, int Vacation)> GetAvailabilityCountsAsync(
     CancellationToken ct = default)

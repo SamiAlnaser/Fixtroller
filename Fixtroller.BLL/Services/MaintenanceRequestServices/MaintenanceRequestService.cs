@@ -1,4 +1,5 @@
-﻿using Fixtroller.BLL.Mapping;
+﻿using Fixtroller.BLL.Helpers;
+using Fixtroller.BLL.Mapping;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.BLL.Services.GenericService;
 using Fixtroller.BLL.Services.NotificationServices;
@@ -165,6 +166,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             if (!IsValidCaseType(newCase))
                 return (null, "CaseType_Invalid");
+
+            if (!IsValidPriority(request.Priority))
+                return (null, "Priority_Invalid");
             // 3) القواعد حسب ما طلبت انت 👇
             // الفني: Submitted, Processing, ManagerReview, ResourcesNeeded
             var techAllowed =
@@ -512,9 +516,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             foreach (var techId in techIds)
             {
                 var user = await _userRepo.GetByIdAsync(techId!, ct);
-                if (user is not null && !string.IsNullOrWhiteSpace(user.FullName))
+                if (user is not null)
                 {
-                    techNames[techId!] = user.FullName;
+                    techNames[techId!] = user.GetDisplayName(language);
                 }
             }
 
@@ -615,7 +619,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     dto.CurrentTechnicianActiveSeconds = seconds;
                 }
             }
-            await EnrichAssignedTechniciansNamesAsync(dto, ct);
+            await EnrichAssignedTechniciansNamesAsync(dto, language, ct);
 
             return dto;
         }
@@ -974,6 +978,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         {
             if (!IsValidCaseType(dto.NewCaseType))
                 return (null, "CaseType_Invalid");
+
+            if (dto.Priority.HasValue && !IsValidPriority(dto.Priority.Value))
+                return (null, "Priority_Invalid");
+
+            if (dto.NoteType.HasValue && !IsValidNoteType(dto.NoteType.Value))
+                return (null, "NoteType_Invalid");
             // تحقّقات بدون ترانزاكشن
             var r = await _repository.GetForUpdateAsync(requestId, ct);
             if (r is null) return (null, "Request_NotFound");
@@ -1191,7 +1201,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (string.IsNullOrWhiteSpace(dto.Text))
                 return (null, "Note_Text_Required");
 
-            var noteType = dto.Type ?? NoteType.General;
+            if (dto.Type.HasValue && !IsValidNoteType(dto.Type.Value))
+                return (null, "NoteType_Invalid");
+
+            var noteType = NoteType.General;
 
             await _uow.BeginTransactionAsync(ct);
             try
@@ -1264,6 +1277,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 if (!string.IsNullOrWhiteSpace(dto.Title)) r.Title = dto.Title.Trim();
                 if (!string.IsNullOrWhiteSpace(dto.Description)) r.Description = dto.Description.Trim();
                 if (!string.IsNullOrWhiteSpace(dto.Address)) r.Address = dto.Address.Trim();
+                if (dto.Priority.HasValue && !IsValidPriority(dto.Priority.Value))
+                    return (null, "Priority_Invalid");
                 if (dto.Priority.HasValue) r.Priority = dto.Priority.Value;
                 if (dto.ProblemTypeId.HasValue) r.ProblemTypeId = dto.ProblemTypeId.Value;
 
@@ -1768,9 +1783,13 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
-        private async Task EnrichAssignedTechniciansNamesAsync(MaintenanceRequestResponseDTO dto, CancellationToken ct)
+        private async Task EnrichAssignedTechniciansNamesAsync(
+            MaintenanceRequestResponseDTO dto,
+            string language,
+            CancellationToken ct = default)
         {
-            if (dto?.AssignedTechnicians == null || dto.AssignedTechnicians.Count == 0) return;
+            if (dto?.AssignedTechnicians == null || dto.AssignedTechnicians.Count == 0)
+                return;
 
             var ids = dto.AssignedTechnicians
                 .Select(x => x.UserId)
@@ -1778,7 +1797,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 .Distinct(StringComparer.Ordinal)
                 .ToList();
 
-            if (ids.Count == 0) return;
+            if (ids.Count == 0)
+                return;
 
             var dict = new Dictionary<string, string>(StringComparer.Ordinal);
 
@@ -1787,18 +1807,28 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var u = await _userRepo.GetByIdAsync(id, ct);
                 if (u is null) continue;
 
-                dict[id] = string.IsNullOrWhiteSpace(u.FullName) ? u.UserName ?? id : u.FullName;
+                // 👈 هون التعديل: استخدم الاسم حسب اللغة
+                dict[id] = u.GetDisplayName(language);
             }
 
             foreach (var t in dto.AssignedTechnicians)
             {
-                if (dict.TryGetValue(t.UserId, out var name))
+                if (!string.IsNullOrWhiteSpace(t.UserId) &&
+                    dict.TryGetValue(t.UserId, out var name))
+                {
                     t.FullName = name;
+                }
             }
         }
 
         private static bool IsValidCaseType(CaseType value)
     => Enum.IsDefined(typeof(CaseType), (int)value);
+
+        private static bool IsValidPriority(Priority value)
+    => Enum.IsDefined(typeof(Priority), (int)value);
+
+        private static bool IsValidNoteType(NoteType value)
+            => Enum.IsDefined(typeof(NoteType), (int)value);
 
     }
 

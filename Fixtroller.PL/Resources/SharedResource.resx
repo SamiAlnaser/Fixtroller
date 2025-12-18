@@ -849,5 +849,10 @@
   <data name="Report.TechPerformance.Items.Header.IsOverdue" xml:space="preserve">
     <value>متأخر</value>
   </data>
-
+  <data name="Priority_Invalid" xml:space="preserve">
+    <value>الأولوية غير صحيحة.</value>
+  </data>
+  <data name="NoteType_Invalid" xml:space="preserve">
+    <value>نوع الملاحظة غير صحيح</value>
+  </data>
 </root>

@@ -21,10 +21,16 @@ namespace Fixtroller.DAL.Data.DTOs.Authentication.Requests
         [Required]
         [MinLength(3)]
         [MaxLength(50)]
-        public string FullName { get; set; }
+        public string FullNameAr { get; set; }
+
+        // 👇 الاسم الإنجليزي
+        [Required]
+        [MinLength(3)]
+        [MaxLength(50)]
+        public string FullNameEn { get; set; }
 
         [Phone]
-        public string PhoneNumber { get; set; }
+        public string? PhoneNumber { get; set; }
 
         public string Location { get; set; }
 

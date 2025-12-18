@@ -1,4 +1,5 @@
-﻿using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
+﻿using Fixtroller.BLL.Helpers;
+using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TCategoryDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
 using Fixtroller.DAL.Entities;
@@ -105,15 +106,15 @@ namespace Fixtroller.BLL.Mapping
             return new TechnicianResponseDTO
             {
                 Id = user.Id,
-                FullName = user.FullName,
+                FullName = user.GetDisplayName(language),  
                 Email = user.Email,
                 TechnicianCategory = user.TechnicianCategory == null
-                    ? null
-                    : new TCategoryUserResponseDTO
-                    {
-                        Id = user.TechnicianCategory.Id,
-                        Name = catName
-                    }
+         ? null
+         : new TCategoryUserResponseDTO
+         {
+             Id = user.TechnicianCategory.Id,
+             Name = catName
+         }
             };
         }
     }

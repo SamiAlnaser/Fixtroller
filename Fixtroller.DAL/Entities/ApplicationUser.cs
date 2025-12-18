@@ -12,7 +12,11 @@ namespace Fixtroller.DAL.Entities
 {
     public class ApplicationUser : IdentityUser
     {
-        public string FullName { get; set; } // username رح يتغير عشان موضوع اللغات و رح يتغير تبعياته في السيرفر و التوكين و غيره مع  
+        // اسم عربي
+        public string FullNameAr { get; set; } = string.Empty;
+
+        // اسم إنجليزي (اختياري)
+        public string? FullNameEn { get; set; }
         public string Location { get; set; }
         public string? Department { get; set; }
         public int? TechnicianCategoryId { get; set; }

@@ -28,7 +28,8 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var users = await _userService.GetAllAsync(ct);
+            var users = await _userService.GetAllAsync(language, ct);
+
 
             var employees = users
                 .Where(u => u.RoleName == "Employee" || u.RoleName == "Technician"|| u.RoleName == "Admin")

@@ -17,7 +17,7 @@ namespace Fixtroller.DAL.Entities.TechnicianCategoryEntity
         public string Language { get; set; } = "ar";
 
 
-        public int TechnicianCategoryyId { get; set; }
+        public int TechnicianCategoryId { get; set; }
         public  TechnicianCategory  TechnicianCategory { get; set; }
     }
 }

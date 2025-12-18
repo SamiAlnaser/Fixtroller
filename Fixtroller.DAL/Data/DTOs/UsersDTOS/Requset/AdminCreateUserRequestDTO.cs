@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Generic;
+﻿using Fixtroller.DAL.Data.DTOs.ChangeRoleDTOs.Requests;
 using System.ComponentModel.DataAnnotations;
 using System.Linq;
 using System.Text;
@@ -9,8 +8,11 @@ namespace Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset
 {
     public sealed class AdminCreateUserRequestDTO
     {
+
         [Required]
-        public string FullName { get; set; } = string.Empty;
+        public string FullNameAr { get; set; } = string.Empty;
+        [Required]
+        public string? FullNameEn { get; set; }
 
         [Required, EmailAddress]
         public string Email { get; set; } = string.Empty;
@@ -30,6 +32,6 @@ namespace Fixtroller.DAL.Data.DTOs.UsersDTOs.Requset
         public string Password { get; set; } = string.Empty;
 
         [Required]
-        public string Role { get; set; } = string.Empty;
+        public RoleType Role { get; set; }
     }
 }

@@ -408,446 +408,451 @@
   <data name="Technician_Status_Vacation" xml:space="preserve">
     <value>On vacation</value>
   </data>
-	<data name="Report.Common.PageLabel" xml:space="preserve">
+  <data name="Report.Common.PageLabel" xml:space="preserve">
     <value>Page</value>
   </data>
-	<data name="Report.Common.FromLabel" xml:space="preserve">
+  <data name="Report.Common.FromLabel" xml:space="preserve">
     <value>From</value>
   </data>
-	<data name="Report.Common.ToLabel" xml:space="preserve">
+  <data name="Report.Common.ToLabel" xml:space="preserve">
     <value>To</value>
   </data>
-	<data name="Report.Common.HoursSuffix" xml:space="preserve">
+  <data name="Report.Common.HoursSuffix" xml:space="preserve">
     <value>hour(s)</value>
   </data>
-	<data name="Report.Common.Yes" xml:space="preserve">
+  <data name="Report.Common.Yes" xml:space="preserve">
     <value>Yes</value>
   </data>
-	<data name="Report.Common.No" xml:space="preserve">
+  <data name="Report.Common.No" xml:space="preserve">
     <value>No</value>
   </data>
-	<data name="Report.Common.Footer.AppLabel" xml:space="preserve">
+  <data name="Report.Common.Footer.AppLabel" xml:space="preserve">
     <value>Fixtroller - Maintenance Report</value>
   </data>
-	<data name="Report.SingleRequest.Header.Title" xml:space="preserve">
+  <data name="Report.SingleRequest.Header.Title" xml:space="preserve">
     <value>Maintenance request report #{0}</value>
   </data>
-	<data name="Report.SingleRequest.Section.Summary" xml:space="preserve">
+  <data name="Report.SingleRequest.Section.Summary" xml:space="preserve">
     <value>Request information</value>
   </data>
-	<data name="Report.SingleRequest.Label.ProblemType" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.ProblemType" xml:space="preserve">
     <value>Problem type</value>
   </data>
-	<data name="Report.SingleRequest.Label.Priority" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.Priority" xml:space="preserve">
     <value>Priority</value>
   </data>
-	<data name="Report.SingleRequest.Label.CaseType" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.CaseType" xml:space="preserve">
     <value>Current status</value>
   </data>
-	<data name="Report.SingleRequest.Label.Description" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.Description" xml:space="preserve">
     <value>Problem description</value>
   </data>
-	<data name="Report.SingleRequest.Section.Owner" xml:space="preserve">
+  <data name="Report.SingleRequest.Section.Owner" xml:space="preserve">
     <value>Request owner</value>
   </data>
-	<data name="Report.SingleRequest.Label.OwnerName" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.OwnerName" xml:space="preserve">
     <value>Name</value>
   </data>
-	<data name="Report.SingleRequest.Label.OwnerDepartment" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.OwnerDepartment" xml:space="preserve">
     <value>Department</value>
   </data>
-	<data name="Report.SingleRequest.Label.OwnerLocation" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.OwnerLocation" xml:space="preserve">
     <value>Employee location</value>
   </data>
-	<data name="Report.SingleRequest.Label.RequestAddress" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.RequestAddress" xml:space="preserve">
     <value>Issue location (building / room)</value>
   </data>
-	<data name="Report.SingleRequest.Label.CreatedBy" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.CreatedBy" xml:space="preserve">
     <value>Created by</value>
   </data>
-	<data name="Report.SingleRequest.CreatedBy.SameAsOwner" xml:space="preserve">
+  <data name="Report.SingleRequest.CreatedBy.SameAsOwner" xml:space="preserve">
     <value>Same as owner</value>
   </data>
-	<data name="Report.SingleRequest.CreatedBy.OtherUser" xml:space="preserve">
+  <data name="Report.SingleRequest.CreatedBy.OtherUser" xml:space="preserve">
     <value>Other user (technician / manager)</value>
   </data>
-	<data name="Report.SingleRequest.Section.Timing" xml:space="preserve">
+  <data name="Report.SingleRequest.Section.Timing" xml:space="preserve">
     <value>Timing &amp; SLA</value>
   </data>
-	<data name="Report.SingleRequest.Label.CreatedAt" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.CreatedAt" xml:space="preserve">
     <value>Request created at</value>
   </data>
-	<data name="Report.SingleRequest.Label.FirstAssignedAt" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.FirstAssignedAt" xml:space="preserve">
     <value>First technician assignment</value>
   </data>
-	<data name="Report.SingleRequest.Label.FirstWorkStartedAt" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.FirstWorkStartedAt" xml:space="preserve">
     <value>First work start</value>
   </data>
-	<data name="Report.SingleRequest.Label.ClosedAt" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.ClosedAt" xml:space="preserve">
     <value>Closed at</value>
   </data>
-	<data name="Report.SingleRequest.Duration.Expected.Format" xml:space="preserve">
+  <data name="Report.SingleRequest.Duration.Expected.Format" xml:space="preserve">
     <value>{0:0.##} hour(s)</value>
   </data>
-	<data name="Report.SingleRequest.Label.ExpectedDuration" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.ExpectedDuration" xml:space="preserve">
     <value>Expected duration (SLA)</value>
   </data>
-	<data name="Report.SingleRequest.Duration.Actual.Format" xml:space="preserve">
+  <data name="Report.SingleRequest.Duration.Actual.Format" xml:space="preserve">
     <value>{0:0.##} hour(s)</value>
   </data>
-	<data name="Report.SingleRequest.Label.ActualDuration" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.ActualDuration" xml:space="preserve">
     <value>Actual closure duration</value>
   </data>
-	<data name="Report.SingleRequest.SlaStatus.Within" xml:space="preserve">
+  <data name="Report.SingleRequest.SlaStatus.Within" xml:space="preserve">
     <value>Within SLA</value>
   </data>
-	<data name="Report.SingleRequest.SlaStatus.Late" xml:space="preserve">
+  <data name="Report.SingleRequest.SlaStatus.Late" xml:space="preserve">
     <value>Overdue</value>
   </data>
-	<data name="Report.SingleRequest.Label.SlaStatus" xml:space="preserve">
+  <data name="Report.SingleRequest.Label.SlaStatus" xml:space="preserve">
     <value>SLA compliance</value>
   </data>
-	<data name="Report.SingleRequest.Section.Technicians" xml:space="preserve">
+  <data name="Report.SingleRequest.Section.Technicians" xml:space="preserve">
     <value>Assigned technicians</value>
   </data>
-	<data name="Report.SingleRequest.Message.NoTechnicians" xml:space="preserve">
+  <data name="Report.SingleRequest.Message.NoTechnicians" xml:space="preserve">
     <value>No technicians assigned to this request.</value>
   </data>
-	<data name="Report.SingleRequest.Technicians.Header.Name" xml:space="preserve">
+  <data name="Report.SingleRequest.Technicians.Header.Name" xml:space="preserve">
     <value>Technician</value>
   </data>
-	<data name="Report.SingleRequest.Technicians.Header.Category" xml:space="preserve">
+  <data name="Report.SingleRequest.Technicians.Header.Category" xml:space="preserve">
     <value>Category</value>
   </data>
-	<data name="Report.SingleRequest.Technicians.Header.AssignedAt" xml:space="preserve">
+  <data name="Report.SingleRequest.Technicians.Header.AssignedAt" xml:space="preserve">
     <value>Assigned</value>
   </data>
-	<data name="Report.SingleRequest.Technicians.Header.StartAt" xml:space="preserve">
+  <data name="Report.SingleRequest.Technicians.Header.StartAt" xml:space="preserve">
     <value>Start</value>
   </data>
-	<data name="Report.SingleRequest.Technicians.Header.EndAt" xml:space="preserve">
+  <data name="Report.SingleRequest.Technicians.Header.EndAt" xml:space="preserve">
     <value>End</value>
   </data>
-	<data name="Report.SingleRequest.Technicians.Header.WorkMinutes" xml:space="preserve">
+  <data name="Report.SingleRequest.Technicians.Header.WorkMinutes" xml:space="preserve">
     <value>Work minutes</value>
   </data>
-	<data name="Report.SingleRequest.Technicians.Header.SlaHours" xml:space="preserve">
+  <data name="Report.SingleRequest.Technicians.Header.SlaHours" xml:space="preserve">
     <value>SLA (h)</value>
   </data>
-	<data name="Report.SingleRequest.Section.Notes" xml:space="preserve">
+  <data name="Report.SingleRequest.Section.Notes" xml:space="preserve">
     <value>Notes</value>
   </data>
-	<data name="Report.SingleRequest.Message.NoNotes" xml:space="preserve">
+  <data name="Report.SingleRequest.Message.NoNotes" xml:space="preserve">
     <value>There are no notes for this request.</value>
   </data>
-	<data name="Report.SingleRequest.Notes.HeaderFormat" xml:space="preserve">
+  <data name="Report.SingleRequest.Notes.HeaderFormat" xml:space="preserve">
     <value>{0:yyyy-MM-dd HH:mm} - {1}</value>
   </data>
-	<data name="Report.DurationByProblemType.Header.Title" xml:space="preserve">
+  <data name="Report.DurationByProblemType.Header.Title" xml:space="preserve">
     <value>Duration by problem type report</value>
   </data>
-	<data name="Report.DurationByProblemType.Header.TotalCompleted" xml:space="preserve">
+  <data name="Report.DurationByProblemType.Header.TotalCompleted" xml:space="preserve">
     <value>Total completed requests in period</value>
   </data>
-	<data name="Report.DurationByProblemType.Footer.Text" xml:space="preserve">
+  <data name="Report.DurationByProblemType.Footer.Text" xml:space="preserve">
     <value>Fixtroller - Duration by Problem Type Report</value>
   </data>
-	<data name="Report.DurationByProblemType.Buckets.NoData" xml:space="preserve">
+  <data name="Report.DurationByProblemType.Buckets.NoData" xml:space="preserve">
     <value>No completed requests in the selected period.</value>
   </data>
-	<data name="Report.DurationByProblemType.Buckets.Title" xml:space="preserve">
+  <data name="Report.DurationByProblemType.Buckets.Title" xml:space="preserve">
     <value>Completed requests distribution by closure duration</value>
   </data>
-	<data name="Report.DurationByProblemType.Buckets.Header.Duration" xml:space="preserve">
+  <data name="Report.DurationByProblemType.Buckets.Header.Duration" xml:space="preserve">
     <value>Closure duration</value>
   </data>
-	<data name="Report.DurationByProblemType.Buckets.Header.Count" xml:space="preserve">
+  <data name="Report.DurationByProblemType.Buckets.Header.Count" xml:space="preserve">
     <value>Count</value>
   </data>
-	<data name="Report.DurationByProblemType.Buckets.Header.Percent" xml:space="preserve">
+  <data name="Report.DurationByProblemType.Buckets.Header.Percent" xml:space="preserve">
     <value>Percentage %</value>
   </data>
-	<data name="Report.DurationByProblemType.ProblemTypes.NoData" xml:space="preserve">
+  <data name="Report.DurationByProblemType.ProblemTypes.NoData" xml:space="preserve">
     <value>No problem-type data in the selected period.</value>
   </data>
-	<data name="Report.DurationByProblemType.ProblemTypes.Title" xml:space="preserve">
+  <data name="Report.DurationByProblemType.ProblemTypes.Title" xml:space="preserve">
     <value>KPIs per problem type</value>
   </data>
-	<data name="Report.DurationByProblemType.ProblemTypes.Header.ProblemType" xml:space="preserve">
+  <data name="Report.DurationByProblemType.ProblemTypes.Header.ProblemType" xml:space="preserve">
     <value>Problem type</value>
   </data>
-	<data name="Report.DurationByProblemType.ProblemTypes.Header.CompletedCount" xml:space="preserve">
+  <data name="Report.DurationByProblemType.ProblemTypes.Header.CompletedCount" xml:space="preserve">
     <value>Completed count</value>
   </data>
-	<data name="Report.DurationByProblemType.ProblemTypes.Header.AvgClosureHours" xml:space="preserve">
+  <data name="Report.DurationByProblemType.ProblemTypes.Header.AvgClosureHours" xml:space="preserve">
     <value>Avg. closure time (h)</value>
   </data>
-	<data name="Report.DurationByProblemType.ProblemTypes.Header.OverdueRate" xml:space="preserve">
+  <data name="Report.DurationByProblemType.ProblemTypes.Header.OverdueRate" xml:space="preserve">
     <value>Overdue rate %</value>
   </data>
-	<data name="Report.KpiRequests.Header.Title" xml:space="preserve">
+  <data name="Report.KpiRequests.Header.Title" xml:space="preserve">
     <value>General KPIs report</value>
   </data>
-	<data name="Report.KpiRequests.Header.ProblemTypeFilterLabel" xml:space="preserve">
+  <data name="Report.KpiRequests.Header.ProblemTypeFilterLabel" xml:space="preserve">
     <value>Filtered problem type</value>
   </data>
-	<data name="Report.KpiRequests.Footer.Text" xml:space="preserve">
+  <data name="Report.KpiRequests.Footer.Text" xml:space="preserve">
     <value>Fixtroller - KPI Report</value>
   </data>
-	<data name="Report.KpiRequests.Summary.Title" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.Title" xml:space="preserve">
     <value>General numbers</value>
   </data>
-	<data name="Report.KpiRequests.Summary.TotalRequests" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.TotalRequests" xml:space="preserve">
     <value>Total requests in period</value>
   </data>
-	<data name="Report.KpiRequests.Summary.NewRequests" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.NewRequests" xml:space="preserve">
     <value>New requests</value>
   </data>
-	<data name="Report.KpiRequests.Summary.ClosedRequests" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.ClosedRequests" xml:space="preserve">
     <value>Closed requests</value>
   </data>
-	<data name="Report.KpiRequests.Summary.RemainingRequests" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.RemainingRequests" xml:space="preserve">
     <value>Remaining (open) requests</value>
   </data>
-	<data name="Report.KpiRequests.Summary.OverdueRequests" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.OverdueRequests" xml:space="preserve">
     <value>Overdue requests (by SLA)</value>
   </data>
-	<data name="Report.KpiRequests.Summary.CompletionRate" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.CompletionRate" xml:space="preserve">
     <value>Completion rate</value>
   </data>
-	<data name="Report.KpiRequests.Summary.OverdueRate" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.OverdueRate" xml:space="preserve">
     <value>Overdue rate</value>
   </data>
-	<data name="Report.KpiRequests.Summary.SlaComplianceRate" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.SlaComplianceRate" xml:space="preserve">
     <value>SLA compliance (of closed requests with SLA)</value>
   </data>
-	<data name="Report.KpiRequests.Summary.AverageClosureHours" xml:space="preserve">
+  <data name="Report.KpiRequests.Summary.AverageClosureHours" xml:space="preserve">
     <value>Average closure time</value>
   </data>
-	<data name="Report.KpiRequests.TopProblemTypes.NoData" xml:space="preserve">
+  <data name="Report.KpiRequests.TopProblemTypes.NoData" xml:space="preserve">
     <value>Not enough data to calculate top problem types.</value>
   </data>
-	<data name="Report.KpiRequests.TopProblemTypes.Title" xml:space="preserve">
+  <data name="Report.KpiRequests.TopProblemTypes.Title" xml:space="preserve">
     <value>Most frequent problem types</value>
   </data>
-	<data name="Report.KpiRequests.TopProblemTypes.Header.ProblemType" xml:space="preserve">
+  <data name="Report.KpiRequests.TopProblemTypes.Header.ProblemType" xml:space="preserve">
     <value>Problem type</value>
   </data>
-	<data name="Report.KpiRequests.TopProblemTypes.Header.Count" xml:space="preserve">
+  <data name="Report.KpiRequests.TopProblemTypes.Header.Count" xml:space="preserve">
     <value>Count</value>
   </data>
-	<data name="Report.KpiRequests.TopDepartments.NoData" xml:space="preserve">
+  <data name="Report.KpiRequests.TopDepartments.NoData" xml:space="preserve">
     <value>Not enough data to calculate top departments.</value>
   </data>
-	<data name="Report.KpiRequests.TopDepartments.Title" xml:space="preserve">
+  <data name="Report.KpiRequests.TopDepartments.Title" xml:space="preserve">
     <value>Most frequent departments</value>
   </data>
-	<data name="Report.KpiRequests.TopDepartments.Header.Department" xml:space="preserve">
+  <data name="Report.KpiRequests.TopDepartments.Header.Department" xml:space="preserve">
     <value>Department</value>
   </data>
-	<data name="Report.KpiRequests.TopDepartments.Header.Count" xml:space="preserve">
+  <data name="Report.KpiRequests.TopDepartments.Header.Count" xml:space="preserve">
     <value>Count</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Header.Title" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Header.Title" xml:space="preserve">
     <value>Maintenance department overview report</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Header.PeriodLabel" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Header.PeriodLabel" xml:space="preserve">
     <value>Period</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Footer.Text" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Footer.Text" xml:space="preserve">
     <value>Fixtroller - Maintenance Department Report</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.Title" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.Title" xml:space="preserve">
     <value>Department general numbers</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.TotalRequests" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.TotalRequests" xml:space="preserve">
     <value>Total requests in period</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.NewRequests" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.NewRequests" xml:space="preserve">
     <value>New requests</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.ClosedRequests" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.ClosedRequests" xml:space="preserve">
     <value>Closed requests</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.RemainingRequests" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.RemainingRequests" xml:space="preserve">
     <value>Remaining (open) requests</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.OverdueRequests" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.OverdueRequests" xml:space="preserve">
     <value>Overdue requests (by SLA)</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.CompletionRate" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.CompletionRate" xml:space="preserve">
     <value>Completion rate</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.OverdueRate" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.OverdueRate" xml:space="preserve">
     <value>Overdue rate</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.SlaComplianceRate" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.SlaComplianceRate" xml:space="preserve">
     <value>SLA compliance (of closed requests with SLA)</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.AverageClosureHours" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.AverageClosureHours" xml:space="preserve">
     <value>Average closure time</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Summary.TotalTechnicians" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Summary.TotalTechnicians" xml:space="preserve">
     <value>Total technicians</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Categories.NoData" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Categories.NoData" xml:space="preserve">
     <value>No technician/category data in this period.</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Categories.Title" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Categories.Title" xml:space="preserve">
     <value>Technicians and requests distribution by categories</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Categories.Header.Category" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Categories.Header.Category" xml:space="preserve">
     <value>Category</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Categories.Header.TechniciansCount" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Categories.Header.TechniciansCount" xml:space="preserve">
     <value>Technicians count</value>
   </data>
-	<data name="Report.MaintenanceDepartment.Categories.Header.RequestsCount" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.Categories.Header.RequestsCount" xml:space="preserve">
     <value>Requests count</value>
   </data>
-	<data name="Report.MaintenanceDepartment.TopProblemTypes.NoData" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.TopProblemTypes.NoData" xml:space="preserve">
     <value>Not enough data about top problem types.</value>
   </data>
-	<data name="Report.MaintenanceDepartment.TopProblemTypes.Title" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.TopProblemTypes.Title" xml:space="preserve">
     <value>Top problem types (Top 3)</value>
   </data>
-	<data name="Report.MaintenanceDepartment.TopProblemTypes.Header.ProblemType" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.TopProblemTypes.Header.ProblemType" xml:space="preserve">
     <value>Problem type</value>
   </data>
-	<data name="Report.MaintenanceDepartment.TopProblemTypes.Header.RequestsCount" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.TopProblemTypes.Header.RequestsCount" xml:space="preserve">
     <value>Requests count</value>
   </data>
-	<data name="Report.MaintenanceDepartment.TopCategories.NoData" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.TopCategories.NoData" xml:space="preserve">
     <value>Not enough data about top categories by requests.</value>
   </data>
-	<data name="Report.MaintenanceDepartment.TopCategories.Title" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.TopCategories.Title" xml:space="preserve">
     <value>Top categories by requests (Top 3)</value>
   </data>
-	<data name="Report.MaintenanceDepartment.TopCategories.Header.Category" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.TopCategories.Header.Category" xml:space="preserve">
     <value>Category</value>
   </data>
-	<data name="Report.MaintenanceDepartment.TopCategories.Header.RequestsCount" xml:space="preserve">
+  <data name="Report.MaintenanceDepartment.TopCategories.Header.RequestsCount" xml:space="preserve">
     <value>Requests count</value>
   </data>
-	<data name="Report.TechCategories.Header.Title" xml:space="preserve">
+  <data name="Report.TechCategories.Header.Title" xml:space="preserve">
     <value>Technicians by category report</value>
   </data>
-	<data name="Report.TechCategories.Header.PeriodLabel" xml:space="preserve">
+  <data name="Report.TechCategories.Header.PeriodLabel" xml:space="preserve">
     <value>Period</value>
   </data>
-	<data name="Report.TechCategories.Footer.Text" xml:space="preserve">
+  <data name="Report.TechCategories.Footer.Text" xml:space="preserve">
     <value>Fixtroller - Technicians by Category Report</value>
   </data>
-	<data name="Report.TechCategories.NoData" xml:space="preserve">
+  <data name="Report.TechCategories.NoData" xml:space="preserve">
     <value>No technician data in the selected period.</value>
   </data>
-	<data name="Report.TechCategories.Summary.TechniciansCount" xml:space="preserve">
+  <data name="Report.TechCategories.Summary.TechniciansCount" xml:space="preserve">
     <value>Technicians count</value>
   </data>
-	<data name="Report.TechCategories.Summary.TotalAssigned" xml:space="preserve">
+  <data name="Report.TechCategories.Summary.TotalAssigned" xml:space="preserve">
     <value>Requests in period</value>
   </data>
-	<data name="Report.TechCategories.Summary.TotalCompleted" xml:space="preserve">
+  <data name="Report.TechCategories.Summary.TotalCompleted" xml:space="preserve">
     <value>Completed requests</value>
   </data>
-	<data name="Report.TechCategories.Summary.TotalOverdue" xml:space="preserve">
+  <data name="Report.TechCategories.Summary.TotalOverdue" xml:space="preserve">
     <value>Overdue requests</value>
   </data>
-	<data name="Report.TechCategories.Summary.CompletionRate" xml:space="preserve">
+  <data name="Report.TechCategories.Summary.CompletionRate" xml:space="preserve">
     <value>Completion rate</value>
   </data>
-	<data name="Report.TechCategories.Summary.OverdueRate" xml:space="preserve">
+  <data name="Report.TechCategories.Summary.OverdueRate" xml:space="preserve">
     <value>Overdue rate</value>
   </data>
-	<data name="Report.TechCategories.Summary.AverageClosureHours" xml:space="preserve">
+  <data name="Report.TechCategories.Summary.AverageClosureHours" xml:space="preserve">
     <value>Average closure time</value>
   </data>
-	<data name="Report.TechCategories.Summary.AverageRequestsPerTechnician" xml:space="preserve">
+  <data name="Report.TechCategories.Summary.AverageRequestsPerTechnician" xml:space="preserve">
     <value>Average requests per technician</value>
   </data>
-	<data name="Report.TechCategories.Table.Header.Technician" xml:space="preserve">
+  <data name="Report.TechCategories.Table.Header.Technician" xml:space="preserve">
     <value>Technician</value>
   </data>
-	<data name="Report.TechCategories.Table.Header.Assigned" xml:space="preserve">
+  <data name="Report.TechCategories.Table.Header.Assigned" xml:space="preserve">
     <value>Requests</value>
   </data>
-	<data name="Report.TechCategories.Table.Header.Completed" xml:space="preserve">
+  <data name="Report.TechCategories.Table.Header.Completed" xml:space="preserve">
     <value>Completed</value>
   </data>
-	<data name="Report.TechCategories.Table.Header.Overdue" xml:space="preserve">
+  <data name="Report.TechCategories.Table.Header.Overdue" xml:space="preserve">
     <value>Overdue</value>
   </data>
-	<data name="Report.TechCategories.Table.Header.AvgClosureHours" xml:space="preserve">
+  <data name="Report.TechCategories.Table.Header.AvgClosureHours" xml:space="preserve">
     <value>Avg. closure time (h)</value>
   </data>
-	<data name="Report.TechCategories.Category.NoTechnicians" xml:space="preserve">
+  <data name="Report.TechCategories.Category.NoTechnicians" xml:space="preserve">
     <value>No technicians in this category during the selected period.</value>
   </data>
-	<data name="Report.TechPerformance.Header.Title" xml:space="preserve">
+  <data name="Report.TechPerformance.Header.Title" xml:space="preserve">
     <value>Technician performance report</value>
   </data>
-	<data name="Report.TechPerformance.Header.TechnicianLabel" xml:space="preserve">
+  <data name="Report.TechPerformance.Header.TechnicianLabel" xml:space="preserve">
     <value>Technician</value>
   </data>
-	<data name="Report.TechPerformance.Header.PeriodLabel" xml:space="preserve">
+  <data name="Report.TechPerformance.Header.PeriodLabel" xml:space="preserve">
     <value>Period</value>
   </data>
-	<data name="Report.TechPerformance.Footer.Text" xml:space="preserve">
+  <data name="Report.TechPerformance.Footer.Text" xml:space="preserve">
     <value>Fixtroller - Technician Performance Report</value>
   </data>
-	<data name="Report.TechPerformance.Summary.Title" xml:space="preserve">
+  <data name="Report.TechPerformance.Summary.Title" xml:space="preserve">
     <value>Technician general numbers</value>
   </data>
-	<data name="Report.TechPerformance.Summary.AssignedCount" xml:space="preserve">
+  <data name="Report.TechPerformance.Summary.AssignedCount" xml:space="preserve">
     <value>Assigned requests in period</value>
   </data>
-	<data name="Report.TechPerformance.Summary.CompletedCount" xml:space="preserve">
+  <data name="Report.TechPerformance.Summary.CompletedCount" xml:space="preserve">
     <value>Closed requests</value>
   </data>
-	<data name="Report.TechPerformance.Summary.OverdueCount" xml:space="preserve">
+  <data name="Report.TechPerformance.Summary.OverdueCount" xml:space="preserve">
     <value>Overdue requests (SLA)</value>
   </data>
-	<data name="Report.TechPerformance.Summary.OverdueRate" xml:space="preserve">
+  <data name="Report.TechPerformance.Summary.OverdueRate" xml:space="preserve">
     <value>Overdue requests rate (of SLA requests)</value>
   </data>
-	<data name="Report.TechPerformance.Summary.AverageClosureHours" xml:space="preserve">
+  <data name="Report.TechPerformance.Summary.AverageClosureHours" xml:space="preserve">
     <value>Average closure time</value>
   </data>
-	<data name="Report.TechPerformance.Summary.AverageStartDelayHours" xml:space="preserve">
+  <data name="Report.TechPerformance.Summary.AverageStartDelayHours" xml:space="preserve">
     <value>Average start delay after assignment</value>
   </data>
-	<data name="Report.TechPerformance.Items.NoData" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.NoData" xml:space="preserve">
     <value>There are no requests for this technician in the selected period.</value>
   </data>
-	<data name="Report.TechPerformance.Items.Title" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Title" xml:space="preserve">
     <value>Requests details</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.RequestId" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.RequestId" xml:space="preserve">
     <value>ID</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.CreatedAt" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.CreatedAt" xml:space="preserve">
     <value>Created</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.ProblemType" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.ProblemType" xml:space="preserve">
     <value>Problem type</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.CaseType" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.CaseType" xml:space="preserve">
     <value>Status</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.AssignedAt" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.AssignedAt" xml:space="preserve">
     <value>Assigned</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.StartedAt" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.StartedAt" xml:space="preserve">
     <value>Started</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.ClosedAt" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.ClosedAt" xml:space="preserve">
     <value>Closed</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.SlaHours" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.SlaHours" xml:space="preserve">
     <value>SLA</value>
   </data>
-	<data name="Report.TechPerformance.Items.Header.IsOverdue" xml:space="preserve">
+  <data name="Report.TechPerformance.Items.Header.IsOverdue" xml:space="preserve">
     <value>Overdue</value>
   </data>
-
+  <data name="Priority_Invalid" xml:space="preserve">
+    <value>Invalid priority value</value>
+  </data>
+  <data name="NoteType_Invalid" xml:space="preserve">
+    <value>Invalid note type</value>
+  </data>
 </root>

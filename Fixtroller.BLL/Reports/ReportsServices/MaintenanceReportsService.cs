@@ -1,12 +1,13 @@
-﻿using Fixtroller.BLL.Mapping;
+﻿using Fixtroller.BLL.Helpers;
+using Fixtroller.BLL.Mapping;
 using Fixtroller.BLL.Reports;
+using Fixtroller.BLL.Reports.ReportsTypes;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.Reports.Responses;
 using Fixtroller.DAL.Repositories.MaintenanceRequestRepositories;
 using Fixtroller.DAL.Repositories.UserRepository;
 using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
-using Fixtroller.BLL.Reports.ReportsTypes;
 using Microsoft.EntityFrameworkCore;
 using QuestPDF.Fluent;
 using System;
@@ -148,7 +149,10 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 // 👈 استخدم الريبو الخاص بالفنيين
                 var techUser = await _technicianRepository.GetByIdAsync(techLink.TechnicianUserId, ct);
 
-                var techName = techUser?.FullName ?? techLink.TechnicianUserId;
+                // اسم الفني حسب اللغة (ar/en)
+                var techName = techUser != null
+                    ? techUser.GetDisplayName(language)
+                    : techLink.TechnicianUserId;
 
                 string? techCategory = null;
 
@@ -190,7 +194,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 {
                     TechnicianUserId = techLink.TechnicianUserId,
                     TechnicianName = techName,
-                    TechnicianCategory = techCategory,      // 👈 هان رح تنعبي فعليًا
+                    TechnicianCategory = techCategory,
                     AssignedAtUtc = techLink.AssignedAtUtc,
                     UnassignedAtUtc = techLink.UnassignedAtUtc,
                     FirstWorkStartedAtUtc = tFirstStart,
@@ -209,13 +213,18 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 PriorityName = baseDto.PriorityName,
                 CaseTypeName = baseDto.CaseType,
 
-                OwnerFullName = entity.OwnerUser?.FullName ?? entity.OwnerUserId,
+                // 👇 أسماء المالك و المنشئ حسب اللغة
+                OwnerFullName = entity.OwnerUser != null
+                    ? entity.OwnerUser.GetDisplayName(language)
+                    : entity.OwnerUserId,
                 OwnerDepartment = entity.OwnerUser?.Department,
                 OwnerLocation = entity.OwnerUser?.Location,
                 RequestAddress = baseDto.Address,
 
                 IsCreatedByOwner = baseDto.IsCreatedByOwner,
-                CreatedByFullName = entity.CreatedByUser?.FullName ?? entity.CreatedByUserId,
+                CreatedByFullName = entity.CreatedByUser != null
+                    ? entity.CreatedByUser.GetDisplayName(language)
+                    : entity.CreatedByUserId,
 
                 CreatedAtUtc = baseDto.CreatedAt,
                 FirstAssignedAtUtc = firstAssigned?.AssignedAtUtc,
@@ -316,10 +325,14 @@ namespace Fixtroller.BLL.Services.ReportsServices
                     .FirstOrDefault();
 
                 string? mainTechnicianName = null;
+
                 if (firstTechLink != null)
                 {
                     var techUser = await _userRepository.GetByIdAsync(firstTechLink.TechnicianUserId, ct);
-                    mainTechnicianName = techUser?.FullName ?? firstTechLink.TechnicianUserId;
+
+                    mainTechnicianName = techUser != null
+                        ? techUser.GetDisplayName(language)            
+                        : firstTechLink.TechnicianUserId;
                 }
 
                 // SLA من أول ExpectedDuration موجود
@@ -858,7 +871,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 }, "User_NotFound");
             }
 
-            var techName = techUser.FullName ?? technicianUserId;
+            var techName = techUser?.GetDisplayName(language) ?? technicianUserId;
 
             // اسم الكاتيجوري باستخدام Translations
             string? techCategoryName = null;
@@ -1153,7 +1166,8 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 if (tech == null)
                     continue;
 
-                var name = string.IsNullOrWhiteSpace(tech.FullName) ? techId : tech.FullName;
+                var displayName = tech.GetDisplayName(language);
+                var name = string.IsNullOrWhiteSpace(displayName) ? techId : displayName;
 
                 int? catId = tech.TechnicianCategoryId;
                 string catName = "غير مصنّف";

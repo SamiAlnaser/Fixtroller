@@ -134,25 +134,34 @@ namespace Fixtroller.PL
                 app.MapOpenApi();
                 app.MapScalarApiReference();
             }
-            //var scope = app.Services.CreateScope();
-                try
-                {
-                    Log.Information("Starting database seeding...");
+                //try
+                //{
+                //    Log.Information("Starting database migration & seeding...");
 
-                    using (var scope = app.Services.CreateScope())
-                    {
-                        var seed = scope.ServiceProvider.GetRequiredService<ISeedData>();
-                        await seed.IdentityDataSeedingAsync();
-                        await seed.DataSeedingAsync();
-                    }
+                //    using var scope = app.Services.CreateScope();
+                //    var services = scope.ServiceProvider;
 
-                    Log.Information("Database seeding finished successfully.");
-                }
-                catch (Exception ex)
-                {
-                    Log.Fatal(ex, "Error occurred while seeding the database.");
-                    throw; // خليه يفجّر عشان تعرف إن الخلل من seeding
-                }
+                //    // ✅ 1) Migrate مرة واحدة
+                //    var db = services.GetRequiredService<ApplicationDbContext>();
+                //    await db.Database.MigrateAsync();
+
+                //    // ✅ 2) Seed Identity (Roles + Users)
+                //    var seed = services.GetRequiredService<ISeedData>();
+                //    await seed.IdentityDataSeedingAsync();
+
+                //    // ✅ 3) مهم جدًا: امسح أي Entities متتبعة من UserManager/RoleManager
+                //    db.ChangeTracker.Clear();
+
+                //    // ✅ 4) Seed باقي الداتا
+                //    await seed.DataSeedingAsync();
+
+                //    Log.Information("Database migration & seeding finished successfully.");
+                //}
+                //catch (Exception ex)
+                //{
+                //    Log.Fatal(ex, "Error occurred while seeding the database.");
+                //    throw;
+                //}
 
                 Log.Information("Starting HTTP pipeline...");
 

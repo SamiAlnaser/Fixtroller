@@ -1,4 +1,5 @@
-﻿using Fixtroller.BLL.Mapping;
+﻿using Fixtroller.BLL.Helpers;
+using Fixtroller.BLL.Mapping;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.PagedResultDTOs.Responses;
@@ -97,18 +98,19 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                 return new TechnicianListItemDTO
                 {
                     TechnicianUserId = t.Id,
-                    TechnicianName = t.FullName ?? string.Empty,
+                    TechnicianName = t.GetDisplayName(language), 
+
                     TechnicianCategory = catName,
                     ProfileImageUrl = string.IsNullOrWhiteSpace(t.ProfileImagePath)
-                                    ? null
-                                    : _fileService.GetPublicUrl(t.ProfileImagePath),
+            ? null
+            : _fileService.GetPublicUrl(t.ProfileImagePath),
                     AssignedCount = assigned,
                     CompletedCount = completed,
                     AvgCompletionMinutes = avg
                 };
             })
-            .OrderBy(x => x.TechnicianName)
-            .ToList();
+    .OrderBy(x => x.TechnicianName)
+    .ToList();
 
             // 👇 هنا فقط الباجينيشن
             var totalCount = list.Count;

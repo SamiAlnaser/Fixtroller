@@ -1,4 +1,5 @@
-﻿using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
+﻿using Fixtroller.BLL.Helpers;
+using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests;
 using Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses;
 using Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Responses;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
@@ -113,7 +114,7 @@ namespace Fixtroller.BLL.Mapping
                 if (owner != null)
                 {
                     dto.OwnerUserId = owner.Id;
-                    dto.OwnerName = owner.FullName ?? owner.UserName ?? owner.Id;
+                    dto.OwnerName = dto.OwnerName = owner.GetDisplayName(language); 
 
                     dto.OwnerDepartment = owner.Department;
 
@@ -136,18 +137,20 @@ namespace Fixtroller.BLL.Mapping
             if (e.Notes is not null && e.Notes.Count > 0)
             {
                 dto.Notes = e.Notes
-                    .OrderByDescending(n => n.CreatedAt)
-                    .Select(n => new MaintenanceNoteDTO
-                    {
-                        Id = n.Id,
-                        Text = n.Text,
-                        Type = GetNoteTypeName(n.Type, language),
-                        Author = GetNoteAuthorName(n.Author, language),
-                        CreatedByUserId = n.CreatedByUserId,
-                        CreatedByName = n.CreatedByUser?.FullName ?? n.CreatedByUserId,
-                        CreatedAt = n.CreatedAt
-                    })
-                    .ToList();
+                 .OrderByDescending(n => n.CreatedAt)
+                 .Select(n => new MaintenanceNoteDTO
+                 {
+                     Id = n.Id,
+                     Text = n.Text,
+                     Type = GetNoteTypeName(n.Type, language),
+                     Author = GetNoteAuthorName(n.Author, language),
+                     CreatedByUserId = n.CreatedByUserId,
+                     CreatedByName = n.CreatedByUser != null
+                         ? n.CreatedByUser.GetDisplayName(language)   
+                         : n.CreatedByUserId,
+                     CreatedAt = n.CreatedAt
+                 })
+                 .ToList();
             }
 
             dto.AssignedTechnicians = (e.Technicians ?? Enumerable.Empty<MaintenanceRequestTechnician>())
