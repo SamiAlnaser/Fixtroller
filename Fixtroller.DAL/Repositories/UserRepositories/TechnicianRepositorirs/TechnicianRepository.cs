@@ -21,6 +21,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
             string? search,
             CancellationToken ct = default)
         {
+            var now = DateTimeOffset.UtcNow;
             var q = _dbcontext.Users
                 .AsNoTracking()
                 .Include(u => u.TechnicianCategory)
@@ -32,6 +33,7 @@ namespace Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs
                         .Any(roleId =>
                             _dbcontext.Roles.Any(r => r.Id == roleId && r.Name == "Technician")
                         )
+                        && (!u.LockoutEnd.HasValue || u.LockoutEnd <= now)
                 );
 
             if (technicianCategoryId.HasValue)

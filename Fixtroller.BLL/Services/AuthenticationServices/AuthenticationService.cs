@@ -4,6 +4,7 @@ using Fixtroller.DAL.Data.DTOs.Authentication.Responses;
 using Fixtroller.DAL.Entities;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.Extensions.Configuration;
+using Microsoft.Extensions.Logging;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -20,18 +21,27 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
         private readonly UserManager<ApplicationUser> _userManager;
         private readonly IConfiguration _configuration;
         private readonly IFileService _fileService;
+        private readonly ILogger<AuthenticationService> _logger;
 
-        public AuthenticationService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IFileService fileService) 
+        public AuthenticationService(UserManager<ApplicationUser> userManager, IConfiguration configuration, IFileService fileService, ILogger<AuthenticationService> logger) 
         {
             _userManager = userManager;
             _configuration = configuration;
             _fileService = fileService;
+            _logger = logger;
         }
         public async Task<(UserResponseDTO Response, string MessageKey)> LoginAsync(LoginRequestDTO loginRequest)
         {
+            _logger.LogInformation(
+                "Login attempt for {Email}",
+                loginRequest.Email);
             var user = await _userManager.FindByEmailAsync(loginRequest.Email);
             if (user == null)
             {
+                _logger.LogWarning(
+                    "Login failed: user not found for {Email}",
+                    loginRequest.Email);
+
                 return (new UserResponseDTO
                 {
                     Token = null,
@@ -39,7 +49,13 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
                     Message = null
                 }, "InvalidCredentials");
             }
+            var roles = await _userManager.GetRolesAsync(user);
 
+            _logger.LogInformation(
+                    "Login success for user {UserId} ({Email}) with roles {Roles}",
+                    user.Id,
+                    user.Email,
+                    roles);
 
             return (new UserResponseDTO
             {
@@ -107,6 +123,7 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
              {
                 new Claim("Email", user.Email),
                 new Claim("Name", user.UserName),//
+                new Claim("Id", user.Id.ToString()),
                 new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
                 new Claim("PhoneNumber", user.PhoneNumber),
                 new Claim("Location", user.Location)
@@ -125,6 +142,7 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
             var Roles = await _userManager.GetRolesAsync(user);
             foreach (var role in Roles)
             {
+                Claims.Add(new Claim("role", role));
                 Claims.Add(new Claim(ClaimTypes.Role, role));
             }
 

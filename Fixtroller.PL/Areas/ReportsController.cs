@@ -36,8 +36,11 @@ namespace Fixtroller.PL.Areas
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirst("role")?.Value
+                     ?? User.FindFirstValue(ClaimTypes.Role)
+                     ?? string.Empty;
 
             if (string.Equals(format, "pdf", StringComparison.OrdinalIgnoreCase))
             {
@@ -80,8 +83,11 @@ namespace Fixtroller.PL.Areas
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirst("role")?.Value
+                     ?? User.FindFirstValue(ClaimTypes.Role)
+                     ?? string.Empty;
 
             // نفترض أن from/to جايين كتاريخ (بدون timezone) ونتعامل معهم كـ UTC
             var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
@@ -123,8 +129,11 @@ namespace Fixtroller.PL.Areas
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirst("role")?.Value
+                     ?? User.FindFirstValue(ClaimTypes.Role)
+                     ?? string.Empty;
 
             var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
             var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
@@ -162,8 +171,11 @@ namespace Fixtroller.PL.Areas
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirst("role")?.Value
+                     ?? User.FindFirstValue(ClaimTypes.Role)
+                     ?? string.Empty;
 
             var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
             var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
@@ -204,8 +216,11 @@ namespace Fixtroller.PL.Areas
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var callerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-            var callerRole = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirst("role")?.Value
+                     ?? User.FindFirstValue(ClaimTypes.Role)
+                     ?? string.Empty;
 
             var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
             var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
@@ -214,7 +229,7 @@ namespace Fixtroller.PL.Areas
             {
                 var (file, fileName, contentType, msgKey) =
                     await _reportsService.GetTechnicianPerformancePdfAsync(
-                        technicianUserId, fromUtc, toUtc, callerUserId, callerRole, language, ct);
+                        technicianUserId, fromUtc, toUtc, userId, role, language, ct);
 
                 if (msgKey == "Forbidden" || msgKey == "User_NotFound")
                     return BadRequest(new { message = _localizer[msgKey].Value });
@@ -225,7 +240,7 @@ namespace Fixtroller.PL.Areas
             {
                 var (report, msgKey) =
                     await _reportsService.GetTechnicianPerformanceAsync(
-                        technicianUserId, fromUtc, toUtc, callerUserId, callerRole, language, ct);
+                        technicianUserId, fromUtc, toUtc, userId, role, language, ct);
 
                 if (msgKey == "Forbidden" || msgKey == "User_NotFound")
                     return BadRequest(new { message = _localizer[msgKey].Value });
@@ -253,8 +268,11 @@ namespace Fixtroller.PL.Areas
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var callerUserId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-            var callerRole = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirst("role")?.Value
+                     ?? User.FindFirstValue(ClaimTypes.Role)
+                     ?? string.Empty;
 
             var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
             var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);
@@ -263,7 +281,7 @@ namespace Fixtroller.PL.Areas
             {
                 var (file, fileName, contentType, msgKey) =
                     await _reportsService.GetTechnicianCategoriesPerformancePdfAsync(
-                        fromUtc, toUtc, callerUserId, callerRole, language, ct);
+                        fromUtc, toUtc, userId, role, language, ct);
 
                 if (msgKey == "Forbidden")
                     return BadRequest(new { message = _localizer[msgKey].Value });
@@ -274,7 +292,7 @@ namespace Fixtroller.PL.Areas
             {
                 var (report, msgKey) =
                     await _reportsService.GetTechnicianCategoriesPerformanceAsync(
-                        fromUtc, toUtc, callerUserId, callerRole, language, ct);
+                        fromUtc, toUtc, userId, role, language, ct);
 
                 if (msgKey == "Forbidden")
                     return BadRequest(new { message = _localizer[msgKey].Value });
@@ -300,8 +318,11 @@ namespace Fixtroller.PL.Areas
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? string.Empty;
-            var role = User.FindFirstValue(ClaimTypes.Role) ?? string.Empty;
+            var userId = User.FindFirst("Id")?.Value
+                      ?? User.FindFirstValue(ClaimTypes.NameIdentifier);
+            var role = User.FindFirst("role")?.Value
+                     ?? User.FindFirstValue(ClaimTypes.Role)
+                     ?? string.Empty;
 
             var fromUtc = DateTime.SpecifyKind(from, DateTimeKind.Utc);
             var toUtc = DateTime.SpecifyKind(to, DateTimeKind.Utc);

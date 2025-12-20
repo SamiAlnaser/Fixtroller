@@ -1,4 +1,5 @@
-﻿using Fixtroller.BLL.Helpers;
+﻿using Azure.Core;
+using Fixtroller.BLL.Helpers;
 using Fixtroller.BLL.Mapping;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.BLL.Services.GenericService;
@@ -15,6 +16,7 @@ using Fixtroller.DAL.Repositories.UserRepository.TechnicianRepositorirs;
 using Fixtroller.DAL.UnitOfWork;
 using Mapster;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Logging;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -33,6 +35,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         private readonly IMaintenanceRequestTechnicianRepository _reqTechRepo;
         private readonly INotificationService _notificationService;
         private readonly IUserRepository _userRepo;
+        private readonly ILogger<MaintenanceRequestService> _logger;
 
         public MaintenanceRequestService(
             IMaintenanceRequestRepository repository,
@@ -42,7 +45,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             IWorkTimeRepository workRepo,
             IMaintenanceRequestTechnicianRepository reqTechRepo,
             INotificationService notificationService,
-            IUserRepository userRepo
+            IUserRepository userRepo,
+            ILogger<MaintenanceRequestService> logger
         ) : base(repository, uow)
         {
             _repository = repository;
@@ -53,6 +57,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             _reqTechRepo = reqTechRepo;
             _notificationService = notificationService;
             _userRepo = userRepo;
+            _logger = logger;
         }
 
         public async Task<int> CreateWithFile(MaintenanceRequestRequestDTO request, string userId, string language = "ar", CancellationToken ct = default)
@@ -119,7 +124,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         }, ct);
                     }
                 }
-
+                _logger.LogInformation(
+                        "Maintenance request created. RequestId={RequestId}, OwnerUserId={OwnerUserId}, CreatedByUserId={CreatedByUserId}, Priority={Priority}",
+                        entity.Id,
+                        entity.OwnerUserId,
+                        entity.CreatedByUserId,
+                        entity.Priority);
 
                 return entity.Id;
             }
@@ -651,6 +661,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
                 var isTechnician = await _techRepo.IsInRoleAsync(tid, "Technician", ct);
                 if (!isTechnician) return (null, "User_NotTechnician");
+
+                var nowUtc = DateTimeOffset.UtcNow;
+                if (tech.LockoutEnd.HasValue && tech.LockoutEnd > nowUtc)
+                {
+                    return (null, "Technician_IsOnVacation");
+                }
             }
 
             await _uow.BeginTransactionAsync(ct);
@@ -776,12 +792,23 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var isTechnician = await _techRepo.IsInRoleAsync(technicianUserId, "Technician", ct);
             if (!isTechnician) return (null, "User_NotTechnician");
 
+            var nowUtc = DateTimeOffset.UtcNow;
+            if (tech.LockoutEnd.HasValue && tech.LockoutEnd > nowUtc)
+            {
+                return (null, "Technician_IsOnVacation");
+            }
+
             // إن كان مُعيَّن نشطًا أصلًا، لا تغيّر شيء
             var already = await _reqTechRepo.IsActiveAssignedAsync(requestId, technicianUserId, ct);
             if (already)
             {
                 return (requestId, "Technician_AlreadyAssigned");
             }
+
+            _logger.LogInformation(
+                "Assigning technician {TechnicianUserId} to request {RequestId}",
+                technicianUserId,
+                requestId);
 
             await _uow.BeginTransactionAsync(ct);
             try
@@ -809,6 +836,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
                     Channels = NotificationChannel.InApp | NotificationChannel.Email
                 }, ct);
+
+
+                _logger.LogInformation(
+                        "Technician {TechnicianUserId} assigned to request {RequestId} successfully",
+                        technicianUserId,
+                        request.Id);
 
                 return (request.Id, "Technician_Assigned");
             }
@@ -989,6 +1022,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (r is null) return (null, "Request_NotFound");
 
             var newCase = dto.NewCaseType;
+            var oldCase = r.CaseType;
+
+            if (!IsValidTransition(oldCase, newCase))
+                return (null, "Case_InvalidTransition");
+
 
             bool isManager = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
             bool isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
@@ -1063,6 +1101,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                             await _reqTechRepo.RemoveActiveAsync(requestId, tid, ct);
                         }
                     }
+
 
                     await _uow.SaveAndCommitAsync(ct);
 
@@ -1156,6 +1195,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 await SendStatusChangeNotificationAsync(r, newCase, language, ct);
 
                 var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
+
+                _logger.LogInformation(
+                "Request {RequestId} case changed from {OldCase} to {NewCase}",
+                r.Id,
+                oldCase,
+                r.CaseType);
                 return (fresh, "Case_Changed");
             }
             catch
@@ -1266,9 +1311,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 // الحالات المسموح فيها التعديل
                 var editable = new HashSet<CaseType>
         {
-            CaseType.Submitted,
-            CaseType.Reopened,
-            CaseType.Modified
+                    CaseType.Submitted,
+                    CaseType.Reopened,
+                    CaseType.Modified
         };
                 if (!editable.Contains(r.CaseType))
                     return (null, "Request_NotEditableInThisState");
@@ -1829,6 +1874,70 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
         private static bool IsValidNoteType(NoteType value)
             => Enum.IsDefined(typeof(NoteType), (int)value);
+
+        private static bool IsValidTransition(CaseType current, CaseType target)
+        {
+            // نفس الحالة أصلاً مغطاة بفحص Case_NoChange فوق
+            if (current == target)
+                return true;
+
+            // الحالات اللي بتتغيّر داخلياً فقط – ما منسمح لحد يغير إلها يدويًا
+            if (target is CaseType.Submitted or CaseType.Modified)
+                return false;
+
+            // خريطة للحركات المسموحة من كل حالة
+            return current switch
+            {
+                // الطلب بعد الإنشاء / التعديل
+                CaseType.Submitted => target is CaseType.Processing or CaseType.Cancelled,
+                CaseType.Modified => target is CaseType.Processing or CaseType.Cancelled,
+
+                // قيد المعالجة
+                CaseType.Processing => target is
+                    CaseType.ManagerReview      // يروح لمراجعة مدير
+                    or CaseType.ResourcesNeeded // الفني محتاج مساعدة/موارد
+                    or CaseType.Completed
+                    or CaseType.Cancelled,
+
+                // تحت مراجعة مدير
+                CaseType.ManagerReview => target is
+                    CaseType.Processed
+                    or CaseType.ResourcesNeeded
+                    or CaseType.Completed
+                    or CaseType.Cancelled,
+
+                // يحتاج موارد
+                CaseType.ResourcesNeeded => target is
+                    CaseType.ManagerReview
+                    or CaseType.Completed
+                    or CaseType.Cancelled,
+
+                // تمت المعالجة
+                CaseType.Processed => target is
+                CaseType.Reopened
+                or CaseType.Completed
+                    or CaseType.Cancelled,
+
+                // الطلب مغلق
+                CaseType.Completed => target is
+                    CaseType.Reopened,   // مسموح فقط إعادة فتحه
+
+                CaseType.Cancelled => target is
+                    CaseType.Reopened,   // نفس الشي
+
+                // بعد إعادة الفتح، ما بنرجع لبداية الفlow، بنكمّل لقدّام
+                CaseType.Reopened => target is
+                    CaseType.Processing
+                    or CaseType.ManagerReview
+                    or CaseType.ResourcesNeeded
+                    or CaseType.Completed
+                    or CaseType.Modified
+                    or CaseType.Cancelled,
+
+                _ => false
+            };
+        }
+
 
     }
 

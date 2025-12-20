@@ -164,6 +164,10 @@ namespace Fixtroller.BLL.Services.UserServices
             if (user is null)
                 return (false, "User_NotFound");
 
+            var isTechnician = await _technicianRepository.IsInRoleAsync(userId, "Technician", ct);
+            if (!isTechnician)
+                return (false, "User_NotTechnician");
+
             var success = await _userRepository.VacationUserAsync(userId, days, ct);
             if (!success)
                 return (false, "User_Vacation_Failed");

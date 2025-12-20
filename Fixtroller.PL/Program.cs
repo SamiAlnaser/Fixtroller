@@ -12,8 +12,10 @@ using Microsoft.IdentityModel.Tokens;
 using QuestPDF.Infrastructure;
 using Scalar.AspNetCore;
 using Serilog;
+using Serilog.Context;
 using Serilog.Events;
 using System.Globalization;
+using System.Security.Claims;
 using System.Text;
 
 namespace Fixtroller.PL
@@ -34,7 +36,7 @@ namespace Fixtroller.PL
                     restrictedToMinimumLevel:
                         env == "Development" ? LogEventLevel.Debug : LogEventLevel.Information,
                     outputTemplate:
-                    "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {SourceContext} | {Message:lj}{NewLine}{Exception}")
+                    "[{Timestamp:yyyy-MM-dd HH:mm:ss} {Level:u3}] {SourceContext} | UserId={UserId} Role={UserRole} | {Message:lj}{NewLine}{Exception}")
 
                 .WriteTo.File(
                     path: "Logs/errors-.txt",
@@ -114,8 +116,12 @@ namespace Fixtroller.PL
                      ValidateAudience = false,
                      ValidateLifetime = true,
                      ValidateIssuerSigningKey = true,
-                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["jwtOptions:SecretKey"]!))
-                   };
+                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["jwtOptions:SecretKey"]!)
+                     ),
+
+                      RoleClaimType = ClaimTypes.Role,
+                      NameClaimType = ClaimTypes.NameIdentifier
+                  };
                  });
 
 
@@ -128,8 +134,35 @@ namespace Fixtroller.PL
 
             app.UseExceptionHandler();
 
-            // Configure the HTTP request pipeline.
-            if (app.Environment.IsDevelopment())
+                app.Use(async (context, next) =>
+                {
+                    var user = context.User;
+
+                    var userId =
+                        user?.FindFirst(ClaimTypes.NameIdentifier)?.Value ??
+                        user?.FindFirst("Id")?.Value ??
+                        "Anonymous";
+
+                    var email = user?.FindFirst(ClaimTypes.Email)?.Value ?? string.Empty;
+
+                    var roles = user?.Claims
+                        .Where(c => c.Type == ClaimTypes.Role)
+                        .Select(c => c.Value)
+                        .ToArray() ?? Array.Empty<string>();
+
+                    var roleString = roles.Length == 0 ? "None" : string.Join(",", roles);
+
+                    using (LogContext.PushProperty("UserId", userId))
+                    using (LogContext.PushProperty("UserEmail", email))
+                    using (LogContext.PushProperty("UserRole", roleString))
+                    {
+                        await next();
+                    }
+                });
+                app.UseSerilogRequestLogging();
+
+                // Configure the HTTP request pipeline.
+                if (app.Environment.IsDevelopment())
             {
                 app.MapOpenApi();
                 app.MapScalarApiReference();

@@ -15,9 +15,8 @@ namespace Fixtroller.DAL.Data.DTOs.Reports.Responses
 
         public DateTime? FirstWorkStartedAtUtc { get; set; }
         public DateTime? LastWorkStoppedAtUtc { get; set; }
-        public double TotalWorkMinutes { get; set; }
-
-        public int? ExpectedDurationHours { get; set; }
+        public double? TotalWorkHours { get; set; }   // المدة الفعلية بالساعات
+        public double? ExpectedDurationHours { get; set; }
     }
 
     public class SingleRequestReportDTO

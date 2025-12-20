@@ -241,7 +241,7 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 if (_model.ExpectedDurationHours is not null)
                 {
                     var value = T("Report.SingleRequest.Duration.Expected.Format",
-                        _model.ExpectedDurationHours.Value); // "{0:0.##} ساعة" بالعربي مثلاً
+                        _model.ExpectedDurationHours.Value); // "{0:0.##} ساعة" مثلاً
 
                     col.Item().Text(text =>
                     {
@@ -312,8 +312,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         columns.ConstantColumn(80);  // تعيين
                         columns.ConstantColumn(80);  // بدء
                         columns.ConstantColumn(80);  // انتهاء
-                        columns.ConstantColumn(60);  // دقائق عمل
-                        columns.ConstantColumn(50);  // SLA
+                        columns.ConstantColumn(60);  // ساعات عمل
+                        columns.ConstantColumn(50);  // SLA (س)
                     });
 
                     // Header
@@ -324,19 +324,27 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         header.Cell().Text(T("Report.SingleRequest.Technicians.Header.AssignedAt")).SemiBold();    // "تعيين"
                         header.Cell().Text(T("Report.SingleRequest.Technicians.Header.StartAt")).SemiBold();       // "بدء"
                         header.Cell().Text(T("Report.SingleRequest.Technicians.Header.EndAt")).SemiBold();         // "انتهاء"
-                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.WorkMinutes")).SemiBold();   // "دقائق عمل"
+                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.WorkHours")).SemiBold();     // "ساعات عمل"
                         header.Cell().Text(T("Report.SingleRequest.Technicians.Header.SlaHours")).SemiBold();      // "SLA (س)"
                     });
 
                     foreach (var t in _model.Technicians.OrderBy(x => x.AssignedAtUtc))
                     {
+                        var workHoursText = t.TotalWorkHours.HasValue && t.TotalWorkHours.Value > 0
+                            ? t.TotalWorkHours.Value.ToString("0.##")
+                            : "-";
+
+                        var expectedHoursText = t.ExpectedDurationHours.HasValue && t.ExpectedDurationHours.Value > 0
+                            ? t.ExpectedDurationHours.Value.ToString("0.##")
+                            : "-";
+
                         table.Cell().Text(t.TechnicianName);
                         table.Cell().Text(t.TechnicianCategory ?? "-");
                         table.Cell().Text(t.AssignedAtUtc.ToString("MM-dd HH:mm"));
                         table.Cell().Text(t.FirstWorkStartedAtUtc?.ToString("MM-dd HH:mm") ?? "-");
                         table.Cell().Text(t.LastWorkStoppedAtUtc?.ToString("MM-dd HH:mm") ?? "-");
-                        table.Cell().Text(t.TotalWorkMinutes > 0 ? t.TotalWorkMinutes.ToString("0") : "-");
-                        table.Cell().Text(t.ExpectedDurationHours?.ToString() ?? "-");
+                        table.Cell().Text(workHoursText);
+                        table.Cell().Text(expectedHoursText);
                     }
                 });
             });

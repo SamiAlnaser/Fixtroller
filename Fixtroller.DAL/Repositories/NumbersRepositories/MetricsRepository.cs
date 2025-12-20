@@ -1,4 +1,5 @@
 ﻿using Fixtroller.DAL.Data;
+using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Microsoft.EntityFrameworkCore;
 using System;
@@ -131,7 +132,7 @@ namespace Fixtroller.DAL.Repositories.NumbersRepositories
         public async Task<int> CountAllRequestsForOwnerAsync(string ownerUserId, CancellationToken ct = default)
         => await _context.MaintenanceRequests
                      .AsNoTracking()
-                     .Where(r => r.CreatedByUserId == ownerUserId)
+                     .Where(r => r.Status == Status.Active && r.OwnerUserId == ownerUserId)
                      .CountAsync(ct);
 
         public async Task<int> CountRequestsByCasesForOwnerAsync(
@@ -144,7 +145,7 @@ namespace Fixtroller.DAL.Repositories.NumbersRepositories
 
             return await _context.MaintenanceRequests
                 .AsNoTracking()
-                .Where(r => r.CreatedByUserId == ownerUserId && set.Contains(r.CaseType))
+                .Where(r => r.Status == Status.Active && r.OwnerUserId == ownerUserId && set.Contains(r.CaseType))
                 .CountAsync(ct);
         }
 

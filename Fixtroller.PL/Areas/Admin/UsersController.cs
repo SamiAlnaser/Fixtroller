@@ -97,22 +97,22 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(new { message = _localizer[key].Value });
         }
 
-        [HttpGet("IsVacation/{userId}")]
-        public async Task<IActionResult> IsVacationUser(
-            [FromRoute] string userId,
-            CancellationToken ct)
-        {
-            var (isVacation, key) = await _userService.IsVacationAsync(userId, ct);
+        //[HttpGet("IsVacation/{userId}")]
+        //public async Task<IActionResult> IsVacationUser(
+        //    [FromRoute] string userId,
+        //    CancellationToken ct)
+        //{
+        //    var (isVacation, key) = await _userService.IsVacationAsync(userId, ct);
 
-            if (string.Equals(key, "User_NotFound", StringComparison.OrdinalIgnoreCase))
-                return BadRequest(new { message = _localizer[key].Value });
+        //    if (string.Equals(key, "User_NotFound", StringComparison.OrdinalIgnoreCase))
+        //        return BadRequest(new { message = _localizer[key].Value });
 
-            return Ok(new
-            {
-                message = _localizer[key].Value,
-                data = new { isVacation }
-            });
-        }
+        //    return Ok(new
+        //    {
+        //        message = _localizer[key].Value,
+        //        data = new { isVacation }
+        //    });
+        //}
 
         [HttpGet("Technicians")]
         public async Task<IActionResult> GetTechnicians(

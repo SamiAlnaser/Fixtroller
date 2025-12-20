@@ -855,4 +855,10 @@
   <data name="NoteType_Invalid" xml:space="preserve">
     <value>Invalid note type</value>
   </data>
+  <data name="Case_InvalidTransition" xml:space="preserve">
+    <value>You cannot change the request status to this value from its current state</value>
+  </data>
+  <data name="Technician_IsOnVacation" xml:space="preserve">
+    <value>Cannot assign the request to this technician because they are currently on vacation</value>
+  </data>
 </root>

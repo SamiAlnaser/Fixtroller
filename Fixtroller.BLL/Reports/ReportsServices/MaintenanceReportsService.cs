@@ -176,6 +176,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 DateTime? tFirstStart = null;
                 DateTime? tLastStop = null;
                 double totalMinutes = 0;
+                double? totalHours = null;
 
                 if (techEntries.Count > 0)
                 {
@@ -188,7 +189,11 @@ namespace Fixtroller.BLL.Services.ReportsServices
                     totalMinutes = techEntries
                         .Where(w => w.StoppedAt != null)
                         .Sum(w => (w.StoppedAt!.Value - w.StartedAt).TotalMinutes);
+
+                    if (totalMinutes > 0)
+                        totalHours = totalMinutes / 60.0;
                 }
+
 
                 technicians.Add(new SingleRequestReportTechnicianDTO
                 {
@@ -199,7 +204,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                     UnassignedAtUtc = techLink.UnassignedAtUtc,
                     FirstWorkStartedAtUtc = tFirstStart,
                     LastWorkStoppedAtUtc = tLastStop,
-                    TotalWorkMinutes = totalMinutes,
+                    TotalWorkHours = totalHours,
                     ExpectedDurationHours = techLink.ExpectedDuration
                 });
             }
