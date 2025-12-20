@@ -108,16 +108,16 @@ namespace Fixtroller.BLL.Mapping
                 ClosedAtUtc = e.ClosedAtUtc
             };
 
-            if (includeOwnerDetails)
+            var owner = e.OwnerUser;
+            if (owner != null)
             {
-                var owner = e.OwnerUser;   // لازم نعمل لها Include من الريبو (الخطوة الجاية)
-                if (owner != null)
+                dto.OwnerUserId = owner.Id;
+                dto.OwnerName = owner.GetDisplayName(language);
+
+                // تفاصيل زيادة بس للأدمن/المانجر
+                if (includeOwnerDetails)
                 {
-                    dto.OwnerUserId = owner.Id;
-                    dto.OwnerName = dto.OwnerName = owner.GetDisplayName(language); 
-
                     dto.OwnerDepartment = owner.Department;
-
                 }
             }
 

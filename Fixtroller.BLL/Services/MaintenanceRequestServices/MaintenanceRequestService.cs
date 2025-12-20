@@ -98,32 +98,26 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 await _repository.AddAsync(entity);
                 await _uow.SaveAndCommitAsync(ct);
 
-                var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
-                if (managers is { Count: > 0 })
+                var recipients = new HashSet<string>(StringComparer.Ordinal);
+                await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
+                await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
+
+                foreach (var uid in recipients)
                 {
-                    foreach (var mgr in managers)
+                    await _notificationService.CreateAsync(new NotificationCreateModel
                     {
-                        if (string.IsNullOrWhiteSpace(mgr.Id))
-                            continue;
-
-                        await _notificationService.CreateAsync(new NotificationCreateModel
-                        {
-                            UserId = mgr.Id,
-                            MaintenanceRequestId = entity.Id,
-                            Type = NotificationType.RequestStatusChanged,
-                            Severity = NotificationSeverity.Info,
-
-
-                            Language = language,
-                            // ✅ localization
-                            TitleKey = "NOTIF_REQUEST_CREATED_TITLE",
-                            BodyKey = "NOTIF_REQUEST_CREATED_BODY",
-                            BodyArgs = new object[] { entity.Id },
-
-                            Channels = NotificationChannel.InApp | NotificationChannel.Email
-                        }, ct);
-                    }
+                        UserId = uid,
+                        MaintenanceRequestId = entity.Id,
+                        Type = NotificationType.RequestStatusChanged,
+                        Severity = NotificationSeverity.Info,
+                        Language = language,
+                        TitleKey = "NOTIF_REQUEST_CREATED_TITLE",
+                        BodyKey = "NOTIF_REQUEST_CREATED_BODY",
+                        BodyArgs = new object[] { entity.Id },
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email
+                    }, ct);
                 }
+            
                 _logger.LogInformation(
                         "Maintenance request created. RequestId={RequestId}, OwnerUserId={OwnerUserId}, CreatedByUserId={CreatedByUserId}, Priority={Priority}",
                         entity.Id,
@@ -273,30 +267,26 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
 
                 // 🔔 إشعارات لمدراء الصيانة عن طلب جديد
-                var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
-                if (managers is { Count: > 0 })
+                var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+                await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
+                await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
+
+                foreach (var uid in recipients)
                 {
-                    foreach (var mgr in managers)
+                    await _notificationService.CreateAsync(new NotificationCreateModel
                     {
-                        if (string.IsNullOrWhiteSpace(mgr.Id))
-                            continue;
-
-                        await _notificationService.CreateAsync(new NotificationCreateModel
-                        {
-                            UserId = mgr.Id,
-                            MaintenanceRequestId = entity.Id,
-                            Type = NotificationType.RequestStatusChanged,
-                            Severity = NotificationSeverity.Info,
-                            Language = language,
-                            // ✅ localization
-                            TitleKey = "NOTIF_REQUEST_CREATED_SCENARIO_TITLE",
-                            BodyKey = "NOTIF_REQUEST_CREATED_SCENARIO_BODY",
-                            BodyArgs = new object[] { entity.Id, callerRole },
-
-                            Channels = NotificationChannel.InApp | NotificationChannel.Email
-                        }, ct);
-                    }
-                }
+                        UserId = uid,
+                        MaintenanceRequestId = entity.Id,
+                        Type = NotificationType.RequestStatusChanged,
+                        Severity = NotificationSeverity.Info,
+                        Language = language,
+                        TitleKey = "NOTIF_REQUEST_CREATED_SCENARIO_TITLE",
+                        BodyKey = "NOTIF_REQUEST_CREATED_SCENARIO_BODY",
+                        BodyArgs = new object[] { entity.Id, callerRole },
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email
+                    }, ct);
+            }
 
                 // نجاح: نرجّع Id + MessageKey جاهز للترجمة في الـ PL
                 return (entity.Id, "Created"); // "Created" موجودة في SharedResource
@@ -609,7 +599,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var isOwner = string.Equals(e.OwnerUserId, userId, StringComparison.Ordinal);
 
 
-            var dto = MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner, includeOwnerDetails: isAdmin || isManager);
+            var dto = MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner, includeOwnerDetails: isAdmin || isManager || isTechnician);
 
             // لو المستخدم الحالي فني: نبحث عن مؤقّت عمل نشط له على هذا الطلب
             if (isTechnician)
@@ -724,57 +714,6 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 throw;
             }
         }
-
-    //    private async Task EnrichAssignTechnicianResponseAsync(
-    //AssignTechnicianResponseDTO? res,
-    //CancellationToken ct)
-    //    {
-    //        if (res == null) return;
-
-    //        // اجمع كل IDs (الفني الرئيسي + كل النشطين)
-    //        var ids = res.ActiveTechnicians
-    //            .Select(t => t.Id)
-    //            .Where(id => !string.IsNullOrWhiteSpace(id))
-    //            .Distinct(StringComparer.Ordinal)
-    //            .ToList();
-
-    //        if (res.Technician != null &&
-    //            !string.IsNullOrWhiteSpace(res.Technician.Id) &&
-    //            !ids.Contains(res.Technician.Id, StringComparer.Ordinal))
-    //        {
-    //            ids.Add(res.Technician.Id);
-    //        }
-
-    //        if (ids.Count == 0) return;
-
-    //        // حمل بيانات المستخدمين من الـ UserRepository
-    //        var dict = new Dictionary<string, (string fullName, string email)>(StringComparer.Ordinal);
-
-    //        foreach (var id in ids)
-    //        {
-    //            var user = await _userRepo.GetByIdAsync(id, ct);
-    //            if (user is null) continue;
-
-    //            dict[id] = (user.FullName, user.Email);
-    //        }
-
-    //        // فانكشن صغيرة لتطبيق البيانات على dto موجود
-    //        void Apply(TechnicianResponseDTO t)
-    //        {
-    //            if (t == null) return;
-    //            if (dict.TryGetValue(t.Id, out var info))
-    //            {
-    //                t.FullName = info.fullName;
-    //                t.Email = info.email;
-    //            }
-    //        }
-
-    //        foreach (var t in res.ActiveTechnicians)
-    //            Apply(t);
-
-    //        if (res.Technician != null)
-    //            Apply(res.Technician);
-    //    }
 
         public async Task<(int? RequestId, string MessageKey)> AssignTechnicianAsync(
             int requestId,
@@ -898,29 +837,25 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }, ct);
 
                 // 🔔 إشعارات لمدراء الصيانة (اختياري بس منطقي)
-                var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
-                if (managers is { Count: > 0 })
+                var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+                await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
+                await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
+
+                foreach (var uid in recipients)
                 {
-                    foreach (var mgr in managers)
+                    await _notificationService.CreateAsync(new NotificationCreateModel
                     {
-                        if (string.IsNullOrWhiteSpace(mgr.Id))
-                            continue;
-
-                        await _notificationService.CreateAsync(new NotificationCreateModel
-                        {
-                            UserId = mgr.Id,
-                            MaintenanceRequestId = r.Id,
-                            Type = NotificationType.RequestStatusChanged,
-                            Severity = NotificationSeverity.Info,
-                            Language = language,
-                            // ✅ localization
-                            TitleKey = "NOTIF_TECH_REMOVED_TITLE",
-                            BodyKey = "NOTIF_TECH_REMOVED_BODY",
-                            BodyArgs = new object[] { r.Id },
-
-                            Channels = NotificationChannel.InApp | NotificationChannel.Email
-                        }, ct);
-                    }
+                        UserId = uid,
+                        MaintenanceRequestId = r.Id,
+                        Type = NotificationType.RequestStatusChanged,
+                        Severity = NotificationSeverity.Info,
+                        Language = language,
+                        TitleKey = "NOTIF_TECH_REMOVED_TITLE",
+                        BodyKey = "NOTIF_TECH_REMOVED_BODY",
+                        BodyArgs = new object[] { r.Id },
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email
+                    }, ct);
                 }
 
                 return (true, "Technician_Removed");
@@ -1627,16 +1562,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
             }
 
-            // المدراء (Role = MaintenanceManager)
-            var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
-            if (managers is { Count: > 0 })
-            {
-                foreach (var mgr in managers)
-                {
-                    if (!string.IsNullOrWhiteSpace(mgr.Id))
-                        recipients.Add(mgr.Id);
-                }
-            }
+            // المدراء (Role = MaintenanceManager) + Admin
+            await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
+            await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
 
             // لو ما في ولا مستلم، خلص
             if (recipients.Count == 0)
@@ -1724,19 +1652,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
             }
 
-            // المدراء (غير الكاتب)
-            var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
-            if (managers is { Count: > 0 })
-            {
-                foreach (var mgr in managers)
-                {
-                    if (!string.IsNullOrWhiteSpace(mgr.Id) &&
-                        !string.Equals(mgr.Id, authorUserId, StringComparison.Ordinal))
-                    {
-                        recipients.Add(mgr.Id);
-                    }
-                }
-            }
+            // المدراء + الأدمن (غير الكاتب)
+            await AddRoleRecipientsAsync(recipients, "MaintenanceManager", authorUserId, ct);
+            await AddRoleRecipientsAsync(recipients, "Admin", authorUserId, ct);
 
             if (recipients.Count == 0)
                 return;
@@ -1768,6 +1686,28 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
+        private async Task AddRoleRecipientsAsync(
+            HashSet<string> recipients,
+            string roleName,
+            string? excludeUserId,
+            CancellationToken ct)
+        {
+            var users = await _userRepo.GetByRoleAsync(roleName, ct);
+            if (users is not { Count: > 0 })
+                return;
+
+            foreach (var u in users)
+            {
+                if (string.IsNullOrWhiteSpace(u.Id))
+                    continue;
+
+                if (!string.IsNullOrWhiteSpace(excludeUserId) &&
+                    string.Equals(u.Id, excludeUserId, StringComparison.Ordinal))
+                    continue;
+
+                recipients.Add(u.Id);
+            }
+        }
 
         private async Task SendRequestUpdatedByOwnerNotificationAsync(
             MaintenanceRequest r,
@@ -1788,16 +1728,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
             }
 
-            // المدراء (MaintenanceManager)
-            var managers = await _userRepo.GetByRoleAsync("MaintenanceManager", ct);
-            if (managers is { Count: > 0 })
-            {
-                foreach (var mgr in managers)
-                {
-                    if (!string.IsNullOrWhiteSpace(mgr.Id))
-                        recipients.Add(mgr.Id);
-                }
-            }
+            // المدراء + الأدمن
+            await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
+            await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
 
             // تأكد ما يوصل للمالك حتى لو كان ضمن أي مجموعة
             if (!string.IsNullOrWhiteSpace(r.OwnerUserId))
@@ -1827,6 +1760,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }, ct);
             }
         }
+
 
         private async Task EnrichAssignedTechniciansNamesAsync(
             MaintenanceRequestResponseDTO dto,
