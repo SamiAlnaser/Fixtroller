@@ -677,7 +677,7 @@ namespace Fixtroller.DAL.Utils
                     Title = title,
                     Description = description,
                     Address = address,
-                    Priority = (Priority)(i % 3), // Low/Medium/High
+                    Priority = (Priority)((i % 3) + 1),             // Low/Medium/High
                     ProblemTypeId = problemTypeId,
                     CaseType = caseType,
                     OwnerUserId = owner.Id,
