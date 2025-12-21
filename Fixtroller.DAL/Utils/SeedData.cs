@@ -1,5 +1,4 @@
 ﻿using Fixtroller.DAL.Data;
-using Fixtroller.DAL.Data.Migrations;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Fixtroller.DAL.Entities.ProblemTypeEntity;
@@ -9,7 +8,7 @@ using Microsoft.EntityFrameworkCore;
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Text;
+using System.Text.Json;
 using System.Threading.Tasks;
 
 namespace Fixtroller.DAL.Utils
@@ -20,424 +19,678 @@ namespace Fixtroller.DAL.Utils
         private readonly RoleManager<IdentityRole> _roleManager;
         private readonly UserManager<ApplicationUser> _userManager;
 
-        public SeedData(ApplicationDbContext context,
-                        RoleManager<IdentityRole> roleManager,
-                        UserManager<ApplicationUser> userManager
-            )
+        public SeedData(
+            ApplicationDbContext context,
+            RoleManager<IdentityRole> roleManager,
+            UserManager<ApplicationUser> userManager)
         {
             _context = context;
             _roleManager = roleManager;
             _userManager = userManager;
         }
 
+        // =========================================================
+        // 1) Seeding للهويّات (Roles + Users)
+        // =========================================================
+        public async Task IdentityDataSeedingAsync()
+        {
+            // الأدوار الأساسية
+            var roles = new[] { "Admin", "MaintenanceManager", "Technician", "Employee" };
+
+            foreach (var role in roles)
+            {
+                if (!await _roleManager.RoleExistsAsync(role))
+                {
+                    await _roleManager.CreateAsync(new IdentityRole(role));
+                }
+            }
+
+            // لو فيه يوزرز خلاص ما نعيد
+            if (await _userManager.Users.AnyAsync())
+                return;
+
+            // باسورد موحّد لكل المستخدمين
+            const string DefaultPassword = "Passw0rd!";
+
+            // دالة مساعدة لتحويل الـ UserName لاسم إنجليزي بسيط
+            string ToEn(string userName)
+            {
+                if (string.IsNullOrWhiteSpace(userName))
+                    return userName;
+
+                var parts = userName.Split('.', StringSplitOptions.RemoveEmptyEntries);
+                for (int i = 0; i < parts.Length; i++)
+                {
+                    var p = parts[i];
+                    if (p.Length == 0) continue;
+                    parts[i] = char.ToUpperInvariant(p[0]) + (p.Length > 1 ? p.Substring(1) : string.Empty);
+                }
+                return string.Join(" ", parts);
+            }
+
+            // -----------------------------------------------------
+            // Admin: يوسف دراغمة
+            // -----------------------------------------------------
+            var admin = new ApplicationUser
+            {
+                UserName = "yousef.daraghmeh",
+                Email = "yousef.daraghmeh@gmail.com",
+                EmailConfirmed = true,
+                PhoneNumber = "0590000001",
+                FullNameAr = "يوسف دراغمة",
+                FullNameEn = "Yousef Daraghmeh",
+                Location = "المقر الرئيسي",
+                Department = "الإدارة"
+            };
+
+            var adminResult = await _userManager.CreateAsync(admin, DefaultPassword);
+            if (!adminResult.Succeeded)
+                throw new Exception(string.Join(" | ", adminResult.Errors.Select(e => e.Description)));
+
+            var adminRoleResult = await _userManager.AddToRoleAsync(admin, "Admin");
+            if (!adminRoleResult.Succeeded)
+                throw new Exception(string.Join(" | ", adminRoleResult.Errors.Select(e => e.Description)));
+
+            // -----------------------------------------------------
+            // Maintenance Manager: حسن دراغمة
+            // -----------------------------------------------------
+            var manager = new ApplicationUser
+            {
+                UserName = "hassan.daraghmeh",
+                Email = "hassan.daraghmeh@gmail.com",
+                EmailConfirmed = true,
+                PhoneNumber = "0590000002",
+                FullNameAr = "حسن دراغمة",
+                FullNameEn = "Hassan Daraghmeh",
+                Location = "المقر الرئيسي",
+                Department = "قسم الصيانة"
+            };
+
+            var managerResult = await _userManager.CreateAsync(manager, DefaultPassword);
+            if (!managerResult.Succeeded)
+                throw new Exception(string.Join(" | ", managerResult.Errors.Select(e => e.Description)));
+
+            var managerRoleResult = await _userManager.AddToRoleAsync(manager, "MaintenanceManager");
+            if (!managerRoleResult.Succeeded)
+                throw new Exception(string.Join(" | ", managerRoleResult.Errors.Select(e => e.Description)));
+
+            // -----------------------------------------------------
+            // Technicians (الفنيين)
+            // -----------------------------------------------------
+            var techniciansData = new[]
+            {
+                new { UserName = "ahmed.joaidi",      Email = "ahmed.joaidi@gmail.com",      FullNameAr = "احمد جعيدي" },
+                new { UserName = "sami.shreim",       Email = "sami.shreim@gmail.com",       FullNameAr = "سامي شريم" },
+                new { UserName = "anas.abuhamed",     Email = "anas.abuhamed@gmail.com",     FullNameAr = "انس ابو حامد" },
+                new { UserName = "mohammad.nour",     Email = "mohammad.nour@gmail.com",     FullNameAr = "محمد نور" },
+                new { UserName = "abdelrahman.hejazi",Email = "abdelrahman.hejazi@gmail.com",FullNameAr = "عبدالرحمن حجازي" },
+                new { UserName = "mahmoud.hamdan",    Email = "mahmoud.hamdan@gmail.com",    FullNameAr = "محمود حمدان" },
+                new { UserName = "jawad.qablawi",     Email = "jawad.qablawi@gmail.com",     FullNameAr = "جواد قبلاوي" },
+                new { UserName = "obada.naffaa",      Email = "obada.naffaa@gmail.com",      FullNameAr = "عبادة نفاع" },
+                new { UserName = "tareq.qashou",      Email = "tareq.qashou@gmail.com",      FullNameAr = "طارق قشوع" },
+                new { UserName = "yaaqoub.sweilem",   Email = "yaaqoub.sweleim@gmail.com",   FullNameAr = "يعقوب سويلم" },
+                new { UserName = "bahjat.yaseen",     Email = "bahjat.yaseen@gmail.com",     FullNameAr = "بهجت ياسين" },
+                new { UserName = "mohammad.barham",   Email = "mohammad.barham@gmail.com",   FullNameAr = "محمد برهم" },
+                new { UserName = "ahmed.dalil",       Email = "ahmed.dalil@gmail.com",       FullNameAr = "احمد دليل" },
+                new { UserName = "islam.zed",         Email = "islam.zed@gmail.com",         FullNameAr = "اسلام زيد" },
+                new { UserName = "ahmed.hamdan",      Email = "ahmed.hamdan@gmail.com",      FullNameAr = "احمد حمدان" },
+                new { UserName = "yazen.joaidi",      Email = "yazen.joaidi@gmail.com",      FullNameAr = "يزن جعيدي" },
+                new { UserName = "osaid.alhassan",    Email = "osaid.alhassan@gmail.com",    FullNameAr = "اسيد الحسن" },
+                new { UserName = "qasem.alqasem",     Email = "qasem.alqasem@gmail.com",     FullNameAr = "قاسم القاسم" },
+                new { UserName = "shareef.nazzal",    Email = "shareef.nazzal@gmail.com",    FullNameAr = "شريف نزال" },
+                new { UserName = "majd.hijjawi",      Email = "majd.hijjawi@gmail.com",      FullNameAr = "مجد حجاوي" },
+                new { UserName = "alaa.dawood",       Email = "alaa.dawood@gmail.com",       FullNameAr = "علاء داود" },
+                new { UserName = "abood.eid",         Email = "abood.eid@gmail.com",         FullNameAr = "عبود عيد" },
+                new { UserName = "mosa.zaben",        Email = "mosa.zaben@gmail.com",        FullNameAr = "موسى زبن" },
+                new { UserName = "meshal.nazzal",     Email = "meshal.nazzal@gmail.com",     FullNameAr = "مشعل نزال" },
+                new { UserName = "muhanad.shawahneh", Email = "muhanad.shawahneh@gmail.com", FullNameAr = "مهند شواهنة" },
+                new { UserName = "ahmed.madani",      Email = "ahmed.madani@gmail.com",      FullNameAr = "احمد مدني" },
+                new { UserName = "amro.jarrar",       Email = "amro.jarrar@gmail.com",       FullNameAr = "عمرو جرار" },
+            };
+
+            int phoneTechBase = 101;
+            foreach (var t in techniciansData.Select((data, idx) => new { data, idx }))
+            {
+                var techUser = new ApplicationUser
+                {
+                    UserName = t.data.UserName,
+                    Email = t.data.Email,
+                    EmailConfirmed = true,
+                    PhoneNumber = $"0590000{phoneTechBase + t.idx}",
+                    FullNameAr = t.data.FullNameAr,
+                    FullNameEn = ToEn(t.data.UserName),
+                    Location = (t.idx % 2 == 0) ? "فرع A" : "فرع B",
+                    Department = "قسم الصيانة"
+                };
+
+                var createRes = await _userManager.CreateAsync(techUser, DefaultPassword);
+                if (!createRes.Succeeded)
+                    throw new Exception(string.Join(" | ", createRes.Errors.Select(e => e.Description)));
+
+                var roleRes = await _userManager.AddToRoleAsync(techUser, "Technician");
+                if (!roleRes.Succeeded)
+                    throw new Exception(string.Join(" | ", roleRes.Errors.Select(e => e.Description)));
+            }
+
+            // -----------------------------------------------------
+            // Employees (الموظفين)
+            // -----------------------------------------------------
+            var employeesData = new[]
+            {
+                new { UserName = "anas.malhem",      Email = "anas.malhem@gmail.com",      FullNameAr = "انس ملحم" },
+                new { UserName = "mohammad.khalil",  Email = "mohammad.khalil@gmail.com",  FullNameAr = "محمد خليل" },
+                new { UserName = "moatamad.khateeb", Email = "moatamad.khateeb@gmail.com", FullNameAr = "معتمد خطيب" },
+                new { UserName = "jaafar.masri",     Email = "jaafar.masri@gmail.com",     FullNameAr = "جعفر مصري" },
+                new { UserName = "mohammad.aboali",  Email = "mohammad.aboali@gmail.com",  FullNameAr = "محمد ابو علي" },
+                new { UserName = "mohammad.amer",    Email = "mohammad.amer@gmail.com",    FullNameAr = "محمد عامر" },
+                new { UserName = "rami.dabie",       Email = "rami.dabie@gmail.com",       FullNameAr = "رامي دبعي" },
+                new { UserName = "mofeed.alawneh",   Email = "mofeed.alawneh@gmail.com",   FullNameAr = "مفيد علاونة" },
+                new { UserName = "hassan.khader",    Email = "hassan.khader@gmail.com",    FullNameAr = "حسن خضر" },
+                new { UserName = "yazeed.sleit",     Email = "yazeed.sleit@gmail.com",     FullNameAr = "يزيد سليط" },
+                new { UserName = "nadeem.shreim",    Email = "nadeem.shreim@gmail.com",    FullNameAr = "نديم شريم" },
+                new { UserName = "mohammad.nofal",   Email = "mohammad.nofal@gmail.com",   FullNameAr = "محمد نوفل" },
+                new { UserName = "yassin.ashqar",    Email = "yassin.ashqar@gmail.com",    FullNameAr = "ياسين اشقر" },
+                new { UserName = "islam.mismar",     Email = "islam.mismar@gmail.com",     FullNameAr = "اسلام مسمار" },
+                new { UserName = "alaa.rabayaa",     Email = "alaa.rabayaa@gmail.com",     FullNameAr = "علاء ربايعة" },
+                new { UserName = "tareq.omar",       Email = "tareq.omar@gmail.com",       FullNameAr = "طارق عمر" },
+                new { UserName = "yousef.jaber",     Email = "yousef.jaber@gmail.com",     FullNameAr = "يوسف جابر" },
+                new { UserName = "ahmed.toama",      Email = "ahmed.toama@gmail.com",      FullNameAr = "احمد طعمة" },
+                new { UserName = "yazen.mohammad",   Email = "yazen.mohammad@gmail.com",   FullNameAr = "يزن محمد" },
+                new { UserName = "nour.faisal",      Email = "nour.faisal@gmail.com",      FullNameAr = "نور فيصل" },
+                new { UserName = "akram.azzam",      Email = "akram.azzam@gmail.com",      FullNameAr = "اكرم عزام" },
+                new { UserName = "mostafa.arafat",   Email = "mostafa.arafat@gmail.com",   FullNameAr = "مصطفى عرفات" },
+                new { UserName = "baha.odeh",        Email = "baha.odeh@gmail.com",        FullNameAr = "بهاء عودة" },
+                new { UserName = "amro.radwan",      Email = "amro.radwan@gmail.com",      FullNameAr = "عمرو رضوان" },
+                new { UserName = "ahmed.barham",     Email = "ahmed.barham@gmail.com",     FullNameAr = "احمد برهم" },
+                new { UserName = "odai.user",        Email = "odai.user@gmail.com",        FullNameAr = "عدي" },
+            };
+
+            int phoneEmpBase = 201;
+            foreach (var e in employeesData.Select((data, idx) => new { data, idx }))
+            {
+                var empUser = new ApplicationUser
+                {
+                    UserName = e.data.UserName,
+                    Email = e.data.Email,
+                    EmailConfirmed = true,
+                    PhoneNumber = $"0590002{phoneEmpBase + e.idx}",
+                    FullNameAr = e.data.FullNameAr,
+                    FullNameEn = ToEn(e.data.UserName),
+                    Location = (e.idx < employeesData.Length / 2) ? "فرع A" : "فرع B",
+                    Department = "قسم شؤون الموظفين"
+                };
+
+                var createRes = await _userManager.CreateAsync(empUser, DefaultPassword);
+                if (!createRes.Succeeded)
+                    throw new Exception(string.Join(" | ", createRes.Errors.Select(x => x.Description)));
+
+                var roleRes = await _userManager.AddToRoleAsync(empUser, "Employee");
+                if (!roleRes.Succeeded)
+                    throw new Exception(string.Join(" | ", roleRes.Errors.Select(x => x.Description)));
+            }
+        }
+
+        // =========================================================
+        // 2) Seeding للداتا التشغيلية (كاتيجوريات + Problems + Requests + Notifications)
+        // =========================================================
         public async Task DataSeedingAsync()
         {
-            // 0) تأكد من المايغريشن
-
-            // 1) فئات الفنيين (5 كاتيجوري) + الترجمات
+            // -----------------------------------------------------
+            // 1) Technician Categories (7) مع الترجمات
+            // -----------------------------------------------------
             if (!await _context.Tcategories.AnyAsync())
             {
                 var categories = new List<TechnicianCategory>
-        {
-            new TechnicianCategory
-            {
-                Translations = new List<TechnicianCategoryTranslation>
                 {
-                    new TechnicianCategoryTranslation { Language = "ar", Name = "كهرباء" },
-                    new TechnicianCategoryTranslation { Language = "en", Name = "Electrical" }
-                }
-            },
-            new TechnicianCategory
-            {
-                Translations = new List<TechnicianCategoryTranslation>
-                {
-                    new TechnicianCategoryTranslation { Language = "ar", Name = "سباكة" },
-                    new TechnicianCategoryTranslation { Language = "en", Name = "Plumbing" }
-                }
-            },
-            new TechnicianCategory
-            {
-                Translations = new List<TechnicianCategoryTranslation>
-                {
-                    new TechnicianCategoryTranslation { Language = "ar", Name = "تكييف وتبريد" },
-                    new TechnicianCategoryTranslation { Language = "en", Name = "HVAC" }
-                }
-            },
-            new TechnicianCategory
-            {
-                Translations = new List<TechnicianCategoryTranslation>
-                {
-                    new TechnicianCategoryTranslation { Language = "ar", Name = "نجارة" },
-                    new TechnicianCategoryTranslation { Language = "en", Name = "Carpentry" }
-                }
-            },
-            new TechnicianCategory
-            {
-                Translations = new List<TechnicianCategoryTranslation>
-                {
-                    new TechnicianCategoryTranslation { Language = "ar", Name = "دعم تقني" },
-                    new TechnicianCategoryTranslation { Language = "en", Name = "IT Support" }
-                }
-            }
-        };
+                    new TechnicianCategory
+                    {
+                        Translations = new List<TechnicianCategoryTranslation>
+                        {
+                            new TechnicianCategoryTranslation { Language = "ar", Name = "الأعطال الكهربائية" },
+                            new TechnicianCategoryTranslation { Language = "en", Name = "Electrical Faults" }
+                        }
+                    },
+                    new TechnicianCategory
+                    {
+                        Translations = new List<TechnicianCategoryTranslation>
+                        {
+                            new TechnicianCategoryTranslation { Language = "ar", Name = "أعطال الشبكات والإنترنت" },
+                            new TechnicianCategoryTranslation { Language = "en", Name = "Network & Internet Issues" }
+                        }
+                    },
+                    new TechnicianCategory
+                    {
+                        Translations = new List<TechnicianCategoryTranslation>
+                        {
+                            new TechnicianCategoryTranslation { Language = "ar", Name = "صيانة الحاسوب والأنظمة" },
+                            new TechnicianCategoryTranslation { Language = "en", Name = "Computer & Systems Maintenance" }
+                        }
+                    },
+                    new TechnicianCategory
+                    {
+                        Translations = new List<TechnicianCategoryTranslation>
+                        {
+                            new TechnicianCategoryTranslation { Language = "ar", Name = "أعمال السباكة والصرف الصحي" },
+                            new TechnicianCategoryTranslation { Language = "en", Name = "Plumbing & Drainage Works" }
+                        }
+                    },
+                    new TechnicianCategory
+                    {
+                        Translations = new List<TechnicianCategoryTranslation>
+                        {
+                            new TechnicianCategoryTranslation { Language = "ar", Name = "أعمال التكييف والتبريد" },
+                            new TechnicianCategoryTranslation { Language = "en", Name = "HVAC (Air Conditioning & Cooling)" }
+                        }
+                    },
+                    new TechnicianCategory
+                    {
+                        Translations = new List<TechnicianCategoryTranslation>
+                        {
+                            new TechnicianCategoryTranslation { Language = "ar", Name = "صيانة المباني والإنشاءات" },
+                            new TechnicianCategoryTranslation { Language = "en", Name = "Building & Construction Maintenance" }
+                        }
+                    },
+                    new TechnicianCategory
+                    {
+                        Translations = new List<TechnicianCategoryTranslation>
+                        {
+                            new TechnicianCategoryTranslation { Language = "ar", Name = "الأثاث المكتبي" },
+                            new TechnicianCategoryTranslation { Language = "en", Name = "Office Furniture" }
+                        }
+                    }
+                };
 
                 await _context.Tcategories.AddRangeAsync(categories);
-                try
-                {
-                    await _context.SaveChangesAsync();
-                }
-                catch (DbUpdateConcurrencyException ex)
-                {
-                    var types = ex.Entries
-                        .Select(e => $"{e.Entity.GetType().Name} ({e.State})")
-                        .Distinct()
-                        .ToList();
-
-                    Console.WriteLine("Concurrency on: " + string.Join(", ", types));
-                    throw;
-                }
-            }
-
-            // 2) أنواع المشاكل (20 نوع) + الترجمات (منها "أخرى / Other")
-            if (!await _context.PTypes.AnyAsync())
-            {
-                var problemTypes = new List<ProblemType>
-        {
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "انقطاع كهرباء" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Power Outage" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "عطل في الإنارة" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Lighting Issue" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "تسريب مياه" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Water Leakage" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "انسداد مجاري" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Clogged Drain" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "التكييف لا يبرّد" },
-                    new ProblemTypeTranslation { Language = "en", Name = "AC Not Cooling" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "صوت مزعج من المكيف" },
-                    new ProblemTypeTranslation { Language = "en", Name = "AC Noise" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "ضغط مياه ضعيف" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Low Water Pressure" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "عطل في السخان" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Water Heater Issue" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "عطل باب" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Door Broken" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "نافذة مكسورة" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Broken Window" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "جدار يحتاج دهان" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Wall Repainting" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "كمبيوتر لا يعمل" },
-                    new ProblemTypeTranslation { Language = "en", Name = "PC Not Booting" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "بطء في الجهاز" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Slow Computer" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "مشكلة في الشبكة" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Network Issue" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "مشكلة في الطابعة" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Printer Issue" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "طلب تنظيف عادي" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Regular Cleaning" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "تنظيف عميق" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Deep Cleaning" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "رائحة كريهة في الغرفة" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Bad Odor in Room" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "تسريب من المكيف" },
-                    new ProblemTypeTranslation { Language = "en", Name = "AC Water Leak" }
-                }
-            },
-            new ProblemType
-            {
-                Translations = new List<ProblemTypeTranslation>
-                {
-                    new ProblemTypeTranslation { Language = "ar", Name = "أخرى" },
-                    new ProblemTypeTranslation { Language = "en", Name = "Other" }
-                }
-            }
-        };
-
-                await _context.PTypes.AddRangeAsync(problemTypes);
                 await _context.SaveChangesAsync();
             }
 
-            // 3) توزيع الكاتيجوري على الفنين (بدون SaveChanges على context مباشرة)
-            var categoriesList = await _context.Tcategories.OrderBy(c => c.Id).ToListAsync();
+            // -----------------------------------------------------
+            // 2) ProblemTypes (حسب القائمة) + ترجمات
+            // -----------------------------------------------------
+            if (!await _context.PTypes.AnyAsync())
+            {
+                var ptypes = new List<ProblemType>
+                {
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "الأمن والسلامة" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Safety & Security" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "النظافة وإدارة المرافق" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Cleaning & Facilities Management" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "صيانة المختبرات والمعدات التقنية" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Lab & Technical Equipment Maintenance" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "أعطال تشغيلية" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Operational Faults" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "تسجيل وتأمين" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Logging & Securing" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "صيانة سيارات المؤسسة" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Institution Vehicles Maintenance" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "أجهزة حساسة (Sensors – PLC – Instruments)" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Sensitive Devices (Sensors – PLC – Instruments)" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "معدات مخبرية" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Laboratory Equipment" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "أجهزة القياس" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Measuring Devices" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "تجديد مواد استهلاكية" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Consumables Renewal" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "فحص أجهزة" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Devices Check" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "نفايات" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Waste Handling" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "ترتيب القاعات" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Halls Arrangement" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "نظافة عامة" },
+                        new ProblemTypeTranslation { Language = "en", Name = "General Cleaning" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "إضاءة الطوارئ" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Emergency Lighting" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "نظام إنذار الحريق" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Fire Alarm System" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "مكاتب وكراسي" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Desks & Chairs" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "المصاعد" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Elevators" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "البلاط والأرضيات" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Tiles & Flooring" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "الجدران والدهان" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Walls & Painting" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "المكيفات" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Air Conditioners" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "وحدات التبريد" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Cooling Units" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "تسريب مياه" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Water Leakage" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "مجاري وصرف صحي" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Sewer & Drainage" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "شاشات وأجهزة إدخال" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Screens & Input Devices" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "الطابعات" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Printers" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "تمديدات كهربائية" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Electrical Wiring" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "مفاتيح وقواطع" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Switches & Breakers" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "إنارة" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Lighting" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "لوحات كهرباء" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Electrical Panels" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "تمديدات الشبكات" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Network Cabling" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "أجهزة الراوتر" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Routers" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "ضعف الشبكة" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Weak Network Signal" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "انقطاع الإنترنت" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Internet Outage" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "الأنظمة والبرامج" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Systems & Software" }
+                    }},
+                    new ProblemType { Translations = new List<ProblemTypeTranslation>
+                    {
+                        new ProblemTypeTranslation { Language = "ar", Name = "أجهزة الكمبيوتر" },
+                        new ProblemTypeTranslation { Language = "en", Name = "Computers" }
+                    }}
+                };
+
+                await _context.PTypes.AddRangeAsync(ptypes);
+                await _context.SaveChangesAsync();
+            }
+
+            // -----------------------------------------------------
+            // 3) توزيع الكاتيجوري على الفنيين
+            // -----------------------------------------------------
+            var categoriesList = await _context.Tcategories
+                .OrderBy(c => c.Id)
+                .ToListAsync();
+
             var technicians = (await _userManager.GetUsersInRoleAsync("Technician"))
                 .OrderBy(u => u.Id)
                 .ToList();
 
-            if (categoriesList.Count > 0 && technicians.Count > 0)
+            if (categoriesList.Any() && technicians.Any())
             {
                 for (int i = 0; i < technicians.Count; i++)
                 {
                     var cat = categoriesList[i % categoriesList.Count];
                     technicians[i].TechnicianCategoryId = cat.Id;
-
-                    // 👈 نستخدم UserManager للتحديث، مش _context.SaveChangesAsync
                     await _userManager.UpdateAsync(technicians[i]);
                 }
             }
 
-            // 4) طلبات الصيانة (100 طلب) – ندخلها فقط إذا الجدول فاضي
+            // -----------------------------------------------------
+            // 4) طلبات الصيانة (100 طلب) – بدون صور – حالات مخلوطة
+            // -----------------------------------------------------
             if (await _context.MaintenanceRequests.AnyAsync())
                 return;
 
-            var problemTypesAll = await _context.PTypes
+            var allProblemTypes = await _context.PTypes
                 .Include(p => p.Translations)
-                .OrderBy(p => p.Id)
                 .ToListAsync();
 
-            var employees = (await _userManager.GetUsersInRoleAsync("Employee"))
+            var employeesList = (await _userManager.GetUsersInRoleAsync("Employee"))
                 .OrderBy(u => u.Id)
                 .ToList();
 
-            var techsForRequests = technicians;
+            var techsForRequests = (await _userManager.GetUsersInRoleAsync("Technician"))
+                .OrderBy(u => u.Id)
+                .ToList();
 
-            var adminUser = await _userManager.FindByIdAsync("admin-001");
-            var managerUser = await _userManager.FindByIdAsync("manager-001");
+            var adminUser = await _userManager.FindByNameAsync("yousef.daraghmeh");
+            var managerUser = await _userManager.FindByNameAsync("hassan.daraghmeh");
 
-            if (problemTypesAll.Count == 0 || employees.Count == 0 || techsForRequests.Count == 0)
+            if (!allProblemTypes.Any() || !employeesList.Any() || !techsForRequests.Any())
                 return;
 
-            var caseTypes = new[]
+            // قاموس من الاسم العربي -> ProblemTypeId
+            var ptByAr = new Dictionary<string, int>();
+            foreach (var p in allProblemTypes)
             {
-        CaseType.Submitted,
-        CaseType.ManagerReview,
-        CaseType.Processing,
-        CaseType.ResourcesNeeded,
-        CaseType.Modified,
-        CaseType.Processed,
-        CaseType.Reopened,
-        CaseType.Completed,
-        CaseType.Cancelled
-    };
+                var ar = p.Translations.FirstOrDefault(t => t.Language == "ar")?.Name;
+                if (!string.IsNullOrWhiteSpace(ar) && !ptByAr.ContainsKey(ar))
+                    ptByAr.Add(ar, p.Id);
+            }
 
-            var priorities = new[] { Priority.Low, Priority.Medium, Priority.High };
-
-            var arabicAddresses = new[]
+            var addressesForRequests = new[]
             {
-        "المقر الرئيسي - الطابق الأول",
-        "المقر الرئيسي - الطابق الثاني",
-        "فرع A - الطابق الأرضي",
-        "فرع A - مكتب 10",
-        "فرع B - الطابق الثالث"
-    };
+                "المقر الرئيسي - الطابق الأول - مكتب الموارد البشرية",
+                "المقر الرئيسي - الطابق الثاني - قسم المالية",
+                "المقر الرئيسي - الطابق الثالث - قسم تكنولوجيا المعلومات",
+                "فرع A - الطابق الأرضي - الاستقبال",
+                "فرع A - مكتب 10 - فريق المبيعات",
+                "فرع B - الطابق الثالث - غرفة الاجتماعات",
+                "فرع B - الطابق الثاني - قسم الصيانة",
+                "مستودع المواد - المنطقة الصناعية",
+                "ساحة المواقف - أمام المبنى الرئيسي",
+                "مختبر الحاسوب - مبنى التدريب"
+            };
 
-            var englishAddresses = new[]
+            var problemNamesForRequests = new[]
             {
-        "HQ - Floor 1",
-        "HQ - Floor 2",
-        "Branch A - Ground Floor",
-        "Branch A - Office 10",
-        "Branch B - Floor 3"
-    };
+                "تمديدات كهربائية",
+                "انقطاع الإنترنت",
+                "الطابعات",
+                "تسريب مياه",
+                "المكيفات",
+                "الجدران والدهان",
+                "مكاتب وكراسي",
+                "لوحات كهرباء",
+                "ضعف الشبكة",
+                "الأنظمة والبرامج",
+                "مجاري وصرف صحي",
+                "وحدات التبريد",
+                "البلاط والأرضيات",
+                "نظافة عامة",
+                "إضاءة الطوارئ",
+                "شاشات وأجهزة إدخال",
+                "تمديدات الشبكات",
+                "مفاتيح وقواطع",
+                "أجهزة الراوتر",
+                "أجهزة الكمبيوتر",
+                "نظام إنذار الحريق",
+                "ترتيب القاعات"
+            };
 
             var now = DateTime.UtcNow;
-            var random = new Random(123);
+            var random = new Random(777);
 
             var requests = new List<MaintenanceRequest>();
             var workEntries = new List<WorkTimeEntry>();
 
+            // توزيع الحالات بنِسَب معيّنة، ثم خلطها
+            var caseTypesPool = new List<CaseType>();
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.Submitted, 20));
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.ManagerReview, 15));
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.Processing, 25));
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.ResourcesNeeded, 10));
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.Modified, 5));
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.Reopened, 10));
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.Processed, 7));
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.Completed, 6));
+            caseTypesPool.AddRange(Enumerable.Repeat(CaseType.Cancelled, 2));
+
+            if (caseTypesPool.Count != 100)
+                throw new Exception($"Expected 100 case types, found {caseTypesPool.Count}");
+
+            // Shuffle ثابت
+            for (int i = caseTypesPool.Count - 1; i > 0; i--)
+            {
+                int j = random.Next(0, i + 1);
+                (caseTypesPool[i], caseTypesPool[j]) = (caseTypesPool[j], caseTypesPool[i]);
+            }
+
             for (int i = 0; i < 100; i++)
             {
-                bool isEnglish = i < 30; // أول 30 طلب بالإنجليزي
+                var caseType = caseTypesPool[i];
 
-                var owner = employees[i % employees.Count];
+                var owner = employeesList[i % employeesList.Count];
+                var problemName = problemNamesForRequests[i % problemNamesForRequests.Length];
 
+                if (!ptByAr.TryGetValue(problemName, out var problemTypeId))
+                {
+                    problemTypeId = allProblemTypes.First().Id;
+                }
+
+                // من أنشأ الطلب؟
                 string createdByUserId;
-                if (i % 10 == 0 && managerUser != null)
+                if (i % 20 == 0 && managerUser != null)
                     createdByUserId = managerUser.Id;
-                else if (i % 15 == 0 && adminUser != null)
+                else if (i % 33 == 0 && adminUser != null)
                     createdByUserId = adminUser.Id;
-                else if (i % 7 == 0)
+                else if (i % 9 == 0)
                     createdByUserId = techsForRequests[i % techsForRequests.Count].Id;
                 else
                     createdByUserId = owner.Id;
 
-                var pt = problemTypesAll[i % problemTypesAll.Count];
-                var caseType = caseTypes[i % caseTypes.Length];
-                var priority = priorities[i % priorities.Length];
+                var address = addressesForRequests[i % addressesForRequests.Length];
 
-                var arName = pt.Translations.FirstOrDefault(t => t.Language == "ar")?.Name
-                             ?? pt.Translations.FirstOrDefault()?.Name
-                             ?? "مشكلة عامة";
+                // 👈 شيلنا رقم الطلب من التايتل والـ Description
+                var title = problemName;
+                var description =
+                    $"طلب صيانة بخصوص {problemName} في {address}. " +
+                    $"الحالة الحالية للطلب: {caseType}. تم توليد هذا الطلب كبيانات واقعية " +
+                    $"لاختبار تدفق العمل، الإشعارات، التقارير ولوحة المتابعة.";
 
-                var enName = pt.Translations.FirstOrDefault(t => t.Language == "en")?.Name
-                             ?? pt.Translations.FirstOrDefault()?.Name
-                             ?? "General Issue";
-
-                string title;
-                string description;
-                string address;
-
-                if (isEnglish)
+                // تاريخ الإنشاء حسب الحالة
+                DateTime createdAt;
+                if (caseType == CaseType.Submitted)
                 {
-                    title = $"{enName} - Request #{i + 1}";
-                    description = $"Auto-seeded maintenance request #{i + 1} in status '{caseType}'.";
-                    address = englishAddresses[i % englishAddresses.Length];
+                    createdAt = now
+                        .AddDays(-random.Next(1, 7))
+                        .AddHours(-random.Next(0, 6));
+                }
+                else if (caseType == CaseType.ManagerReview)
+                {
+                    createdAt = now
+                        .AddDays(-random.Next(5, 20))
+                        .AddHours(-random.Next(0, 8));
                 }
                 else
                 {
-                    title = $"{arName} - طلب رقم {i + 1}";
-                    description = $"طلب صيانة تجريبي رقم {i + 1} بالحالة {caseType} لاختبار النظام.";
-                    address = arabicAddresses[i % arabicAddresses.Length];
+                    createdAt = now
+                        .AddDays(-random.Next(10, 60))
+                        .AddHours(-random.Next(0, 10));
                 }
-
-                var createdAt = now
-                    .AddDays(-random.Next(1, 60))
-                    .AddHours(-random.Next(0, 8));
 
                 var request = new MaintenanceRequest
                 {
                     Title = title,
                     Description = description,
                     Address = address,
-                    Priority = priority,
-                    ProblemTypeId = pt.Id,
+                    Priority = (Priority)(i % 3), // Low/Medium/High
+                    ProblemTypeId = problemTypeId,
                     CaseType = caseType,
                     OwnerUserId = owner.Id,
                     CreatedByUserId = createdByUserId,
                     CreatedAt = createdAt
                 };
 
-                // صورة أساسية
-                request.Images.Add(new MaintenanceRequestImage
-                {
-                    FileName = isEnglish
-                        ? $"seed-en-{i + 1:000}.jpg"
-                        : $"seed-ar-{i + 1:000}.jpg",
-                    IsPrimary = true,
-                    Source = MaintenanceRequestImageSource.RequestCreation
-                });
-
-                // صورة إضافية لبعض الطلبات
-                if (i % 5 == 0)
-                {
-                    request.Images.Add(new MaintenanceRequestImage
-                    {
-                        FileName = $"seed-extra-{i + 1:000}.jpg",
-                        IsPrimary = false,
-                        Source = MaintenanceRequestImageSource.StaffAttachment
-                    });
-                }
-
-                // ملاحظات
+                // Notes (مع ضمان وجود ملاحظة واحدة على الأقل)
                 if (caseType == CaseType.Reopened)
                 {
                     request.Notes.Add(new MaintenanceNote
                     {
-                        Text = isEnglish
-                            ? "Ticket reopened because the issue is still happening."
-                            : "تم إعادة فتح الطلب لأن المشكلة ما زالت مستمرة.",
+                        Text = "تم إعادة فتح الطلب لأن المشكلة ما زالت مستمرة من وجهة نظر صاحب الطلب.",
                         Type = NoteType.ReopenReason,
                         Author = NoteAuthor.Owner,
                         CreatedByUserId = owner.Id
@@ -447,37 +700,49 @@ namespace Fixtroller.DAL.Utils
                 {
                     request.Notes.Add(new MaintenanceNote
                     {
-                        Text = isEnglish
-                            ? "Additional materials or another technician are required to continue."
-                            : "نحتاج إلى مواد إضافية أو فني آخر لاستكمال العمل.",
+                        Text = "يحتاج الفني إلى مواد/أدوات إضافية أو فني آخر لاستكمال العمل.",
                         Type = NoteType.HelpRequest,
-                        Author = NoteAuthor.Owner,
-                        CreatedByUserId = owner.Id
+                        Author = NoteAuthor.Technician,
+                        CreatedByUserId = createdByUserId
                     });
                 }
-                else if (i % 6 == 0)
+                else if (i % 7 == 0)
                 {
                     request.Notes.Add(new MaintenanceNote
                     {
-                        Text = isEnglish
-                            ? "General note added for testing purposes."
-                            : "ملاحظة عامة مضافة لأغراض الاختبار.",
+                        Text = "ملاحظة متابعة عامة حول حالة الموقع وطبيعة العطل.",
                         Type = NoteType.General,
                         Author = NoteAuthor.Owner,
                         CreatedByUserId = owner.Id
                     });
                 }
 
-                // تعيين فني (مش كل الطلبات)
-                bool assignTechnician =
-                    caseType != CaseType.Submitted &&
-                    caseType != CaseType.Cancelled &&
-                    (i % 4 != 0);
+                // 🔹 ضمان وجود ملاحظة واحدة على الأقل لكل طلب
+                if (request.Notes.Count == 0)
+                {
+                    request.Notes.Add(new MaintenanceNote
+                    {
+                        Text = "تمت إضافة هذه الملاحظة ضمن بيانات الاختبار لتوضيح استخدام نظام الملاحظات.",
+                        Type = NoteType.General,
+                        Author = NoteAuthor.Owner,
+                        CreatedByUserId = owner.Id
+                    });
+                }
 
-                if (assignTechnician)
+                // تعيين فنيين
+                bool shouldAssignTech =
+                    caseType != CaseType.Submitted &&
+                    (caseType != CaseType.ManagerReview || i % 2 == 0);
+
+                if (caseType == CaseType.Cancelled && i % 2 == 0)
+                    shouldAssignTech = true;
+
+                DateTime? lastWorkTime = null;
+
+                if (shouldAssignTech)
                 {
                     var tech = techsForRequests[i % techsForRequests.Count];
-                    var assignedAt = createdAt.AddHours(1);
+                    var assignedAt = createdAt.AddHours(random.Next(1, 6));
 
                     var link = new MaintenanceRequestTechnician
                     {
@@ -486,17 +751,31 @@ namespace Fixtroller.DAL.Utils
                         ExpectedDuration = 2 + (i % 6)
                     };
 
-                    if (i % 9 == 0 &&
-                        caseType != CaseType.Completed &&
-                        caseType != CaseType.Processed)
+                    if ((caseType == CaseType.Modified || caseType == CaseType.Cancelled) && i % 3 == 0)
                     {
                         link.UnassignedAtUtc = assignedAt.AddHours(2);
                     }
 
                     request.Technicians.Add(link);
 
-                    // WorkTimeEntries للحالات اللي فيها شغل حقيقي
+                    // فني إضافي أحياناً في ResourcesNeeded
+                    if (caseType == CaseType.ResourcesNeeded && i % 2 == 0)
+                    {
+                        var tech2 = techsForRequests[(i + 5) % techsForRequests.Count];
+                        if (tech2.Id != tech.Id)
+                        {
+                            request.Technicians.Add(new MaintenanceRequestTechnician
+                            {
+                                TechnicianUserId = tech2.Id,
+                                AssignedAtUtc = assignedAt.AddMinutes(30),
+                                ExpectedDuration = 1 + (i % 4)
+                            });
+                        }
+                    }
+
+                    // WorkTimeEntries للحالات اللي فيها شغل فعلي
                     if (caseType == CaseType.Processing ||
+                        caseType == CaseType.Reopened ||
                         caseType == CaseType.Processed ||
                         caseType == CaseType.Completed)
                     {
@@ -505,7 +784,11 @@ namespace Fixtroller.DAL.Utils
 
                         if (caseType == CaseType.Processed || caseType == CaseType.Completed)
                         {
-                            stop = start.AddHours(1 + (i % 4));
+                            stop = start.AddHours(2 + (i % 4));
+                        }
+                        else if (i % 4 == 0)
+                        {
+                            stop = start.AddHours(1 + (i % 3));
                         }
 
                         workEntries.Add(new WorkTimeEntry
@@ -515,17 +798,61 @@ namespace Fixtroller.DAL.Utils
                             StartedAt = start,
                             StoppedAt = stop
                         });
+
+                        lastWorkTime = stop?.UtcDateTime ?? start.UtcDateTime;
                     }
                 }
 
-                if (caseType == CaseType.Completed ||
-                    caseType == CaseType.Cancelled ||
-                    caseType == CaseType.Processed)
+                // ClosedAtUtc للحالات المغلقة
+                bool isClosed =
+                    caseType == CaseType.Processed ||
+                    caseType == CaseType.Completed ||
+                    caseType == CaseType.Cancelled;
+
+                if (isClosed)
                 {
-                    request.ClosedAtUtc = createdAt
+                    var closedAt = createdAt
                         .AddDays(random.Next(0, 5))
-                        .AddHours(random.Next(1, 4));
+                        .AddHours(random.Next(1, 6));
+
+                    if (closedAt > now)
+                        closedAt = now.AddMinutes(-random.Next(5, 60));
+
+                    request.ClosedAtUtc = closedAt;
                 }
+
+                // UpdatedAt (آخر تعديل)
+                DateTime? updatedAt = null;
+
+                if (request.ClosedAtUtc.HasValue)
+                {
+                    // الطلبات النهائية: آخر تعديل = وقت الإغلاق
+                    updatedAt = request.ClosedAtUtc.Value;
+                }
+                else
+                {
+                    bool hasTech = request.Technicians.Count > 0;
+                    bool hasNotes = request.Notes.Count > 0;
+
+                    if (lastWorkTime.HasValue)
+                    {
+                        updatedAt = lastWorkTime.Value;
+                    }
+                    else if (caseType != CaseType.Submitted || hasTech || hasNotes)
+                    {
+                        var candidate = createdAt.AddHours(random.Next(1, 72));
+                        if (candidate > now) candidate = now.AddMinutes(-random.Next(10, 120));
+                        updatedAt = candidate;
+                    }
+                    else if (i % 4 == 0)
+                    {
+                        var candidate = createdAt.AddHours(random.Next(1, 24));
+                        if (candidate > now) candidate = createdAt;
+                        updatedAt = candidate;
+                    }
+                }
+
+                request.UpdatedAt = updatedAt;
 
                 requests.Add(request);
             }
@@ -536,208 +863,288 @@ namespace Fixtroller.DAL.Utils
                 await _context.WorkTimeEntries.AddRangeAsync(workEntries);
 
             await _context.SaveChangesAsync();
-        }
 
+            // ============================
+            // 5) Notifications (Owner + Techs + Managers + Admins)
+            // ============================
 
+            var managersList = (await _userManager.GetUsersInRoleAsync("MaintenanceManager")).ToList();
+            var adminsList = (await _userManager.GetUsersInRoleAsync("Admin")).ToList();
 
+            var managerIds = managersList
+                .Select(m => m.Id)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToList();
 
+            var adminIds = adminsList
+                .Select(a => a.Id)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .ToList();
 
-        public async Task IdentityDataSeedingAsync()
-        {
+            var notifications = new List<Notification>();
 
-            // 1) Ensure roles (4 roles only)
-            var roles = new[] { "Admin", "Technician", "Employee", "MaintenanceManager" };
-
-            foreach (var role in roles)
+            foreach (var r in requests)
             {
-                if (!await _roleManager.RoleExistsAsync(role))
+                // 1) إشعار لصاحب الطلب "طلب تم إنشاؤه لك"
+                if (!string.IsNullOrWhiteSpace(r.OwnerUserId))
                 {
-                    await _roleManager.CreateAsync(new IdentityRole(role));
-                }
-            }
-
-            // 2) Seed users only if DB is empty
-            if (!await _userManager.Users.AnyAsync())
-            {
-                const string adminPassword = "Admin#12345";
-                const string managerPassword = "Manager#12345";
-                const string technicianPassword = "Tech#12345";
-                const string employeePassword = "Employee#12345";
-
-                // Admin - يوسف دراغمة
-                var admin = new ApplicationUser
-                {
-                    Id = "admin-001",
-                    UserName = "admin",
-                    Email = "admin@fixtroller.com",
-                    EmailConfirmed = true,
-                    PhoneNumber = "0590000001",
-                    FullNameAr = "يوسف دراغمة",
-                    FullNameEn = "Yousef Daraghmeh",
-                    Location = "المقر الرئيسي",
-                    Department = "الإدارة"
-                };
-                var r1 = await _userManager.CreateAsync(admin, adminPassword);
-                if (!r1.Succeeded) throw new Exception(string.Join(" | ", r1.Errors.Select(e => e.Description)));
-
-                var rr1 = await _userManager.AddToRoleAsync(admin, "Admin");
-                if (!rr1.Succeeded) throw new Exception(string.Join(" | ", rr1.Errors.Select(e => e.Description)));
-
-                // Maintenance Manager - حسن دراغمة
-                var manager = new ApplicationUser
-                {
-                    Id = "manager-001",
-                    UserName = "manager",
-                    Email = "manager@fixtroller.com",
-                    EmailConfirmed = true,
-                    PhoneNumber = "0590000002",
-                    FullNameAr = "حسن دراغمة",
-                    FullNameEn = "Hassan Daraghmeh",
-                    Location = "المقر الرئيسي",
-                    Department = "قسم الصيانة"
-                };
-
-                var m1 = await _userManager.CreateAsync(manager, managerPassword);
-                if (!m1.Succeeded) throw new Exception(string.Join(" | ", m1.Errors.Select(e => e.Description)));
-
-                var mm1 = await _userManager.AddToRoleAsync(manager, "MaintenanceManager");
-                if (!mm1.Succeeded) throw new Exception(string.Join(" | ", mm1.Errors.Select(e => e.Description)));
-
-                // 20 Technicians (6 أسماء حقيقية + 14 توليد تلقائي)
-                var technicians = new List<ApplicationUser>
-        {
-            new ApplicationUser
-            {
-                Id = "tech-001",
-                UserName = "sami.alnser",
-                Email = "samialnser@gmail.com",
-                EmailConfirmed = true,
-                PhoneNumber = "0590000101",
-                FullNameAr = "سامي النصر",
-                FullNameEn = "Sami Al-Nser",
-                Location = "فرع A",
-                Department = "الصيانة"
-            },
-            new ApplicationUser
-            {
-                Id = "tech-002",
-                UserName = "ahmed.joaidi",
-                Email = "ajaidi258@gmail.com",
-                EmailConfirmed = true,
-                PhoneNumber = "0590000102",
-                FullNameAr = "احمد جعيدي",
-                FullNameEn = "Ahmed Juaidi",
-                Location = "فرع A",
-                Department = "الصيانة"
-            },
-            new ApplicationUser
-            {
-                Id = "tech-003",
-                UserName = "anas.abuhamed",
-                Email = "anasabuhamed07@gmail.com",
-                EmailConfirmed = true,
-                PhoneNumber = "0590000103",
-                FullNameAr = "انس ابوحامد",
-                FullNameEn = "Anas Abuhamed",
-                Location = "فرع B",
-                Department = "الصيانة"
-            },
-            new ApplicationUser
-            {
-                Id = "tech-004",
-                UserName = "abed.hejazi",
-                Email = "hejaziabed4@gmail.com",
-                EmailConfirmed = true,
-                PhoneNumber = "0590000104",
-                FullNameAr = "عبد الرحمن حجازي",
-                FullNameEn = "Abed Alrahman Hejazi",
-                Location = "فرع B",
-                Department = "الصيانة"
-            },
-            new ApplicationUser
-            {
-                Id = "tech-005",
-                UserName = "mohammad.nour",
-                Email = "Mohammadnour20212003@gmail.com",
-                EmailConfirmed = true,
-                PhoneNumber = "0590000105",
-                FullNameAr = "محمد نور",
-                FullNameEn = "Mohammad Nour",
-                Location = "فرع A",
-                Department = "الصيانة"
-            },
-            new ApplicationUser
-            {
-                Id = "tech-006",
-                UserName = "anas.malhem",
-                Email = "anas.malhem@fixtroller.com",
-                EmailConfirmed = true,
-                PhoneNumber = "0590000106",
-                FullNameAr = "انس ملحم",
-                FullNameEn = "Anas Malhem",
-                Location = "فرع B",
-                Department = "الصيانة"
-            }
-        };
-
-                // Generate remaining technicians
-                for (int i = 7; i <= 20; i++)
-                {
-                    technicians.Add(new ApplicationUser
+                    notifications.Add(new Notification
                     {
-                        Id = $"tech-{i:000}",
-                        UserName = $"technician{i}",
-                        Email = $"technician{i}@fixtroller.com",
-                        EmailConfirmed = true,
-                        PhoneNumber = $"0590000{i + 100}",
-                        FullNameAr = $"فني {i}",
-                        FullNameEn = $"Technician {i}",
-                        Location = (i % 2 == 0) ? "فرع A" : "فرع B",
-                        Department = "الصيانة"
+                        UserId = r.OwnerUserId,
+                        MaintenanceRequestId = r.Id,
+                        Type = NotificationType.RequestStatusChanged,
+                        Severity = NotificationSeverity.Info,
+
+                        TitleKey = "NOTIF_REQUEST_CREATED_FOR_YOU_TITLE",
+                        BodyKey = "NOTIF_REQUEST_CREATED_FOR_YOU_BODY",
+                        TitleArgsJson = null,
+                        BodyArgsJson = JsonSerializer.Serialize(new object[] { r.Id }),
+
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email,
+                        CreatedAt = r.CreatedAt,
+                        CreatedAtUtc = r.CreatedAt,
+                        IsRead = false,
+                        EmailSent = false
                     });
                 }
 
-                foreach (var tech in technicians)
+                // 2) إشعار عام للمدير + الأدمن عن طلب جديد
+                if (managerIds.Count > 0 || adminIds.Count > 0)
                 {
-                    var t1 = await _userManager.CreateAsync(tech, technicianPassword);
-                    if (!t1.Succeeded) throw new Exception(string.Join(" | ", t1.Errors.Select(e => e.Description)));
-
-                    var tt1 = await _userManager.AddToRoleAsync(tech, "Technician");
-                    if (!tt1.Succeeded) throw new Exception(string.Join(" | ", tt1.Errors.Select(e => e.Description)));
-                }
-
-                // 100 Employees
-                var employees = new List<ApplicationUser>();
-                for (int i = 1; i <= 100; i++)
-                {
-                    employees.Add(new ApplicationUser
+                    foreach (var mid in managerIds)
                     {
-                        Id = $"emp-{i:000}",
-                        UserName = $"employee{i}",
-                        Email = $"employee{i}@fixtroller.com",
-                        EmailConfirmed = true,
-                        PhoneNumber = $"0590002{i:000}",
-                        FullNameAr = $"موظف {i}",
-                        FullNameEn = $"Employee {i}",
-                        Location = (i <= 50) ? "فرع A" : "فرع B",
-                        Department = "الموارد البشرية"
-                    });
+                        notifications.Add(new Notification
+                        {
+                            UserId = mid,
+                            MaintenanceRequestId = r.Id,
+                            Type = NotificationType.RequestStatusChanged,
+                            Severity = NotificationSeverity.Info,
+
+                            TitleKey = "NOTIF_REQUEST_CREATED_TITLE",
+                            BodyKey = "NOTIF_REQUEST_CREATED_BODY",
+                            TitleArgsJson = null,
+                            BodyArgsJson = JsonSerializer.Serialize(new object[] { r.Id }),
+
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email,
+                            CreatedAt = r.CreatedAt,
+                            CreatedAtUtc = r.CreatedAt,
+                            IsRead = false,
+                            EmailSent = false
+                        });
+                    }
+
+                    foreach (var aid in adminIds)
+                    {
+                        notifications.Add(new Notification
+                        {
+                            UserId = aid,
+                            MaintenanceRequestId = r.Id,
+                            Type = NotificationType.RequestStatusChanged,
+                            Severity = NotificationSeverity.Info,
+
+                            TitleKey = "NOTIF_REQUEST_CREATED_TITLE",
+                            BodyKey = "NOTIF_REQUEST_CREATED_BODY",
+                            TitleArgsJson = null,
+                            BodyArgsJson = JsonSerializer.Serialize(new object[] { r.Id }),
+
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email,
+                            CreatedAt = r.CreatedAt,
+                            CreatedAtUtc = r.CreatedAt,
+                            IsRead = false,
+                            EmailSent = false
+                        });
+                    }
                 }
 
-                foreach (var emp in employees)
+                // 3) إشعار إسناد للفنيين
+                if (r.Technicians is { Count: > 0 })
                 {
-                    var e1 = await _userManager.CreateAsync(emp, employeePassword);
-                    if (!e1.Succeeded) throw new Exception(string.Join(" | ", e1.Errors.Select(e => e.Description)));
+                    var techLinks = r.Technicians
+                        .Where(t => !string.IsNullOrWhiteSpace(t.TechnicianUserId))
+                        .Select(t => new { t.TechnicianUserId, t.AssignedAtUtc })
+                        .ToList();
 
-                    var ee1 = await _userManager.AddToRoleAsync(emp, "Employee");
-                    if (!ee1.Succeeded) throw new Exception(string.Join(" | ", ee1.Errors.Select(e => e.Description)));
+                    foreach (var t in techLinks)
+                    {
+                        var assignedAt = t.AssignedAtUtc == default
+                            ? r.CreatedAt.AddHours(1)
+                            : t.AssignedAtUtc;
+
+                        notifications.Add(new Notification
+                        {
+                            UserId = t.TechnicianUserId!,
+                            MaintenanceRequestId = r.Id,
+                            Type = NotificationType.RequestAssigned,
+                            Severity = NotificationSeverity.Info,
+
+                            TitleKey = "NOTIF_ASSIGNED_TITLE",
+                            BodyKey = "NOTIF_ASSIGNED_BODY",
+                            TitleArgsJson = null,
+                            BodyArgsJson = JsonSerializer.Serialize(new object[] { r.Id }),
+
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email,
+                            CreatedAt = assignedAt,
+                            CreatedAtUtc = assignedAt,
+                            IsRead = false,
+                            EmailSent = false
+                        });
+                    }
                 }
 
+                // 4) إشعارات تغيير الحالة للطلبات المغلقة
+                if (r.CaseType == CaseType.Completed ||
+                    r.CaseType == CaseType.Processed ||
+                    r.CaseType == CaseType.Cancelled)
+                {
+                    var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+                    if (!string.IsNullOrWhiteSpace(r.OwnerUserId))
+                        recipients.Add(r.OwnerUserId);
+
+                    var activeTechIds = r.Technicians
+                        .Where(x => !string.IsNullOrWhiteSpace(x.TechnicianUserId)
+                                    && x.UnassignedAtUtc == null)
+                        .Select(x => x.TechnicianUserId!)
+                        .ToList();
+
+                    foreach (var tid in activeTechIds)
+                        recipients.Add(tid);
+
+                    foreach (var mid in managerIds)
+                        recipients.Add(mid);
+
+                    foreach (var aid in adminIds)
+                        recipients.Add(aid);
+
+                    if (recipients.Count > 0)
+                    {
+                        string titleKey;
+                        string bodyKey;
+                        object[] bodyArgs;
+                        var type = r.CaseType == CaseType.Completed
+                            ? NotificationType.RequestCompleted
+                            : NotificationType.RequestStatusChanged;
+
+                        var severity = r.CaseType == CaseType.Completed
+                            ? NotificationSeverity.Success
+                            : NotificationSeverity.Info;
+
+                        if (r.CaseType == CaseType.Completed)
+                        {
+                            titleKey = "NOTIF_REQUEST_COMPLETED_TITLE";
+                            bodyKey = "NOTIF_REQUEST_COMPLETED_BODY";
+                            bodyArgs = new object[] { r.Id };
+                        }
+                        else
+                        {
+                            titleKey = "NOTIF_REQUEST_STATUS_CHANGED_TITLE";
+                            bodyKey = "NOTIF_REQUEST_STATUS_CHANGED_BODY";
+                            bodyArgs = new object[] { r.Id, r.CaseType.ToString() };
+                        }
+
+                        var when = r.ClosedAtUtc ?? r.UpdatedAt ?? r.CreatedAt.AddHours(2);
+
+                        foreach (var uid in recipients)
+                        {
+                            notifications.Add(new Notification
+                            {
+                                UserId = uid,
+                                MaintenanceRequestId = r.Id,
+                                Type = type,
+                                Severity = severity,
+
+                                TitleKey = titleKey,
+                                BodyKey = bodyKey,
+                                TitleArgsJson = null,
+                                BodyArgsJson = JsonSerializer.Serialize(bodyArgs),
+
+                                Channels = NotificationChannel.InApp | NotificationChannel.Email,
+                                CreatedAt = when,
+                                CreatedAtUtc = when,
+                                IsRead = false,
+                                EmailSent = false
+                            });
+                        }
+                    }
+                }
+
+                // 5) إشعارات "إضافة ملاحظة"
+                var firstNote = r.Notes.FirstOrDefault();
+                if (firstNote != null)
+                {
+                    var recipients = new HashSet<string>(StringComparer.Ordinal);
+                    var authorUserId = firstNote.CreatedByUserId;
+
+                    var trimmed = (firstNote.Text ?? string.Empty).Trim();
+                    if (trimmed.Length > 120)
+                        trimmed = trimmed.Substring(0, 120) + "...";
+
+                    if (!string.IsNullOrWhiteSpace(r.OwnerUserId) &&
+                        !string.Equals(r.OwnerUserId, authorUserId, StringComparison.Ordinal))
+                    {
+                        recipients.Add(r.OwnerUserId);
+                    }
+
+                    var techIdsAll = r.Technicians
+                        .Where(t => !string.IsNullOrWhiteSpace(t.TechnicianUserId))
+                        .Select(t => t.TechnicianUserId!)
+                        .Distinct()
+                        .ToList();
+
+                    foreach (var tid in techIdsAll)
+                    {
+                        if (!string.Equals(tid, authorUserId, StringComparison.Ordinal))
+                            recipients.Add(tid);
+                    }
+
+                    foreach (var mid in managerIds)
+                    {
+                        if (!string.Equals(mid, authorUserId, StringComparison.Ordinal))
+                            recipients.Add(mid);
+                    }
+
+                    foreach (var aid in adminIds)
+                    {
+                        if (!string.Equals(aid, authorUserId, StringComparison.Ordinal))
+                            recipients.Add(aid);
+                    }
+
+                    if (recipients.Count > 0)
+                    {
+                        var noteTime = firstNote.CreatedAt;
+                        if (noteTime == default)
+                            noteTime = r.UpdatedAt ?? r.CreatedAt.AddHours(2);
+
+                        foreach (var uid in recipients)
+                        {
+                            notifications.Add(new Notification
+                            {
+                                UserId = uid,
+                                MaintenanceRequestId = r.Id,
+                                Type = NotificationType.RequestStatusChanged,
+                                Severity = NotificationSeverity.Info,
+
+                                TitleKey = "NOTIF_NOTE_ADDED_TITLE",
+                                BodyKey = "NOTIF_NOTE_ADDED_BODY",
+                                TitleArgsJson = null,
+                                BodyArgsJson = JsonSerializer.Serialize(new object[] { r.Id, trimmed }),
+
+                                Channels = NotificationChannel.InApp | NotificationChannel.Email,
+                                CreatedAt = noteTime,
+                                CreatedAtUtc = noteTime,
+                                IsRead = false,
+                                EmailSent = false
+                            });
+                        }
+                    }
+                }
             }
 
+            if (notifications.Count > 0)
+            {
+                await _context.Notifications.AddRangeAsync(notifications);
+                await _context.SaveChangesAsync();
+            }
         }
-
-
     }
-
 }

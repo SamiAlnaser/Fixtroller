@@ -33,6 +33,7 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         public decimal? Latitude { get; set; }
         public decimal? Longitude { get; set; }
         public string OwnerUserId { get; set; } = default!;
+        public string? OwnerName { get; set; }
         public string CreatedByUserId { get; set; } = default!;
         public bool IsCreatedByOwner { get; set; }
         public DateTime CreatedAt { get; set; }
@@ -48,11 +49,10 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public int? CurrentTechnicianActiveSeconds { get; set; }
 
-
-        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
-        public string? OwnerName { get; set; }
-
         [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
         public string? OwnerDepartment { get; set; }
+
+        [JsonIgnore(Condition = JsonIgnoreCondition.WhenWritingNull)]
+        public string? OwnerProfileImageUrl { get; set; }
     }
 }

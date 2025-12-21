@@ -189,7 +189,9 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
-            var role = User.FindFirst("role")?.Value ?? ""; // قد يكون Empty, service يتعامل بمنطق المالك
+            var role = User.FindFirst("role")?.Value
+                       ?? User.FindFirst(ClaimTypes.Role)?.Value
+                       ?? "";
 
             var (res, key) = await _maintenanceRequestService.ChangeCaseAsync(id, dto, userId, role, preferOwnerPath: true, language, ct);
 

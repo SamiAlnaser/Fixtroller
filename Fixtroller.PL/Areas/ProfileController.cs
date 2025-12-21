@@ -5,7 +5,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Localization;
 using System.Security.Claims;
 
-namespace Fixtroller.PL.Controllers
+namespace Fixtroller.PL.Areas
 {
     [Route("Api/[controller]")]
     [ApiController]
@@ -21,7 +21,7 @@ namespace Fixtroller.PL.Controllers
                 _localizer = localizer;
             }
 
-            // POST: api/Profile/Image
+            // POST: Api/Profile/Image
             [HttpPost("Image")]
             public async Task<IActionResult> UploadImage([FromForm] IFormFile file, CancellationToken ct)
             {

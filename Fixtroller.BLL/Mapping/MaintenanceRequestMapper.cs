@@ -85,6 +85,8 @@ namespace Fixtroller.BLL.Mapping
                  .Select(t => t.Name)
                  .FirstOrDefault();
 
+            var owner = e.OwnerUser;
+
             var dto = new MaintenanceRequestResponseDTO
             {
                 Id = e.Id,
@@ -100,6 +102,7 @@ namespace Fixtroller.BLL.Mapping
                 Latitude = e.Latitude,
                 Longitude = e.Longitude,
                 OwnerUserId = e.OwnerUserId,
+                OwnerName = owner != null ? owner.GetDisplayName(language) : null,
                 CreatedByUserId = e.CreatedByUserId,
                 IsCreatedByOwner = string.Equals(e.OwnerUserId, e.CreatedByUserId, StringComparison.Ordinal),
 
@@ -108,18 +111,16 @@ namespace Fixtroller.BLL.Mapping
                 ClosedAtUtc = e.ClosedAtUtc
             };
 
-            var owner = e.OwnerUser;
-            if (owner != null)
+            if (owner != null && includeOwnerDetails)
             {
-                dto.OwnerUserId = owner.Id;
-                dto.OwnerName = owner.GetDisplayName(language);
+                dto.OwnerDepartment = owner.Department;
 
-                // تفاصيل زيادة بس للأدمن/المانجر
-                if (includeOwnerDetails)
+                if (!string.IsNullOrWhiteSpace(owner.ProfileImagePath))
                 {
-                    dto.OwnerDepartment = owner.Department;
+                    dto.OwnerProfileImageUrl = urlBuilder(owner.ProfileImagePath);
                 }
             }
+
 
             if (e.Images is not null && e.Images.Count > 0)
             {
