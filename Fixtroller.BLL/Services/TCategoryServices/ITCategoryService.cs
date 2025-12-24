@@ -19,7 +19,9 @@ namespace Fixtroller.BLL.Services.TCategoryServices
     {
         Task<IEnumerable<TCategoryUserResponseDTO>> GetAllForUserAsync(
             string language,
+            bool? isActive,
             CancellationToken ct = default);
+
 
         Task<IEnumerable<TCategoryUserResponseDTO>> GetActiveForUserAsync(
             string language,

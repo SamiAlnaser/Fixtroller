@@ -6,6 +6,7 @@ namespace Fixtroller.DAL.Repositories.TCategoryRepositories
     public interface ITCategoryRepository : IGenericRepository<TechnicianCategory>
     {
         Task<IEnumerable<TechnicianCategory>> GetAllForUserAsync(
+            bool? isActive = null,
             bool asTracking = false,
             CancellationToken ct = default);
 

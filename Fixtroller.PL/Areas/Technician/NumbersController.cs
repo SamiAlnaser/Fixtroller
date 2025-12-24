@@ -20,12 +20,19 @@ namespace Fixtroller.PL.Areas.Technician
         }
 
 
-
         [HttpGet("Technicians/Me/Numbers")]
         public async Task<IActionResult> GetMyNumbers(CancellationToken ct)
         {
             var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
             var dto = await _metricsService.GetTechnicianDashboardAsync(userId, ct);
+            return Ok(dto);
+        }
+
+        [HttpGet("TechniciansAsEmployee/Me/Numbers")]
+        public async Task<IActionResult> GetMyNumbersAsEmployee(CancellationToken ct)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+            var dto = await _metricsService.GetEmployeeDashboardAsync(userId, ct);
             return Ok(dto);
         }
 

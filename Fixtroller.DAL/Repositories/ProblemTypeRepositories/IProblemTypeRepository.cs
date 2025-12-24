@@ -7,8 +7,10 @@ namespace Fixtroller.DAL.Repositories.ProblemTypeRepositories
     public interface IProblemTypeRepository : IGenericRepository<ProblemType>
     {
         Task<IEnumerable<ProblemType>> GetAllForUserAsync(
+            bool? isActive = null,
             bool asTracking = false,
             CancellationToken ct = default);
+
 
         Task<IEnumerable<ProblemType>> GetActiveForUserAsync(
             bool asTracking = false,

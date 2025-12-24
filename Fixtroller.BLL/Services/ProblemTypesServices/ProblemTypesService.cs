@@ -29,19 +29,24 @@ namespace Fixtroller.BLL.Services.ProblemTypesServices
 
         public async Task<IEnumerable<ProblemTypeUserResponseDTO>> GetAllForUserAsync(
             string language,
+            bool? isActive,
             CancellationToken ct = default)
         {
-            var list = await _repository.GetAllForUserAsync(asTracking: false, ct);
+            var list = await _repository.GetAllForUserAsync(
+                isActive: isActive,
+                asTracking: false,
+                ct: ct);
 
             return list.Select(e => new ProblemTypeUserResponseDTO
             {
                 Id = e.Id,
                 Name = e.Translations
-                         .FirstOrDefault(t => t.Language == language)?.Name
-                      ?? e.Translations
-                         .FirstOrDefault(t => t.Language == "ar")?.Name
+                          .FirstOrDefault(t => t.Language == language)?.Name
+                       ?? e.Translations
+                          .FirstOrDefault(t => t.Language == "ar")?.Name
             });
         }
+
 
         public async Task<IEnumerable<ProblemTypeUserResponseDTO>> GetActiveForUserAsync(
             string language,

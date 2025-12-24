@@ -35,16 +35,27 @@ namespace Fixtroller.DAL.Repositories.ProblemTypeRepositories
         }
 
         public async Task<IEnumerable<ProblemType>> GetAllForUserAsync(
+            bool? isActive = null,
             bool asTracking = false,
             CancellationToken ct = default)
         {
             IQueryable<ProblemType> q = _dbcontext.PTypes
                 .Include(p => p.Translations);
 
-            if (!asTracking) q = q.AsNoTracking();
+            if (!asTracking)
+                q = q.AsNoTracking();
+
+            if (isActive.HasValue)
+            {
+                // true → Active
+                // false → In_active
+                var wantedStatus = isActive.Value ? Status.Active : Status.In_active;
+                q = q.Where(p => p.Status == wantedStatus);
+            }
 
             return await q.ToListAsync(ct);
         }
+
 
         public Task<ProblemType?> GetByIdForUserAsync(
             int id,

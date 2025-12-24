@@ -16,6 +16,7 @@ namespace Fixtroller.BLL.Services.ProblemTypesServices
     {
         Task<IEnumerable<ProblemTypeUserResponseDTO>> GetAllForUserAsync(
             string language,
+            bool? isActive,
             CancellationToken ct = default);
 
         Task<IEnumerable<ProblemTypeUserResponseDTO>> GetActiveForUserAsync(

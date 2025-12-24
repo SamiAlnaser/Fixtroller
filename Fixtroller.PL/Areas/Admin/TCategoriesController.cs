@@ -24,12 +24,14 @@ namespace Fixtroller.PL.Areas.Admin
 
         // GET: api/Tcategories
         [HttpGet("")]
-        public async Task<IActionResult> GetAll(CancellationToken ct)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] bool? isActive,
+            CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var result = await _TcategoryService.GetAllForUserAsync(language, ct);
+            var result = await _TcategoryService.GetAllForUserAsync(language, isActive, ct);
             return Ok(result);
         }
 

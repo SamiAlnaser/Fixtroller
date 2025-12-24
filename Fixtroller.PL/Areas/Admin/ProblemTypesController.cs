@@ -24,14 +24,19 @@ namespace Fixtroller.PL.Areas.Admin
             _localizer = localizer;
         }
 
+
         // GET: api/ProblemsTypes
         [HttpGet("")]
-        public async Task<IActionResult> GetAll(CancellationToken ct)
+        public async Task<IActionResult> GetAll(
+            [FromQuery] bool? isActive,   // فلتر من الرابط
+            CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var result = await _problemTypesService.GetAllForUserAsync(language, ct);
+            var result = await _problemTypesService
+                .GetAllForUserAsync(language, isActive, ct);
+
             return Ok(result);
         }
 

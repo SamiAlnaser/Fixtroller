@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Identity.Client;
+using System.Security.Claims;
 
 namespace Fixtroller.PL.Areas.MaintenanceManager
 {
@@ -45,5 +46,14 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var dto = await _metricsService.GetManagerChartsAsync(language, fromUtc, toUtc, ct);
             return Ok(dto);
         }
+
+        //[HttpGet("ManagerAsEmployee/Me/Numbers")]
+        //public async Task<IActionResult> GetMyNumbersAsEmployee(CancellationToken ct)
+        //{
+        //    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+        //    var dto = await _metricsService.GetEmployeeDashboardAsync(userId, ct);
+        //    return Ok(dto);
+        //}
+
     }
 }

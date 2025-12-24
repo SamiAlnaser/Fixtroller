@@ -45,9 +45,13 @@ namespace Fixtroller.BLL.Services.TCategoryServices
 
         public async Task<IEnumerable<TCategoryUserResponseDTO>> GetAllForUserAsync(
             string language,
+            bool? isActive,
             CancellationToken ct = default)
         {
-            var list = await _repository.GetAllForUserAsync(asTracking: false, ct);
+            var list = await _repository.GetAllForUserAsync(
+                isActive: isActive,
+                asTracking: false,
+                ct: ct);
 
             return list.Select(e => new TCategoryUserResponseDTO
             {
@@ -58,6 +62,7 @@ namespace Fixtroller.BLL.Services.TCategoryServices
                          .FirstOrDefault(t => t.Language == "ar")?.Name
             });
         }
+
 
         public async Task<TCategoryUserResponseDTO?> GetByIdForUserAsync(
             int id,

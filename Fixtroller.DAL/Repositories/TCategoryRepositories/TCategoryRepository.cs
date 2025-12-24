@@ -19,8 +19,8 @@ namespace Fixtroller.DAL.Repositories.TCategoryRepositories
         {
             _dbcontext = context;
         }
-
         public async Task<IEnumerable<TechnicianCategory>> GetAllForUserAsync(
+            bool? isActive = null,
             bool asTracking = false,
             CancellationToken ct = default)
         {
@@ -29,6 +29,12 @@ namespace Fixtroller.DAL.Repositories.TCategoryRepositories
 
             if (!asTracking)
                 q = q.AsNoTracking();
+
+            if (isActive.HasValue)
+            {
+                var wantedStatus = isActive.Value ? Status.Active : Status.In_active;
+                q = q.Where(t => t.Status == wantedStatus);
+            }
 
             return await q.ToListAsync(ct);
         }
