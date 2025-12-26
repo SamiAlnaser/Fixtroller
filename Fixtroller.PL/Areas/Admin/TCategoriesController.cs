@@ -22,7 +22,7 @@ namespace Fixtroller.PL.Areas.Admin
             _localizer = localizer;
         }
 
-        // GET: api/Tcategories
+        // GET: Api/Admin/Tcategories
         [HttpGet("")]
         public async Task<IActionResult> GetAll(
             [FromQuery] bool? isActive,
@@ -35,7 +35,7 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(result);
         }
 
-        // GET: api/Tcategories/active
+        // GET: Api/Admin/Tcategories/active
         [HttpGet("Active")]
         public async Task<IActionResult> GetActiveTCategories(CancellationToken ct)
         {
@@ -47,19 +47,18 @@ namespace Fixtroller.PL.Areas.Admin
         }
 
         // GET: api/Tcategories/{id}
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
         {
-            var language = Request.Headers["Accept-Language"].ToString();
-            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var result = await _TcategoryService.GetByIdForUserAsync(id, ct);
 
-            var result = await _TcategoryService.GetByIdForUserAsync(id, language, ct);
-            return result == null
-                ? NotFound(new { message = _localizer["NotFound"].Value })
-                : Ok(result);
+            if (result is null)
+                return NotFound(new { message = _localizer["NotFound"].Value });
+
+            return Ok(result);
         }
 
-        // POST: api/Tcategories
+        // POST: Api/Admin/Tcategories
         [HttpPost]
         public async Task<IActionResult> Add([FromBody] TCategoryRequestDTO dto, CancellationToken ct)
         {
@@ -70,7 +69,7 @@ namespace Fixtroller.PL.Areas.Admin
             return CreatedAtAction(nameof(GetById), new { id }, new { message = _localizer["Created"].Value, id });
         }
 
-        // PUT: api/Tcategories/{id}
+        // PUT: Api/Admin/Tcategories/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] TCategoryRequestDTO dto, CancellationToken ct)
         {
@@ -83,7 +82,7 @@ namespace Fixtroller.PL.Areas.Admin
                 : Ok(new { message = _localizer["Updated"].Value });
         }
 
-        // DELETE: api/Tcategories/{id}
+        // DELETE: Api/Admin/Tcategories/{id}
         [HttpDelete("{id}")]
         public async Task<IActionResult> Delete([FromRoute] int id, CancellationToken ct)
         {
@@ -93,7 +92,7 @@ namespace Fixtroller.PL.Areas.Admin
                 : Ok(new { message = _localizer["Deleted"].Value });
         }
 
-        // PATCH: api/Tcategories/{id}/toggle-status
+        // PATCH: Api/Admin/Tcategories/{id}/toggle-status
         [HttpPatch("{id}/Toggle-Status")]
         public async Task<IActionResult> ToggleStatus([FromRoute] int id, CancellationToken ct)
         {

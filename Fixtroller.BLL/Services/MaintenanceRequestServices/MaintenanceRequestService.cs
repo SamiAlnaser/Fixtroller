@@ -1811,7 +1811,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
         private static bool IsValidTransition(CaseType current, CaseType target)
         {
-            // نفس الحالة أصلاً مغطاة بفحص Case_NoChange فوق
+
             if (current == target)
                 return true;
 

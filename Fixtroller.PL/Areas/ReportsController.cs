@@ -157,7 +157,7 @@ namespace Fixtroller.PL.Areas
                 });
             }
         }
-        // تقرير التصنيفات حسب مدة الإغلاق ونوع المشكلة
+
         // GET: api/MaintenanceManager/Reports/duration-problem-types?from=2025-01-01&to=2025-01-31
         // GET: api/MaintenanceManager/Reports/duration-problem-types?from=2025-01-01&to=2025-01-31&format=pdf
         [Authorize(Roles = "Admin,MaintenanceManager")]

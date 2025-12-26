@@ -27,9 +27,8 @@ namespace Fixtroller.BLL.Services.TCategoryServices
             string language,
             CancellationToken ct = default);
 
-        Task<TCategoryUserResponseDTO?> GetByIdForUserAsync(
+        Task<TCategoryDetailsResponseDTO?> GetByIdForUserAsync(
             int id,
-            string language,
             CancellationToken ct = default);
     }
 }

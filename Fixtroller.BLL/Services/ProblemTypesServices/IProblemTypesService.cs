@@ -23,9 +23,9 @@ namespace Fixtroller.BLL.Services.ProblemTypesServices
             string language,
             CancellationToken ct = default);
 
-        Task<ProblemTypeUserResponseDTO?> GetByIdForUserAsync(
+        Task<ProblemTypeDetailsResponseDTO?> GetByIdForUserAsync(
             int id,
-            string language,
-            CancellationToken ct = default);
+            CancellationToken ct = default
+        );
     }
 }

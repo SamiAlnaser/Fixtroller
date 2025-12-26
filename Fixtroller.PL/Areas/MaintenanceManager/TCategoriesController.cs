@@ -45,17 +45,16 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(new { message = _localizer["Success"].Value, data = result });
         }
 
-        // GET: api/Tcategories/{id}
-        [HttpGet("{id}")]
+        // GET: api/MaintenanceManager/Tcategories/{id}
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
         {
-            var language = Request.Headers["Accept-Language"].ToString();
-            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var result = await _TcategoryService.GetByIdForUserAsync(id, ct);
 
-            var result = await _TcategoryService.GetByIdForUserAsync(id, language, ct);
-            return result == null
-                ? NotFound(new { message = _localizer["NotFound"].Value })
-                : Ok(result);
+            if (result is null)
+                return NotFound(new { message = _localizer["NotFound"].Value });
+
+            return Ok(result);
         }
 
         // POST: api/Tcategories

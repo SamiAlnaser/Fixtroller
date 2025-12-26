@@ -50,16 +50,15 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         // GET: api/ProblemsTypes/{id}
-        [HttpGet("{id}")]
+        [HttpGet("{id:int}")]
         public async Task<IActionResult> GetById([FromRoute] int id, CancellationToken ct)
         {
-            var language = Request.Headers["Accept-Language"].ToString();
-            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var result = await _problemTypesService.GetByIdForUserAsync(id, ct);
 
-            var result = await _problemTypesService.GetByIdForUserAsync(id, language, ct);
-            return result == null
-                ? NotFound(new { message = _localizer["NotFound"].Value })
-                : Ok(result);
+            if (result is null)
+                return NotFound(new { message = _localizer["NotFound"].Value });
+
+            return Ok(result);
         }
 
         // POST: api/ProblemsTypes

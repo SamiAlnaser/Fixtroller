@@ -159,19 +159,19 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
         }
 
-        [HttpGet("By-Category/{categoryId:int}")]
-        public async Task<IActionResult> GetByCategory(
-            int categoryId,
-           [FromQuery] string? search,
-            int pageNumber = 1,
-            int pageSize = 10,
-            CancellationToken ct = default)
-        {
-            var language = Request.Headers["Accept-Language"].ToString();
-            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+        //[HttpGet("By-Category/{categoryId:int}")]
+        //public async Task<IActionResult> GetByCategory(
+        //    int categoryId,
+        //   [FromQuery] string? search,
+        //    int pageNumber = 1,
+        //    int pageSize = 10,
+        //    CancellationToken ct = default)
+        //{
+        //    var language = Request.Headers["Accept-Language"].ToString();
+        //    if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var result = await _TechnicianService.GetByCategoryAsync(categoryId,search,language,pageNumber,pageSize,ct);
-            return Ok(result);
-        }
+        //    var result = await _TechnicianService.GetByCategoryAsync(categoryId,search,language,pageNumber,pageSize,ct);
+        //    return Ok(result);
+        //}
     }
 }
