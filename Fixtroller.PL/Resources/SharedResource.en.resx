@@ -861,4 +861,19 @@
   <data name="Technician_IsOnVacation" xml:space="preserve">
     <value>Cannot assign the request to this technician because they are currently on vacation</value>
   </data>
+  <data name="Technician_NotFoundOrNotInRole" xml:space="preserve">
+    <value>The specified user does not exist or is not a technician</value>
+  </data>
+  <data name="Technician_AlreadyInCategory" xml:space="preserve">
+    <value>This technician is already assigned to this category</value>
+  </data>
+  <data name="TechnicianCategory_Update_Failed" xml:space="preserve">
+    <value>Failed to update the technician's category</value>
+  </data>
+  <data name="TechnicianCategory_Updated" xml:space="preserve">
+    <value>Technician category updated successfully</value>
+  </data>
+  <data name="CategoryId_Required_For_ExcludeCurrentCategory" xml:space="preserve">
+    <value>CategoryId_Required_For_ExcludeCurrentCategory</value>
+  </data>
 </root>

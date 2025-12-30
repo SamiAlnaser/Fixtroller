@@ -46,19 +46,31 @@ namespace Fixtroller.BLL.Services.TechnicianServices
 
 
         public async Task<PagedResultDTO<TechnicianListItemDTO>> GetWithMetricsAsync(
-      string language,
-      int? technicianCategoryId,
-      string? search,
-      int pageNumber = 1,
-      int pageSize = 10,
-      CancellationToken ct = default)
+        string language,
+        int? technicianCategoryId,
+        string? search,
+        int pageNumber = 1,
+        int pageSize = 10,
+        bool excludeCurrentCategory = false,
+        CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
 
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            var techs = await _repository.GetAsync(technicianCategoryId, search, ct);
+
+            int? effectiveCategoryId = excludeCurrentCategory ? null : technicianCategoryId;
+
+            var techs = await _repository.GetAsync(effectiveCategoryId, search, ct);
+
+            if (excludeCurrentCategory)
+            {
+                techs = techs
+                    .Where(t => !t.TechnicianCategoryId.HasValue)
+                    .ToList();
+            }
+
             var techIds = techs.Select(t => t.Id).ToList();
 
             if (techIds.Count == 0)
@@ -67,10 +79,13 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                 {
                     TotalPages = 0,
                     CurrentPage = pageNumber,
+                    PageSize = pageSize, 
+                    TotalCount = 0,
                     Data = new List<TechnicianListItemDTO>()
                 };
             }
 
+            // إحصائيات الطلبات لكل فني
             var reqStatsTuples = await _metricsrepo.GetRequestStatsPerTechnicianAsync(techIds, ct);
             var avgTuples = await _metricsrepo.GetAvgCompletionMinutesPerTechnicianAsync(techIds, ct);
 
@@ -98,21 +113,22 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                 return new TechnicianListItemDTO
                 {
                     TechnicianUserId = t.Id,
-                    TechnicianName = t.GetDisplayName(language), 
+                    TechnicianName = t.GetDisplayName(language),
 
                     TechnicianCategory = catName,
                     ProfileImageUrl = string.IsNullOrWhiteSpace(t.ProfileImagePath)
-            ? null
-            : _fileService.GetPublicUrl(t.ProfileImagePath),
+                        ? null
+                        : _fileService.GetPublicUrl(t.ProfileImagePath),
+
                     AssignedCount = assigned,
                     CompletedCount = completed,
                     AvgCompletionMinutes = avg
                 };
             })
-    .OrderBy(x => x.TechnicianName)
-    .ToList();
+            .OrderBy(x => x.TechnicianName)
+            .ToList();
 
-            // 👇 هنا فقط الباجينيشن
+            // 👇 الباجينيشن
             var totalCount = list.Count;
             var totalPages = totalCount == 0
                 ? 0
@@ -127,26 +143,47 @@ namespace Fixtroller.BLL.Services.TechnicianServices
             {
                 TotalPages = totalPages,
                 CurrentPage = pageNumber,
+                PageSize = pageSize,   
+                TotalCount = totalCount,  
                 Data = pageData
             };
         }
 
 
 
-        public async Task<bool> UpdateTechnicianCategoryAsync(
+        public async Task<(bool ok, string messageKey)> UpdateTechnicianCategoryAsync(
             UpdateTechnicianCategoryRequestDTO dto,
             CancellationToken ct = default)
         {
-            // تأكد أنه فعلاً Technician
+            // 1) تأكد أنه فعلاً Technician
             var isTech = await _repository.IsInRoleAsync(dto.TechnicianUserId, "Technician", ct);
-            if (!isTech) return false;
+            if (!isTech)
+                return (false, "Technician_NotFoundOrNotInRole");
 
-            // عدّل فقط… الحفظ عبر UoW
-            var ok = await _repository.UpdateCategoryAsync(dto.TechnicianUserId, dto.TechnicianCategoryId, ct);
-            if (!ok) return false;
+            // 2) جيب المستخدم وتأكد من الكتجوري الحالية
+            var user = await _repository.GetByIdAsync(dto.TechnicianUserId, ct);
+            if (user is null)
+                return (false, "Technician_NotFound");
+
+            // 3) لو هو أصلاً مربوط بنفس الكتجوري → لا تعدّل ورجع رسالة مناسبة
+            if (user.TechnicianCategoryId.HasValue &&
+                user.TechnicianCategoryId.Value == dto.TechnicianCategoryId)
+            {
+                return (false, "Technician_AlreadyInCategory");
+            }
+
+            // 4) نفّذ التحديث الفعلي
+            var ok = await _repository.UpdateCategoryAsync(
+                dto.TechnicianUserId,
+                dto.TechnicianCategoryId,
+                ct);
+
+            if (!ok)
+                return (false, "TechnicianCategory_Update_Failed");
 
             await _uow.SaveAndCommitAsync(ct);
-            return true;
+
+            return (true, "TechnicianCategory_Updated");
         }
 
         public async Task<bool> ClearTechnicianCategoryAsync(

@@ -41,7 +41,7 @@ namespace Fixtroller.BLL.Services.NumbersServices
 
             return new ManagerDashboardNumbersDTO
             {
-                TotalRequests = total,
+                Total= total,
                 Processing = proc,
                 Completed = done,
                 Submitted = newReqs,

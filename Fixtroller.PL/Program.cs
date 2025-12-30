@@ -103,7 +103,18 @@ namespace Fixtroller.PL
             QuestPDF.Settings.License = LicenseType.Community;
 
 
-            builder.Services.AddAuthentication(options =>
+                var jwtSecret = builder.Configuration["jwtOptions:SecretKey"];
+
+                if (string.IsNullOrWhiteSpace(jwtSecret))
+                {
+                    // لوج مفيد عشان لو نسيته في السيرفر
+                    Log.Fatal("Configuration error: jwtOptions:SecretKey is missing or empty");
+                    throw new InvalidOperationException("Missing configuration value: jwtOptions:SecretKey");
+                }
+
+                var signingKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(jwtSecret));
+
+                builder.Services.AddAuthentication(options =>
             {
                 options.DefaultAuthenticateScheme = JwtBearerDefaults.AuthenticationScheme;
                 options.DefaultChallengeScheme = JwtBearerDefaults.AuthenticationScheme;
@@ -116,8 +127,7 @@ namespace Fixtroller.PL
                      ValidateAudience = false,
                      ValidateLifetime = true,
                      ValidateIssuerSigningKey = true,
-                     IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(builder.Configuration["jwtOptions:SecretKey"]!)
-                     ),
+                     IssuerSigningKey = signingKey,
 
                       RoleClaimType = ClaimTypes.Role,
                       NameClaimType = ClaimTypes.NameIdentifier

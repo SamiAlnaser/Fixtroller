@@ -40,10 +40,11 @@ namespace Fixtroller.BLL.Services.TechnicianServices
             string? search,
             int pageNumber = 1,
             int pageSize = 10,
+            bool excludeCurrentCategory = false,
             CancellationToken ct = default);
 
 
-        Task<bool> UpdateTechnicianCategoryAsync(
+        Task<(bool ok, string messageKey)> UpdateTechnicianCategoryAsync(
             UpdateTechnicianCategoryRequestDTO dto,
             CancellationToken ct = default);
         Task<bool> ClearTechnicianCategoryAsync(

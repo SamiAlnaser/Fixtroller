@@ -35,5 +35,26 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(dto);
         }
 
+
+        [HttpGet("Requests/Overview")]
+        public async Task<IActionResult> RequestsOverview(
+            [FromQuery] DateTimeOffset? fromUtc = null,
+            [FromQuery] DateTimeOffset? toUtc = null,
+            CancellationToken ct = default)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+            var dto = await _metricsService.GetManagerChartsAsync(language, fromUtc, toUtc, ct);
+            return Ok(dto);
+        }
+
+        [HttpGet("AdminAsEmployee/Me/Numbers")]
+        public async Task<IActionResult> GetMyNumbersAsEmployee(CancellationToken ct)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+            var dto = await _metricsService.GetEmployeeDashboardAsync(userId, ct);
+            return Ok(dto);
+        }
+
     }
 }

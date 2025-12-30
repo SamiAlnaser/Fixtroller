@@ -861,4 +861,19 @@
   <data name="Technician_IsOnVacation" xml:space="preserve">
     <value>لا يمكن إسناد الطلب إلى هذا الفني لأنه في إجازة حالياً</value>
   </data>
+  <data name="Technician_NotFoundOrNotInRole" xml:space="preserve">
+    <value>المستخدم المحدد غير موجود أو ليس من ضمن الفنيين.</value>
+  </data>
+  <data name="Technician_AlreadyInCategory" xml:space="preserve">
+    <value>هذا الفني مرتبط بالفعل بهذا القسم.</value>
+  </data>
+  <data name="TechnicianCategory_Update_Failed" xml:space="preserve">
+    <value>فشل في تحديث قسم الفني.</value>
+  </data>
+  <data name="TechnicianCategory_Updated" xml:space="preserve">
+    <value>تم تحديث قسم الفني بنجاح.</value>
+  </data>
+  <data name="CategoryId_Required_For_ExcludeCurrentCategory" xml:space="preserve">
+    <value>يجب تحديد القسم عند استثناء الفنيين المرتبطين به.</value>
+  </data>
 </root>

@@ -34,6 +34,7 @@ namespace Fixtroller.PL.Areas.Admin
         public async Task<IActionResult> List(
                [FromQuery] int? categoryId,
                [FromQuery] string? search,
+               [FromQuery] bool excludeCurrentCategory = false,
                int pageNumber = 1,
                int pageSize = 10,
                CancellationToken ct = default)
@@ -41,9 +42,19 @@ namespace Fixtroller.PL.Areas.Admin
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var data = await _TechnicianService.GetWithMetricsAsync(language, categoryId, search, pageNumber, pageSize, ct);
+
+            var data = await _TechnicianService.GetWithMetricsAsync(
+                language,
+                categoryId,
+                search,
+                pageNumber,
+                pageSize,
+                excludeCurrentCategory,
+                ct);
+
             return Ok(data);
         }
+
         [HttpGet("{techId}/Assigned")]
         public async Task<IActionResult> GetAssignedForTechnician(
             string techId,
@@ -146,10 +157,17 @@ namespace Fixtroller.PL.Areas.Admin
         }
 
         [HttpPatch("Category")]
-        public async Task<IActionResult> UpdateCategory([FromBody] UpdateTechnicianCategoryRequestDTO dto, CancellationToken ct)
+        public async Task<IActionResult> UpdateCategory(
+            [FromBody] UpdateTechnicianCategoryRequestDTO dto,
+            CancellationToken ct)
         {
-            var ok = await _TechnicianService.UpdateTechnicianCategoryAsync(dto, ct);
-            return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
+            var (ok, key) = await _TechnicianService.UpdateTechnicianCategoryAsync(dto, ct);
+
+            if (!ok)
+                return BadRequest(new { message = _localizer[key].Value });
+
+            // ممكن تخليها 200 OK مع رسالة، أو 204 بدون body، حسب ستايلك
+            return Ok(new { message = _localizer[key].Value });
         }
 
         // DELETE: api/Admin/Technicians/{techId}/category
@@ -163,19 +181,5 @@ namespace Fixtroller.PL.Areas.Admin
             return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
         }
 
-        //[HttpGet("By-Category/{categoryId:int}")]
-        //public async Task<IActionResult> GetByCategory(
-        //    int categoryId,
-        //   [FromQuery] string? search,
-        //    int pageNumber = 1,
-        //    int pageSize = 10,
-        //    CancellationToken ct = default)
-        //{
-        //    var language = Request.Headers["Accept-Language"].ToString();
-        //    if (string.IsNullOrWhiteSpace(language)) language = "ar";
-
-        //    var result = await _TechnicianService.GetByCategoryAsync(categoryId, search, language, pageNumber, pageSize, ct);
-        //    return Ok(result);
-        //}
     }
 }

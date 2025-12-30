@@ -57,7 +57,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(result);
         }
 
-        // POST: api/Tcategories
+        // POST: api/MaintenanceManager/Tcategories
         [HttpPost]
         public async Task<IActionResult> Add([FromBody] TCategoryRequestDTO dto, CancellationToken ct)
         {
@@ -68,7 +68,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return CreatedAtAction(nameof(GetById), new { id }, new { message = _localizer["Created"].Value, id });
         }
 
-        // PUT: api/Tcategories/{id}
+        // PUT: api//MaintenanceManagerTcategories/{id}
         [HttpPut("{id}")]
         public async Task<IActionResult> Update([FromRoute] int id, [FromBody] TCategoryRequestDTO dto, CancellationToken ct)
         {

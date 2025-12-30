@@ -435,13 +435,13 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
 
         public async Task<(KpiRequestsReportDTO Report, string MessageKey)> GetKpiRequestsAsync(
-    DateTime fromUtc,
-    DateTime toUtc,
-    int? problemTypeId,
-    string userId,
-    string userRole,
-    string language = "ar",
-    CancellationToken ct = default)
+        DateTime fromUtc,
+        DateTime toUtc,
+        int? problemTypeId,
+        string userId,
+        string userRole,
+        string language = "ar",
+        CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -453,7 +453,8 @@ namespace Fixtroller.BLL.Services.ReportsServices
             if (toUtc <= fromUtc)
                 toUtc = fromUtc.AddDays(1);
 
-            var query = _requestRepository.Query(
+            // 🚩 Query أساسي بدون فلترة problemTypeId (لكن مع صلاحيات المستخدم)
+            var baseQuery = _requestRepository.Query(
                 asTracking: false,
                 include: q => q
                     .Include(r => r.ProblemType)
@@ -465,17 +466,25 @@ namespace Fixtroller.BLL.Services.ReportsServices
                     r.CreatedAt <= toUtc &&
                     r.Status == DAL.Entities.Status.Active);
 
-            if (problemTypeId.HasValue)
-                query = query.Where(r => r.ProblemTypeId == problemTypeId.Value);
-
-            query = query.Where(r =>
+            baseQuery = baseQuery.Where(r =>
                 isAdmin ||
                 isManager ||
                 (isEmployee && r.OwnerUserId == userId) ||
                 (isTechnician && (r.CreatedByUserId == userId ||
                                   r.Technicians.Any(t => t.TechnicianUserId == userId && t.UnassignedAtUtc == null))));
 
-            var entities = await query.ToListAsync(ct);
+            // كل الطلبات في الفترة (لـ TopProblemTypes)
+            var allEntities = await baseQuery.ToListAsync(ct);
+
+            // الطلبات المستخدمة في باقي الإحصائيات (تتأثر بـ problemTypeId)
+            var entities = allEntities;
+            if (problemTypeId.HasValue)
+            {
+                entities = entities
+                    .Where(r => r.ProblemTypeId == problemTypeId.Value)
+                    .ToList();
+            }
+
             var now = DateTime.UtcNow;
 
             var total = entities.Count;
@@ -486,7 +495,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             var openEntities = entities.Except(closedEntities).ToList();
 
-            // SLA per request
+            // SLA per request (من ExpectedDuration عند الفني)
             int overdueCount = 0;
             int closedWithinSlaCount = 0;
             int closedWithSlaCount = 0;
@@ -539,7 +548,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
             var summary = new KpiRequestsSummaryDTO
             {
                 TotalRequests = total,
-                NewRequests = total, // حسب التعريف الحالي: كل الطلبات في الفترة هي "جديدة" ضمنها
+                NewRequests = total, // كل الطلبات في الفترة تعتبر "جديدة" ضمن التقرير
                 ClosedRequests = closedEntities.Count,
                 OpenRequests = openEntities.Count,
                 RemainingRequests = openEntities.Count,
@@ -559,8 +568,10 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             summary.AverageClosureHours = avgClosureHours;
 
-            // Top Problem Types (Top 3)
-            var topProblemTypes = entities
+            // ✅ Top Problem Types (Top 3)
+            // مَبنية على كل الطلبات في الفترة (allEntities)
+            // وما بتتأثر بـ problemTypeId
+            var topProblemTypes = allEntities
                 .GroupBy(r => r.ProblemTypeId)
                 .Select(g =>
                 {
@@ -585,7 +596,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 .Take(3)
                 .ToList();
 
-            // Top Departments (Top 3) من Department الخاص بالـ Owner
+            // Top Departments (Top 3) تظل مبنية على entities (وتتأثر بـ problemTypeId)
             var topDepartments = entities
                 .Where(r => !string.IsNullOrWhiteSpace(r.OwnerUser?.Department))
                 .GroupBy(r => r.OwnerUser!.Department!)
@@ -623,6 +634,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             return (report, "Success");
         }
+
         public async Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetKpiRequestsPdfAsync(
             DateTime fromUtc,
             DateTime toUtc,
@@ -1076,12 +1088,12 @@ namespace Fixtroller.BLL.Services.ReportsServices
         }
 
         public async Task<(TechnicianCategoriesPerformanceReportDTO Report, string MessageKey)> GetTechnicianCategoriesPerformanceAsync(
-    DateTime fromUtc,
-    DateTime toUtc,
-    string callerUserId,
-    string callerRole,
-    string language = "ar",
-    CancellationToken ct = default)
+      DateTime fromUtc,
+      DateTime toUtc,
+      string callerUserId,
+      string callerRole,
+      string language = "ar",
+      CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -1160,8 +1172,6 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 }
             }
 
-
-
             var techIds = techAggDict.Keys.ToList();
             var techInfoDict = new Dictionary<string, (string Name, int? CategoryId, string CategoryName)>();
 
@@ -1193,9 +1203,9 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 techInfoDict[techId] = (name, catId, catName);
             }
 
-
             // تجميع حسب الفئة
-            var categoryDict = new Dictionary<int?, TechnicianCategoryPerformanceDTO>();
+            // ملاحظة: نستخدم int كمفتاح داخلي، ونمثل الفئة غير المعينة بالقيمة -1
+            var categoryDict = new Dictionary<int, TechnicianCategoryPerformanceDTO>();
 
             foreach (var kvp in techAggDict)
             {
@@ -1205,14 +1215,17 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 if (!techInfoDict.TryGetValue(techId, out var info))
                     continue;
 
-                var catId = info.CategoryId;
+                var catId = info.CategoryId;        // int? ممكن تكون null
                 var catName = info.CategoryName;
 
-                if (!categoryDict.TryGetValue(catId, out var catDto))
+                // مفتاح الدكشنري الفعلي
+                var catKey = catId ?? -1;
+
+                if (!categoryDict.TryGetValue(catKey, out var catDto))
                 {
                     catDto = new TechnicianCategoryPerformanceDTO
                     {
-                        CategoryId = catId,
+                        CategoryId = catId,          // نخليها زي ما هي (حتى لو null)
                         CategoryName = catName
                     };
                 }
@@ -1237,7 +1250,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 catDto.TotalCompleted += agg.Completed;
                 catDto.TotalOverdue += agg.Overdue;
 
-                categoryDict[catId] = catDto;
+                categoryDict[catKey] = catDto;
             }
 
             // حساب المؤشرات النهائية لكل فئة
@@ -1261,7 +1274,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 // متوسط زمن الإغلاق على مستوى الفئة
                 var allClosureHours = catDto.Technicians
                     .Where(t => t.AverageClosureHours.HasValue)
-                    .SelectMany(t => Enumerable.Repeat(t.AverageClosureHours!.Value, 1)) // نستخدم متوسط الفني كتمثيل
+                    .Select(t => t.AverageClosureHours!.Value)
                     .ToList();
 
                 if (allClosureHours.Count > 0)
@@ -1281,6 +1294,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             return (report, "Success");
         }
+
         public async Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetTechnicianCategoriesPerformancePdfAsync(
             DateTime fromUtc,
             DateTime toUtc,
@@ -1299,12 +1313,12 @@ namespace Fixtroller.BLL.Services.ReportsServices
             return (bytes, fileName, "application/pdf", msg);
         }
         public async Task<(MaintenanceDepartmentReportDTO Report, string MessageKey)> GetMaintenanceDepartmentAsync(
-            DateTime fromUtc,
-            DateTime toUtc,
-            string userId,
-            string userRole,
-            string language = "ar",
-            CancellationToken ct = default)
+      DateTime fromUtc,
+      DateTime toUtc,
+      string userId,
+      string userRole,
+      string language = "ar",
+      CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -1483,24 +1497,31 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 techInfoDict[techId] = (catId, catName);
             }
 
-            // توزيع الفنيين على الفئات
-            var categoryTechCount = techInfoDict
-                .GroupBy(kvp => kvp.Value.CategoryId)
-                .ToDictionary(
-                    g => g.Key,
-                    g => new
-                    {
-                        CategoryId = g.Key,
-                        CategoryName = g.First().Value.CategoryName,
-                        TechniciansCount = g.Count()
-                    });
+            // توزيع الفنيين على الفئات (بدون null key)
+            // catKey = catId ?? -1
+            var categoryTechCount = new Dictionary<int, (int? CategoryId, string CategoryName, int TechniciansCount)>();
+
+            foreach (var kvp in techInfoDict)
+            {
+                var catId = kvp.Value.CategoryId;      // int?
+                var catName = kvp.Value.CategoryName;
+                var catKey = catId ?? -1;             // مفتاح داخلي للدكشنري
+
+                if (!categoryTechCount.TryGetValue(catKey, out var info))
+                {
+                    info = (CategoryId: catId, CategoryName: catName, TechniciansCount: 0);
+                }
+
+                info.TechniciansCount++;
+
+                categoryTechCount[catKey] = info;
+            }
 
             // توزيع الطلبات على الفئات (Distinct per request/category)
-            var categoryReqDict = new Dictionary<int?, HashSet<int>>();
+            var categoryReqDict = new Dictionary<int, HashSet<int>>(); // المفتاح int catKey
 
             foreach (var r in entities)
             {
-                // لكل طلب، لكل فني عليه، نضيف الـ RequestId لفئته
                 var requestId = r.Id;
                 var techLinks = r.Technicians;
 
@@ -1510,26 +1531,15 @@ namespace Fixtroller.BLL.Services.ReportsServices
                         continue;
 
                     var catId = info.CategoryId;
-                    var catName = info.CategoryName;
+                    var catKey = catId ?? -1;
 
-                    if (!categoryReqDict.TryGetValue(catId, out var set))
+                    if (!categoryReqDict.TryGetValue(catKey, out var set))
                     {
                         set = new HashSet<int>();
-                        categoryReqDict[catId] = set;
+                        categoryReqDict[catKey] = set;
                     }
 
                     set.Add(requestId);
-
-                    // نضمن أن CategoryName محفوظ في categoryTechCount حتى لو ما كان فيه فنيين محسوبين
-                    if (!categoryTechCount.ContainsKey(catId))
-                    {
-                        categoryTechCount[catId] = new
-                        {
-                            CategoryId = catId,
-                            CategoryName = catName,
-                            TechniciansCount = 0
-                        };
-                    }
                 }
             }
 
@@ -1537,16 +1547,16 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             foreach (var kvp in categoryReqDict)
             {
-                var catId = kvp.Key;
+                var catKey = kvp.Key;
                 var reqCount = kvp.Value.Count;
 
-                var techInfo = categoryTechCount.TryGetValue(catId, out var infoObj)
-                    ? infoObj
-                    : new { CategoryId = catId, CategoryName = "غير مصنّف", TechniciansCount = 0 };
+                var techInfo = categoryTechCount.TryGetValue(catKey, out var info)
+                    ? info
+                    : (CategoryId: (int?)null, CategoryName: "غير مصنّف", TechniciansCount: 0);
 
                 categories.Add(new MaintenanceDepartmentCategoryStatDTO
                 {
-                    CategoryId = catId,
+                    CategoryId = techInfo.CategoryId,
                     CategoryName = techInfo.CategoryName,
                     TechniciansCount = techInfo.TechniciansCount,
                     RequestsCount = reqCount
@@ -1572,6 +1582,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             return (report, "Success");
         }
+
         public async Task<(byte[]? FileContent, string FileName, string ContentType, string MessageKey)> GetMaintenanceDepartmentPdfAsync(
             DateTime fromUtc,
             DateTime toUtc,

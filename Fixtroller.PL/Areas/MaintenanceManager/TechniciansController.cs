@@ -30,10 +30,11 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             _requestService = RequestService;
             _localizer = localizer;
         }
-        [HttpGet] 
+        [HttpGet]
         public async Task<IActionResult> List(
                [FromQuery] int? categoryId,
                [FromQuery] string? search,
+               [FromQuery] bool excludeCurrentCategory = false,
                int pageNumber = 1,
                int pageSize = 10,
                CancellationToken ct = default)
@@ -41,7 +42,15 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var data = await _TechnicianService.GetWithMetricsAsync(language,categoryId,search,pageNumber,pageSize,ct);
+            var data = await _TechnicianService.GetWithMetricsAsync(
+                language,
+                categoryId,
+                search,
+                pageNumber,
+                pageSize,
+                excludeCurrentCategory,
+                ct);
+
             return Ok(data);
         }
 
@@ -71,6 +80,7 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
 
             return Ok(board);
         }
+
         [HttpPost("{id:int}/Assign")]
         public async Task<IActionResult> Assign(int id, [FromBody] AssignTechnicianRequestDTO dto, CancellationToken ct)
         {
@@ -141,13 +151,21 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             if (!ok) return BadRequest(new { message = _localizer[key].Value });
             return Ok(new { message = _localizer[key].Value });
         }
-
+        // Patch: Api/MaintenanceManager/Technicians/Category
         [HttpPatch("Category")]
-        public async Task<IActionResult> UpdateCategory([FromBody] UpdateTechnicianCategoryRequestDTO dto, CancellationToken ct)
+        public async Task<IActionResult> UpdateCategory(
+            [FromBody] UpdateTechnicianCategoryRequestDTO dto,
+            CancellationToken ct)
         {
-            var ok = await _TechnicianService.UpdateTechnicianCategoryAsync(dto, ct);
-            return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
+            var (ok, key) = await _TechnicianService.UpdateTechnicianCategoryAsync(dto, ct);
+
+            if (!ok)
+                return BadRequest(new { message = _localizer[key].Value });
+
+
+            return Ok(new { message = _localizer[key].Value });
         }
+
         // DELETE: api/MaintenanceManager/Technicians/{techId}/category
         [HttpDelete("{techId}/Category")]
         public async Task<IActionResult> ClearCategory([FromRoute] string techId, CancellationToken ct)
@@ -159,19 +177,5 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return ok ? NoContent() : BadRequest(new { message = _localizer["BadRequest"].Value });
         }
 
-        //[HttpGet("By-Category/{categoryId:int}")]
-        //public async Task<IActionResult> GetByCategory(
-        //    int categoryId,
-        //   [FromQuery] string? search,
-        //    int pageNumber = 1,
-        //    int pageSize = 10,
-        //    CancellationToken ct = default)
-        //{
-        //    var language = Request.Headers["Accept-Language"].ToString();
-        //    if (string.IsNullOrWhiteSpace(language)) language = "ar";
-
-        //    var result = await _TechnicianService.GetByCategoryAsync(categoryId,search,language,pageNumber,pageSize,ct);
-        //    return Ok(result);
-        //}
     }
 }

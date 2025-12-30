@@ -47,13 +47,13 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(dto);
         }
 
-        //[HttpGet("ManagerAsEmployee/Me/Numbers")]
-        //public async Task<IActionResult> GetMyNumbersAsEmployee(CancellationToken ct)
-        //{
-        //    var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
-        //    var dto = await _metricsService.GetEmployeeDashboardAsync(userId, ct);
-        //    return Ok(dto);
-        //}
+        [HttpGet("ManagerAsEmployee/Me/Numbers")]
+        public async Task<IActionResult> GetMyNumbersAsEmployee(CancellationToken ct)
+        {
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier) ?? User.FindFirst("Id")?.Value ?? "";
+            var dto = await _metricsService.GetEmployeeDashboardAsync(userId, ct);
+            return Ok(dto);
+        }
 
     }
 }

@@ -146,7 +146,15 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
                 Claims.Add(new Claim(ClaimTypes.Role, role));
             }
 
-            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(_configuration.GetSection("jwtOptions")["SecretKey"]));
+            var secret = _configuration.GetSection("jwtOptions")["SecretKey"];
+
+            if (string.IsNullOrWhiteSpace(secret))
+            {
+                _logger.LogError("Missing configuration value: jwtOptions:SecretKey in AuthenticationService");
+                throw new InvalidOperationException("Missing configuration value: jwtOptions:SecretKey");
+            }
+
+            var securityKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(secret));
             var credentials = new SigningCredentials(securityKey, SecurityAlgorithms.HmacSha256);
 
             var token = new JwtSecurityToken(
