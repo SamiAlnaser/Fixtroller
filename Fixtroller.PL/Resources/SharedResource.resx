@@ -876,4 +876,7 @@
   <data name="CategoryId_Required_For_ExcludeCurrentCategory" xml:space="preserve">
     <value>يجب تحديد القسم عند استثناء الفنيين المرتبطين به.</value>
   </data>
+  <data name="UncategorizedCategory" xml:space="preserve">
+    <value>غير مصنف</value>
+  </data>
 </root>

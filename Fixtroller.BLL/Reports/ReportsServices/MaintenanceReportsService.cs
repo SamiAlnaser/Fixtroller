@@ -1470,6 +1470,8 @@ namespace Fixtroller.BLL.Services.ReportsServices
             var totalTechnicians = technicianIds.Count;
 
             // تحميل بيانات الفنيين (اسم + Category)
+            var uncategorizedName = _reportsText.Get("UncategorizedCategory", language);
+
             var techInfoDict = new Dictionary<string, (int? CategoryId, string CategoryName)>();
 
             foreach (var techId in technicianIds)
@@ -1479,7 +1481,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
                     continue;
 
                 int? catId = tech.TechnicianCategoryId;
-                string catName = "غير مصنّف";
+                string catName = uncategorizedName;
 
                 var catTrans = tech.TechnicianCategory?.Translations;
                 if (catTrans != null && catTrans.Count > 0)
@@ -1552,7 +1554,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
                 var techInfo = categoryTechCount.TryGetValue(catKey, out var info)
                     ? info
-                    : (CategoryId: (int?)null, CategoryName: "غير مصنّف", TechniciansCount: 0);
+                    : (CategoryId: (int?)null, CategoryName: uncategorizedName, TechniciansCount: 0);
 
                 categories.Add(new MaintenanceDepartmentCategoryStatDTO
                 {
@@ -1565,10 +1567,10 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             // Top categories by requests (Top 3)
             var topCategories = categories
+                .Where(c => c.CategoryId.HasValue) // استبعاد الفئة اللي بدون كاتيجوري
                 .OrderByDescending(c => c.RequestsCount)
                 .Take(3)
                 .ToList();
-
             var report = new MaintenanceDepartmentReportDTO
             {
                 FromUtc = fromUtc,

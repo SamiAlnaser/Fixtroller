@@ -876,4 +876,7 @@
   <data name="CategoryId_Required_For_ExcludeCurrentCategory" xml:space="preserve">
     <value>CategoryId_Required_For_ExcludeCurrentCategory</value>
   </data>
+  <data name="UncategorizedCategory" xml:space="preserve">
+    <value>Uncategorized</value>
+  </data>
 </root>
