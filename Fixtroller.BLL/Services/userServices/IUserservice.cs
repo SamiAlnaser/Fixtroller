@@ -20,6 +20,7 @@ namespace Fixtroller.BLL.Services.UserServices
             string? search = null,
             int pageNumber = 1,
             int pageSize = 10,
+             string[]? allowedRoles = null,
             CancellationToken ct = default);
         Task<UserListItemDTO?> GetByIdAsync(string userId, string language = "ar", CancellationToken ct = default);
 

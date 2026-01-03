@@ -43,6 +43,7 @@ namespace Fixtroller.BLL.Services.UserServices
             string? search = null,
             int pageNumber = 1,
             int pageSize = 10,
+            string[]? allowedRoles = null,
             CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
@@ -70,7 +71,17 @@ namespace Fixtroller.BLL.Services.UserServices
                 });
             }
 
-            // 🔍 بحث بالاسم
+            // 🧩 فلترة حسب الرولز (لو مبعوثة)
+            if (allowedRoles != null && allowedRoles.Length > 0)
+            {
+                list = list
+                    .Where(u =>
+                        !string.IsNullOrWhiteSpace(u.RoleName) &&
+                        allowedRoles.Contains(u.RoleName))
+                    .ToList();
+            }
+
+            // 🔍 بحث بالاسم (تظل بعد فلترة الرولز عادي)
             if (!string.IsNullOrWhiteSpace(search))
             {
                 var s = search.Trim();
