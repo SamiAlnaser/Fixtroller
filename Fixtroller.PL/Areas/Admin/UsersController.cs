@@ -35,7 +35,7 @@ namespace Fixtroller.PL.Areas.Admin
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var result = await _userService.GetAllAsync(language, search, pageNumber, pageSize, ct);
+            var result = await _userService.GetAllAsync(language, search, pageNumber, pageSize, ct: ct);
 
             // نجهّز ليست الصفحة (page object)
             var page = new

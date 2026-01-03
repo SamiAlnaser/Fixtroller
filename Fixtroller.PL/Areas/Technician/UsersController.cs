@@ -25,40 +25,30 @@ namespace Fixtroller.PL.Areas.Technician
         // GET: api/Technician/Users/E0mployees
         [HttpGet("Employees")]
         public async Task<IActionResult> List(
-            [FromQuery] int pageNumber = 1,
-            [FromQuery] int pageSize = 10,
-            [FromQuery] string? search = null,
-            CancellationToken ct = default)
+       [FromQuery] int pageNumber = 1,
+       [FromQuery] int pageSize = 10,
+       [FromQuery] string? search = null,
+       CancellationToken ct = default)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var users = await _userService.GetAllAsync(language, search, pageNumber, pageSize, ct);
+            var allowedRoles = new[] { "Employee", "Admin" };
 
-            var employees = users.Data
-                .Where(u => u.RoleName == "Employee" || u.RoleName == "Admin")
-                .ToList();
-
-            var page = new
-            {
-                users.TotalPages,
-                users.CurrentPage,
-                users.TotalCount,
-                users.PageSize,
-                Data = employees.Select(u => new
-                {
-                    u.Id,
-                    u.FullName,
-                    u.RoleName,
-                    u.Email
-                })
-            };
+            var users = await _userService.GetAllAsync(
+                language,
+                search,
+                pageNumber,
+                pageSize,
+                allowedRoles,   
+                ct);
 
             return Ok(new
             {
                 message = _localizer["Success"].Value,
-                data = page
+                data = users
             });
         }
+    
     }
 }

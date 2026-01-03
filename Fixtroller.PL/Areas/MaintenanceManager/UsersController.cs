@@ -22,7 +22,6 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             _localizer = localizer;
         }
 
-        // GET: api/MaintenanceManager/Users/Employees
         [HttpGet("Employees")]
         public async Task<IActionResult> List(
             [FromQuery] int pageNumber = 1,
@@ -33,40 +32,74 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var users = await _userService.GetAllAsync(language, search, pageNumber, pageSize, ct);
+            var allowedRoles = new[] { "Employee", "Technician", "Admin" };
 
-            // فلترة الرولز اللي بدك تعرضهم
-            var employees = users.Data
-                .Where(u =>
-                    u.RoleName == "Employee" ||
-                    u.RoleName == "Technician" ||
-                    u.RoleName == "Admin")
-                .ToList();
-
-            // نبني صفحة جديدة للـ employees
-            var totalCount = employees.Count;
-            var totalPages = (int)Math.Ceiling(totalCount / (double)users.PageSize);
-
-            var page = new
-            {
-                TotalPages = totalPages,
-                CurrentPage = users.CurrentPage,
-                TotalCount = totalCount,
-                PageSize = users.PageSize,
-                Data = employees.Select(u => new
-                {
-                    u.Id,
-                    u.FullName,
-                    u.RoleName,
-                    u.Email
-                })
-            };
+            var users = await _userService.GetAllAsync(
+                language,
+                search,
+                pageNumber,
+                pageSize,
+                allowedRoles,   // ← هاي الجديدة
+                ct);
 
             return Ok(new
             {
                 message = _localizer["Success"].Value,
-                data = page
+                data = users
             });
         }
+
+        [HttpGet("Technicians")]
+        public async Task<IActionResult> GetTechnicians(
+            [FromQuery] int pageNumber = 1,
+            [FromQuery] int pageSize = 10,
+            [FromQuery] string? search = null,
+            [FromQuery] string? status = null,
+            CancellationToken ct = default)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            if (pageSize > 100) pageSize = 100;
+
+            var result = await _userService.GetTechniciansForAdminAsync(language, search, status, pageNumber, pageSize, ct);
+
+            var items = result.Data.Select(x => new
+            {
+                x.Id,
+                x.FullName,
+                x.ProfileImageUrl,
+                TechnicianCategoryName = x.TechnicianCategoryName,
+                Status = x.IsVacation
+                    ? _localizer["Technician_Status_Vacation"].Value
+                    : _localizer["Technician_Status_Available"].Value
+            }).ToList();
+
+            return Ok(new
+            {
+                message = _localizer["Success"].Value,
+                data = new
+                {
+                    result.TotalPages,
+                    result.CurrentPage,
+                    result.TotalCount,
+                    result.PageSize,
+                    Data = items
+                }
+            });
+        }
+
+        [HttpGet("Technicians/Numbers")]
+        public async Task<IActionResult> GetTechniciansNumbers(CancellationToken ct)
+        {
+            var dto = await _userService.GetTechniciansAvailabilityNumbersAsync(ct);
+
+            return Ok(new
+            {
+                message = _localizer["Success"].Value,
+                data = dto
+            });
+        }
+
     }
 }
