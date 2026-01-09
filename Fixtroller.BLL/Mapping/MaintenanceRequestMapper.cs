@@ -262,7 +262,7 @@ namespace Fixtroller.BLL.Mapping
             return new MaintenanceRequestListAllDTO
             {
                 Id = e.Id,
-                Description = e.Description,
+                Title = e.Title,
                 CaseType = GetCaseTypeName(e.CaseType, language),
                 Priority = GetPriorityName(e.Priority, language),
                 CreatedAt = e.CreatedAt,

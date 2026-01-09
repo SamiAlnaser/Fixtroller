@@ -19,8 +19,8 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Responses
 
     public class MaintenanceRequestListAllDTO
     {
-        public int Id { get; set; }                   
-        public string? Description { get; set; }
+        public int Id { get; set; }
+        public string Title { get; set; } = default!;
         public string CaseType { get; set; } = default!;
         public string Priority { get; set; } = default!;
         public DateTime CreatedAt { get; set; }

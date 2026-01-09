@@ -542,7 +542,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     Light = new MaintenanceRequest
                     {
                         Id = x.Id,
-                        Description = x.Description,
+                        Title = x.Title,
                         CaseType = x.CaseType,
                         Priority = x.Priority,
                         CreatedAt = x.CreatedAt
