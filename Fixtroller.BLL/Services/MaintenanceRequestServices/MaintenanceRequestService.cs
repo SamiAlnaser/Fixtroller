@@ -1426,6 +1426,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var r = await _repository.GetForUpdateAsync(requestId, ct);
             if (r is null) return (null, "Request_NotFound");
 
+            if (r.CaseType == CaseType.Completed || r.CaseType == CaseType.Cancelled)
+                return (null, "Request_IsLocked");
+
             var isOwner = string.Equals(r.OwnerUserId, userId, StringComparison.Ordinal);
             var isTech = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
             var isMgr = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
@@ -1433,9 +1436,6 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             var author = InferAuthor(isOwner, isTech, isMgr, isAdmin);
 
-            var lockedForManager = r.CaseType == CaseType.Completed || r.CaseType == CaseType.Cancelled;
-            if (isMgr && lockedForManager && !isAdmin)
-                return (null, "Notes_Disabled_For_Manager_In_FinalState");
 
             if (isTech && !isOwner && !isAdmin && !isMgr)
             {
@@ -1547,7 +1547,6 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var editable = new HashSet<CaseType>
         {
             CaseType.Submitted,
-            CaseType.Reopened,
             CaseType.Modified
         };
                 if (!editable.Contains(r.CaseType))
@@ -1667,7 +1666,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             // نمنع إضافة صور بعد الإنهاء/الإلغاء (يسمح فقط للأدمن لو أردت)
             var lockedFinal = r.CaseType == CaseType.Completed || r.CaseType == CaseType.Cancelled;
-            if (lockedFinal && !isAdmin)
+            if (lockedFinal)
                 return (null, "Images_Disabled_In_FinalState");
 
             // الفني يجب أن يكون مُعيَّن تعيينًا نشطًا
@@ -1770,9 +1769,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (!isTech && !isMgr && !isAdmin)
                 return (null, "Forbidden");
 
-            // نفس منطق AddImagesAsync: لا تعديل بعد الإنهاء/الإلغاء (إلا للأدمن)
             var lockedFinal = r.CaseType == CaseType.Completed || r.CaseType == CaseType.Cancelled;
-            if (lockedFinal && !isAdmin)
+            if (lockedFinal)
                 return (null, "Images_Disabled_In_FinalState");
 
             // الفني لازم يكون معيَّن على الطلب
