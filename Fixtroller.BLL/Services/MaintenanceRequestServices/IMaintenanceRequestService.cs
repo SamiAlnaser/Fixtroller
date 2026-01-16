@@ -127,7 +127,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
     CancellationToken ct = default);
 
 
-
+        Task<(IReadOnlyList<int> AllowedCases, string MessageKey)> GetManagerAllowedCasesAsync(
+    int requestId,
+    string userId,
+    string userRole,
+    CancellationToken ct = default);
 
     }
 

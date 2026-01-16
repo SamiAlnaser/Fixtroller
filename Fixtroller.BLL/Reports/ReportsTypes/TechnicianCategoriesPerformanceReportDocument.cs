@@ -25,6 +25,9 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         private string T(string key, params object[] args)
             => _text.Get(key, _language, args);
 
+        private bool IsRtl =>
+            string.Equals(_language, "ar", StringComparison.OrdinalIgnoreCase);
+
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
         public void Compose(IDocumentContainer container)
@@ -61,25 +64,33 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         });
                 });
 
-                page.Content().Column(col =>
+                // ✅ اتجاه المحتوى حسب اللغة
+                page.Content().Element(content =>
                 {
-                    col.Spacing(15);
+                    var dirContainer = IsRtl
+                        ? content.ContentFromRightToLeft()
+                        : content.ContentFromLeftToRight();
 
-                    if (_model.Categories == null || _model.Categories.Count == 0)
+                    dirContainer.Column(col =>
                     {
-                        // "لا توجد بيانات للفنيين ضمن الفترة المحددة."
-                        col.Item().Text(t =>
+                        col.Spacing(15);
+
+                        if (_model.Categories == null || _model.Categories.Count == 0)
                         {
-                            t.Span(T("Report.TechCategories.NoData"))
-                             .Italic();
-                        });
-                        return;
-                    }
+                            // "لا توجد بيانات للفنيين ضمن الفترة المحددة."
+                            col.Item().Text(t =>
+                            {
+                                t.Span(T("Report.TechCategories.NoData"))
+                                 .Italic();
+                            });
+                            return;
+                        }
 
-                    foreach (var cat in _model.Categories.OrderByDescending(c => c.TotalAssigned))
-                    {
-                        col.Item().Element(cn => CategorySection(cn, cat));
-                    }
+                        foreach (var cat in _model.Categories.OrderByDescending(c => c.TotalAssigned))
+                        {
+                            col.Item().Element(cn => CategorySection(cn, cat));
+                        }
+                    });
                 });
 
                 page.Footer()
@@ -254,5 +265,4 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             });
         }
     }
-
 }

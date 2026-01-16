@@ -25,6 +25,9 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         private string T(string key, params object[] args)
             => _text.Get(key, _language, args);
 
+        private bool IsRtl =>
+            string.Equals(_language, "ar", StringComparison.OrdinalIgnoreCase);
+
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
         public void Compose(IDocumentContainer container)
@@ -68,12 +71,20 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         });
                 });
 
-                page.Content().Column(col =>
+                // ✅ هنا أضفنا دعم RTL
+                page.Content().Element(content =>
                 {
-                    col.Spacing(10);
+                    var dirContainer = IsRtl
+                        ? content.ContentFromRightToLeft()
+                        : content.ContentFromLeftToRight();
 
-                    col.Item().Element(BucketsSection);
-                    col.Item().Element(ProblemTypesSection);
+                    dirContainer.Column(col =>
+                    {
+                        col.Spacing(10);
+
+                        col.Item().Element(BucketsSection);
+                        col.Item().Element(ProblemTypesSection);
+                    });
                 });
 
                 page.Footer().AlignCenter().Text(txt =>
@@ -136,7 +147,16 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     foreach (var b in _model.Buckets.OrderBy(b => b.BucketKey))
                     {
-                        table.Cell().Text(b.BucketName);
+                        // نحدد النص حسب الـ BucketKey
+                        var durationLabel = b.BucketKey switch
+                        {
+                            "lt12h" => T("Report.DurationByProblemType.Buckets.Value.LessThan12Hours"),
+                            "h12to72" => T("Report.DurationByProblemType.Buckets.Value.From12HoursTo3Days"),
+                            "gt72h" => T("Report.DurationByProblemType.Buckets.Value.MoreThan3Days"),
+                            _ => b.BucketName    // fallback لو صار مفتاح جديد
+                        };
+
+                        table.Cell().Text(durationLabel);
                         table.Cell().Text(b.Count.ToString());
                         table.Cell().Text(b.Percentage.ToString("0.##"));
                     }
@@ -212,5 +232,4 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             });
         }
     }
-
 }

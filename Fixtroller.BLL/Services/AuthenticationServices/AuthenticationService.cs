@@ -49,6 +49,22 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
                     Message = null
                 }, "InvalidCredentials");
             }
+
+            var isPasswordValid = await _userManager.CheckPasswordAsync(user, loginRequest.Password);
+            if (!isPasswordValid)
+            {
+                _logger.LogWarning(
+                    "Login failed: invalid password for {Email}",
+                    loginRequest.Email);
+
+                return (new UserResponseDTO
+                {
+                    Token = null,
+                    IsSuccess = false,
+                    Message = null
+                }, "InvalidCredentials");
+            }
+
             var roles = await _userManager.GetRolesAsync(user);
 
             _logger.LogInformation(
@@ -92,11 +108,9 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
                 Location = RegisterRequest.Location?.Trim() ?? string.Empty
             };
 
-            // لو عندك Password في RegisterRequestDTO الأفضل تستخدم هذا الأوفرلود:
-            // var result = await _userManager.CreateAsync(user, RegisterRequest.Password);
 
-            var result = await _userManager.CreateAsync(user);
 
+            var result = await _userManager.CreateAsync(user, RegisterRequest.Password);
             if (!result.Succeeded)
             {
                 return (new UserResponseDTO
@@ -159,7 +173,7 @@ namespace Fixtroller.BLL.Services.AuthenticationServices
 
             var token = new JwtSecurityToken(
                 claims: Claims,
-                expires: DateTime.Now.AddDays(15),
+                expires: DateTime.Now.AddDays(1),
                 signingCredentials: credentials
             );
 

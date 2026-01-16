@@ -426,7 +426,7 @@ namespace Fixtroller.BLL.Services.ReportsServices
             var (report, msg) = await GetRequestsPeriodAsync(fromUtc, toUtc, problemTypeId, userId, userRole, language, ct);
 
             // حتى لو مافي طلبات، بنرجع PDF فاضي لكن فيه Summary
-            var document = new PeriodRequestsReportDocument(report);
+            var document = new PeriodRequestsReportDocument(report, _reportsText, language);
             var bytes = document.GeneratePdf();
 
             var fileName = $"MaintenanceRequests_{fromUtc:yyyyMMdd}_{toUtc:yyyyMMdd}.pdf";

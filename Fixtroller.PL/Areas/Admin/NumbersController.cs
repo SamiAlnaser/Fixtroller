@@ -27,6 +27,14 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(dto);
         }
 
+
+        [HttpGet("Numbers")]
+        public async Task<IActionResult> GetNumbers(CancellationToken ct)
+        {
+            var dto = await _metricsService.GetManagerDashboardAsync(ct);
+            return Ok(dto);
+        }
+
         [HttpGet("Admin/Me/Numbers")]
         public async Task<IActionResult> GetMyNumbers(CancellationToken ct)
         {

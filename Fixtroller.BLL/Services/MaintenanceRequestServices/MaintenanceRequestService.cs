@@ -116,36 +116,41 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var notifLanguage = language;
 
                 // 4) إرسال الإشعارات في الخلفية (non-blocking)
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+                    // استخدم نفس الـ ct تبع الميثود لو موجود
+                    await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
+                    await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
+
+                    foreach (var uid in recipients)
                     {
-                        var recipients = new HashSet<string>(StringComparer.Ordinal);
-
-                        await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, CancellationToken.None);
-                        await AddRoleRecipientsAsync(recipients, "Admin", null, CancellationToken.None);
-
-                        foreach (var uid in recipients)
+                        await _notificationService.CreateAsync(new NotificationCreateModel
                         {
-                            await _notificationService.CreateAsync(new NotificationCreateModel
-                            {
-                                UserId = uid,
-                                MaintenanceRequestId = requestId,
-                                Type = NotificationType.RequestStatusChanged,
-                                Severity = NotificationSeverity.Info,
-                                Language = notifLanguage,
-                                TitleKey = "NOTIF_REQUEST_CREATED_TITLE",
-                                BodyKey = "NOTIF_REQUEST_CREATED_BODY",
-                                BodyArgs = new object[] { requestId },
-                                Channels = NotificationChannel.InApp | NotificationChannel.Email
-                            }, CancellationToken.None);
-                        }
+                            UserId = uid,
+                            MaintenanceRequestId = requestId,
+                            Type = NotificationType.RequestStatusChanged,
+                            Severity = NotificationSeverity.Info,
+                            Language = notifLanguage,
+                            TitleKey = "NOTIF_REQUEST_CREATED_TITLE",
+                            BodyKey = "NOTIF_REQUEST_CREATED_BODY",
+                            BodyArgs = new object[] { requestId },
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email
+                        }, ct);
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex, "Background notifications failed.");
-                    }
-                });
+                }
+                catch (OperationCanceledException)
+                {
+                    // لو الـ request اتكنسل، عادي طنّش
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Notifications failed for created request. RequestId={RequestId}",
+                        requestId);
+                }
 
                 _logger.LogInformation(
                     "Maintenance request created. RequestId={RequestId}, OwnerUserId={OwnerUserId}, CreatedByUserId={CreatedByUserId}, Priority={Priority}",
@@ -292,59 +297,61 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var callerRoleLocal = callerRole;
 
                 // 🔔 الإشعارات في الخلفية (non-blocking)
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    // إشعار لصاحب الطلب بأن تم إنشاء طلب له
+                    if (!string.IsNullOrWhiteSpace(ownerUserId))
                     {
-                        // إشعار لصاحب الطلب بأن تم إنشاء طلب له
-                        if (!string.IsNullOrWhiteSpace(ownerUserId))
+                        await _notificationService.CreateAsync(new NotificationCreateModel
                         {
-                            await _notificationService.CreateAsync(new NotificationCreateModel
-                            {
-                                UserId = ownerUserId,
-                                MaintenanceRequestId = requestId,
-                                Type = NotificationType.RequestStatusChanged,
-                                Severity = NotificationSeverity.Info,
-                                Language = notifLanguage,
+                            UserId = ownerUserId,
+                            MaintenanceRequestId = requestId,
+                            Type = NotificationType.RequestStatusChanged,
+                            Severity = NotificationSeverity.Info,
+                            Language = notifLanguage,
 
-                                // ✅ localization
-                                TitleKey = "NOTIF_REQUEST_CREATED_FOR_YOU_TITLE",
-                                BodyKey = "NOTIF_REQUEST_CREATED_FOR_YOU_BODY",
-                                BodyArgs = new object[] { requestId },
+                            // ✅ localization
+                            TitleKey = "NOTIF_REQUEST_CREATED_FOR_YOU_TITLE",
+                            BodyKey = "NOTIF_REQUEST_CREATED_FOR_YOU_BODY",
+                            BodyArgs = new object[] { requestId },
 
-                                Channels = NotificationChannel.InApp | NotificationChannel.Email
-                            }, CancellationToken.None);
-                        }
-
-                        // إشعارات لمدراء الصيانة عن طلب جديد
-                        var recipients = new HashSet<string>(StringComparer.Ordinal);
-
-                        await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, CancellationToken.None);
-                        await AddRoleRecipientsAsync(recipients, "Admin", null, CancellationToken.None);
-
-                        foreach (var uid in recipients)
-                        {
-                            await _notificationService.CreateAsync(new NotificationCreateModel
-                            {
-                                UserId = uid,
-                                MaintenanceRequestId = requestId,
-                                Type = NotificationType.RequestStatusChanged,
-                                Severity = NotificationSeverity.Info,
-                                Language = notifLanguage,
-                                TitleKey = "NOTIF_REQUEST_CREATED_SCENARIO_TITLE",
-                                BodyKey = "NOTIF_REQUEST_CREATED_SCENARIO_BODY",
-                                BodyArgs = new object[] { requestId, callerRoleLocal },
-                                Channels = NotificationChannel.InApp | NotificationChannel.Email
-                            }, CancellationToken.None);
-                        }
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email
+                        }, ct);
                     }
-                    catch (Exception ex)
+
+                    // إشعارات لمدراء الصيانة عن طلب جديد
+                    var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+                    await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
+                    await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
+
+                    foreach (var uid in recipients)
                     {
-                        _logger.LogError(ex,
-                            "Background notifications failed for CreateScenarioAsync. RequestId={RequestId}",
-                            requestId);
+                        await _notificationService.CreateAsync(new NotificationCreateModel
+                        {
+                            UserId = uid,
+                            MaintenanceRequestId = requestId,
+                            Type = NotificationType.RequestStatusChanged,
+                            Severity = NotificationSeverity.Info,
+                            Language = notifLanguage,
+                            TitleKey = "NOTIF_REQUEST_CREATED_SCENARIO_TITLE",
+                            BodyKey = "NOTIF_REQUEST_CREATED_SCENARIO_BODY",
+                            BodyArgs = new object[] { requestId, callerRoleLocal },
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email
+                        }, ct);
                     }
-                });
+                }
+                catch (OperationCanceledException)
+                {
+                    // الريكوست اتكنسل، تجاهل بلطف
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Notifications failed for CreateScenarioAsync. RequestId={RequestId}",
+                        requestId);
+                }
 
                 // نجاح: نرجّع Id + MessageKey جاهز للترجمة في الـ PL
                 return (entity.Id, "Created"); // "Created" موجودة في SharedResource
@@ -641,7 +648,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                                 isAdmin ||
                                 isManager ||
                                 (isEmployee && x.OwnerUserId == userId) ||
-                                (isTechnician && (x.CreatedByUserId == userId ||
+                                (isTechnician && (x.OwnerUserId == userId ||
+                                                  x.CreatedByUserId == userId ||
                                                   x.Technicians.Any(t => t.UnassignedAtUtc == null && t.TechnicianUserId == userId)))
                             ),
                         include: q => q
@@ -740,9 +748,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 // مزامنة التعيينات بدون شطب السابقين
                 await _reqTechRepo.SetActiveListAsync(requestId, newActiveList, expectedDuration, ct);
 
-                // لو Submitted ارفعها إلى Processing
-                if (request.CaseType == CaseType.Submitted)
+                if (request.CaseType != CaseType.Cancelled)
+                {
                     request.CaseType = CaseType.Processing;
+                }
 
                 request.UpdatedAt = DateTime.UtcNow;
 
@@ -754,35 +763,39 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var notifLanguage = language;
 
                 // إشعارات للفنيين الجدد فقط (في الخلفية - non-blocking)
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    foreach (var tid in addedLocal)
                     {
-                        foreach (var tid in addedLocal)
+                        await _notificationService.CreateAsync(new NotificationCreateModel
                         {
-                            await _notificationService.CreateAsync(new NotificationCreateModel
-                            {
-                                UserId = tid,
-                                MaintenanceRequestId = reqId,
-                                Type = NotificationType.RequestAssigned,
-                                Severity = NotificationSeverity.Info,
-                                Language = notifLanguage,
-                                // ✅ localization
-                                TitleKey = "NOTIF_ASSIGNED_TITLE",
-                                BodyKey = "NOTIF_ASSIGNED_BODY",
-                                BodyArgs = new object[] { reqId },
+                            UserId = tid,
+                            MaintenanceRequestId = reqId,
+                            Type = NotificationType.RequestAssigned,
+                            Severity = NotificationSeverity.Info,
+                            Language = notifLanguage,
 
-                                Channels = NotificationChannel.InApp | NotificationChannel.Email
-                            }, CancellationToken.None);
-                        }
+                            // ✅ localization
+                            TitleKey = "NOTIF_ASSIGNED_TITLE",
+                            BodyKey = "NOTIF_ASSIGNED_BODY",
+                            BodyArgs = new object[] { reqId },
+
+                            Channels = NotificationChannel.InApp | NotificationChannel.Email
+                        }, ct); // استخدم ct بدل CancellationToken.None
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "Background notifications failed for AssignTechniciansAsync. RequestId={RequestId}",
-                            reqId);
-                    }
-                });
+                }
+                catch (OperationCanceledException)
+                {
+                    // الريكوست اتكنسل، عادي ما نعمل إشي
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Notifications failed for AssignTechniciansAsync. RequestId={RequestId}",
+                        reqId);
+                }
+
 
                 return (request.Id, "Technicians_Assigned");
             }
@@ -839,8 +852,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             {
                 await _reqTechRepo.AddActiveAsync(requestId, technicianUserId, expectedDuration, ct);
 
-                if (request.CaseType == CaseType.Submitted)
+                if (request.CaseType != CaseType.Cancelled)
+                {
                     request.CaseType = CaseType.Processing;
+                }
 
                 request.UpdatedAt = DateTime.UtcNow;
 
@@ -852,33 +867,37 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var notifLanguage = language;
 
                 // إشعار للفني المعيّن (في الخلفية - non-blocking)
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    await _notificationService.CreateAsync(new NotificationCreateModel
                     {
-                        await _notificationService.CreateAsync(new NotificationCreateModel
-                        {
-                            UserId = techIdLocal,
-                            MaintenanceRequestId = reqId,
-                            Type = NotificationType.RequestAssigned,
-                            Severity = NotificationSeverity.Info,
-                            Language = notifLanguage,
-                            // ✅ localization
-                            TitleKey = "NOTIF_ASSIGNED_TITLE",
-                            BodyKey = "NOTIF_ASSIGNED_BODY",
-                            BodyArgs = new object[] { reqId },
+                        UserId = techIdLocal,
+                        MaintenanceRequestId = reqId,
+                        Type = NotificationType.RequestAssigned,
+                        Severity = NotificationSeverity.Info,
+                        Language = notifLanguage,
 
-                            Channels = NotificationChannel.InApp | NotificationChannel.Email
-                        }, CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "Background notification failed for AssignTechnicianAsync. RequestId={RequestId}, TechnicianUserId={TechnicianUserId}",
-                            reqId,
-                            techIdLocal);
-                    }
-                });
+                        // ✅ localization
+                        TitleKey = "NOTIF_ASSIGNED_TITLE",
+                        BodyKey = "NOTIF_ASSIGNED_BODY",
+                        BodyArgs = new object[] { reqId },
+
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email
+                    }, ct); // استخدم ct بدل CancellationToken.None
+                }
+                catch (OperationCanceledException)
+                {
+                    // الريكوست اتكنسل، مافي داعي نعمل إشي
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Notification failed for AssignTechnicianAsync. RequestId={RequestId}, TechnicianUserId={TechnicianUserId}",
+                        reqId,
+                        techIdLocal);
+                }
+
 
                 _logger.LogInformation(
                     "Technician {TechnicianUserId} assigned to request {RequestId} successfully",
@@ -937,56 +956,60 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var notifLanguage = language;
 
                 // 🔔 الإشعارات في الخلفية (non-blocking)
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    // إشعار للفني الذي تمّت إزالته
+                    await _notificationService.CreateAsync(new NotificationCreateModel
                     {
-                        // إشعار للفني الذي تمّت إزالته
+                        UserId = techIdLocal,
+                        MaintenanceRequestId = reqId,
+                        Type = NotificationType.RequestStatusChanged,
+                        Severity = NotificationSeverity.Info,
+                        Language = notifLanguage,
+
+                        // ✅ localization
+                        TitleKey = "NOTIF_REMOVED_FROM_REQUEST_TITLE",
+                        BodyKey = "NOTIF_REMOVED_FROM_REQUEST_BODY",
+                        BodyArgs = new object[] { reqId },
+
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email
+                    }, ct); // بدل CancellationToken.None
+
+                    // إشعارات لمدراء الصيانة
+                    var recipients = new HashSet<string>(StringComparer.Ordinal);
+
+                    await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
+                    await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
+
+                    foreach (var uid in recipients)
+                    {
                         await _notificationService.CreateAsync(new NotificationCreateModel
                         {
-                            UserId = techIdLocal,
+                            UserId = uid,
                             MaintenanceRequestId = reqId,
                             Type = NotificationType.RequestStatusChanged,
                             Severity = NotificationSeverity.Info,
                             Language = notifLanguage,
-                            // ✅ localization
-                            TitleKey = "NOTIF_REMOVED_FROM_REQUEST_TITLE",
-                            BodyKey = "NOTIF_REMOVED_FROM_REQUEST_BODY",
+                            TitleKey = "NOTIF_TECH_REMOVED_TITLE",
+                            BodyKey = "NOTIF_TECH_REMOVED_BODY",
                             BodyArgs = new object[] { reqId },
-
                             Channels = NotificationChannel.InApp | NotificationChannel.Email
-                        }, CancellationToken.None);
-
-                        // إشعارات لمدراء الصيانة
-                        var recipients = new HashSet<string>(StringComparer.Ordinal);
-
-                        await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, CancellationToken.None);
-                        await AddRoleRecipientsAsync(recipients, "Admin", null, CancellationToken.None);
-
-                        foreach (var uid in recipients)
-                        {
-                            await _notificationService.CreateAsync(new NotificationCreateModel
-                            {
-                                UserId = uid,
-                                MaintenanceRequestId = reqId,
-                                Type = NotificationType.RequestStatusChanged,
-                                Severity = NotificationSeverity.Info,
-                                Language = notifLanguage,
-                                TitleKey = "NOTIF_TECH_REMOVED_TITLE",
-                                BodyKey = "NOTIF_TECH_REMOVED_BODY",
-                                BodyArgs = new object[] { reqId },
-                                Channels = NotificationChannel.InApp | NotificationChannel.Email
-                            }, CancellationToken.None);
-                        }
+                        }, ct);
                     }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "Background notifications failed for RemoveTechnicianAsync. RequestId={RequestId}, TechnicianUserId={TechnicianUserId}",
-                            reqId,
-                            techIdLocal);
-                    }
-                });
+                }
+                catch (OperationCanceledException)
+                {
+                    // الريكوست اتكنسل، ما في داعي نعمل إشي
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Notifications failed for RemoveTechnicianAsync. RequestId={RequestId}, TechnicianUserId={TechnicianUserId}",
+                        reqId,
+                        techIdLocal);
+                }
+
 
                 return (true, "Technician_Removed");
             }
@@ -1053,33 +1076,37 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var notifLang = language;
 
                 // ( إشعار للفني ) في الخلفية - non-blocking
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
+                    await _notificationService.CreateAsync(new NotificationCreateModel
                     {
-                        await _notificationService.CreateAsync(new NotificationCreateModel
-                        {
-                            UserId = techIdLocal,
-                            MaintenanceRequestId = reqId,
-                            Type = NotificationType.RequestStatusChanged,
-                            Severity = NotificationSeverity.Info,
-                            Language = notifLang,
-                            // ✅ localization
-                            TitleKey = "NOTIF_WORK_STARTED_TITLE",
-                            BodyKey = "NOTIF_WORK_STARTED_BODY",
-                            BodyArgs = new object[] { reqId },
+                        UserId = techIdLocal,
+                        MaintenanceRequestId = reqId,
+                        Type = NotificationType.RequestStatusChanged,
+                        Severity = NotificationSeverity.Info,
+                        Language = notifLang,
 
-                            Channels = NotificationChannel.InApp | NotificationChannel.Email
-                        }, CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "Background notification failed for StartWorkAsync. RequestId={RequestId}, TechnicianUserId={TechnicianUserId}",
-                            reqId,
-                            techIdLocal);
-                    }
-                });
+                        // ✅ localization
+                        TitleKey = "NOTIF_WORK_STARTED_TITLE",
+                        BodyKey = "NOTIF_WORK_STARTED_BODY",
+                        BodyArgs = new object[] { reqId },
+
+                        Channels = NotificationChannel.InApp | NotificationChannel.Email
+                    }, ct); // استخدم ct بدل CancellationToken.None
+                }
+                catch (OperationCanceledException)
+                {
+                    // الريكوست اتكنسل، خلّيه يمشي بهدوء
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Notification failed for StartWorkAsync. RequestId={RequestId}, TechnicianUserId={TechnicianUserId}",
+                        reqId,
+                        techIdLocal);
+                }
+
 
                 return (true, "Work_Started");
             }
@@ -1206,20 +1233,27 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     var newCaseOwner = newCase;
                     var langOwner = language;
 
-                    _ = Task.Run(async () =>
+                    try
                     {
-                        try
-                        {
-                            await SendStatusChangeNotificationAsync(r, newCaseOwner, langOwner, CancellationToken.None);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex,
-                                "Background status change notification failed (owner path). RequestId={RequestId}, NewCase={NewCase}",
-                                reqIdOwner,
-                                newCaseOwner);
-                        }
-                    });
+                        await SendStatusChangeNotificationAsync(
+                            r,
+                            newCaseOwner,
+                            langOwner,
+                            ct); // بدل CancellationToken.None
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // الريكوست اتكنسل، مافي داعي نكبّرها
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            ex,
+                            "Status change notification failed (owner path). RequestId={RequestId}, NewCase={NewCase}",
+                            reqIdOwner,
+                            newCaseOwner);
+                    }
+
 
                     var fresh2 = await GetByIdAsync(requestId, userId, userRole, language, ct);
                     return (fresh2, "Case_Changed");
@@ -1252,20 +1286,27 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     var newCaseTech = newCase;
                     var langTech = language;
 
-                    _ = Task.Run(async () =>
+                    try
                     {
-                        try
-                        {
-                            await SendStatusChangeNotificationAsync(r, newCaseTech, langTech, CancellationToken.None);
-                        }
-                        catch (Exception ex)
-                        {
-                            _logger.LogError(ex,
-                                "Background status change notification failed (technician path). RequestId={RequestId}, NewCase={NewCase}",
-                                reqIdTech,
-                                newCaseTech);
-                        }
-                    });
+                        await SendStatusChangeNotificationAsync(
+                            r,
+                            newCaseTech,
+                            langTech,
+                            ct); // بدل CancellationToken.None
+                    }
+                    catch (OperationCanceledException)
+                    {
+                        // الريكوست اتكنسل، خلاص ما بنكمل إشعارات
+                    }
+                    catch (Exception ex)
+                    {
+                        _logger.LogError(
+                            ex,
+                            "Status change notification failed (technician path). RequestId={RequestId}, NewCase={NewCase}",
+                            reqIdTech,
+                            newCaseTech);
+                    }
+
 
                     var fresh1 = await GetByIdAsync(requestId, userId, userRole, language, ct);
                     return (fresh1, "Case_Changed");
@@ -1322,20 +1363,27 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var newCaseMgr = newCase;
                 var langMgr = language;
 
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        await SendStatusChangeNotificationAsync(r, newCaseMgr, langMgr, CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "Background status change notification failed (manager/admin path). RequestId={RequestId}, NewCase={NewCase}",
-                            reqIdMgr,
-                            newCaseMgr);
-                    }
-                });
+                    await SendStatusChangeNotificationAsync(
+                        r,
+                        newCaseMgr,
+                        langMgr,
+                        ct); // استخدم ct بدل CancellationToken.None
+                }
+                catch (OperationCanceledException)
+                {
+                    // الريكوست اتكنسل، ما في داعي نكمل إشعارات
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Status change notification failed (manager/admin path). RequestId={RequestId}, NewCase={NewCase}",
+                        reqIdMgr,
+                        newCaseMgr);
+                }
+
 
                 var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
 
@@ -1386,7 +1434,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (isMgr && lockedForManager && !isAdmin)
                 return (null, "Notes_Disabled_For_Manager_In_FinalState");
 
-            if (isTech)
+            if (isTech && !isOwner && !isAdmin && !isMgr)
             {
                 var activeAssigned = await _reqTechRepo.IsActiveAssignedAsync(requestId, userId, ct);
                 if (!activeAssigned) return (null, "Request_NotAssignedToYou");
@@ -1418,22 +1466,33 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var notifLang = language;
                 var authorId = userId;
 
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        await SendNoteAddedNotificationAsync(r, ntType, authorId, noteText, notifLang, CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "Background note-added notification failed. RequestId={RequestId}, UserId={UserId}",
-                            reqId,
-                            authorId);
-                    }
-                });
+                    await SendNoteAddedNotificationAsync(
+                        r,
+                        ntType,
+                        authorId,
+                        noteText,
+                        notifLang,
+                        ct); // استخدم ct بدل CancellationToken.None
+                }
+                catch (OperationCanceledException)
+                {
+                    // الريكوست اتكنسل، ما في داعي نكمّل الإشعارات
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Note-added notification failed. RequestId={RequestId}, UserId={UserId}",
+                        reqId,
+                        authorId);
+                }
+
 
                 var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
+
+
                 return (fresh, "Note_Added");
             }
             catch
@@ -1543,19 +1602,25 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var reqId = r.Id;
                 var notifLang = language;
 
-                _ = Task.Run(async () =>
+                try
                 {
-                    try
-                    {
-                        await SendRequestUpdatedByOwnerNotificationAsync(r, notifLang, CancellationToken.None);
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(ex,
-                            "Background notification failed for UpdateMineAsync. RequestId={RequestId}",
-                            reqId);
-                    }
-                });
+                    await SendRequestUpdatedByOwnerNotificationAsync(
+                        r,
+                        notifLang,
+                        ct); // استخدم ct بدل CancellationToken.None
+                }
+                catch (OperationCanceledException)
+                {
+                    // الريكوست اتكنسل، ما في داعي نكمّل إشعارات
+                }
+                catch (Exception ex)
+                {
+                    _logger.LogError(
+                        ex,
+                        "Notification failed for UpdateMineAsync. RequestId={RequestId}",
+                        reqId);
+                }
+
 
                 var isOwner = true; // مؤكّد من الفحص أعلاه
 
@@ -1781,6 +1846,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         {
             if (isAdmin) return NoteAuthor.Admin;
             if (isMgr) return NoteAuthor.Manager;
+            if (isOwner) return NoteAuthor.Owner;
             if (isTech) return NoteAuthor.Technician;
             return NoteAuthor.Owner;
         }
@@ -2065,65 +2131,97 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
         private static bool IsValidTransition(CaseType current, CaseType target)
         {
-
             if (current == target)
                 return true;
 
-            // الحالات اللي بتتغيّر داخلياً فقط – ما منسمح لحد يغير إلها يدويًا
+            // حالات داخلية: ممنوع تعيينها يدويًا كـ target
             if (target is CaseType.Submitted or CaseType.Modified)
                 return false;
 
-            // خريطة للحركات المسموحة من كل حالة
+            // الإلغاء مسموح فقط إذا الطلب جديد أو "معدل" (وبتعامل كجديد)
+            if (target is CaseType.Cancelled)
+                return current is CaseType.Submitted or CaseType.Modified;
+
             return current switch
             {
-                // الطلب بعد الإنشاء / التعديل
-                CaseType.Submitted => target is CaseType.Processing or CaseType.Cancelled,
-                CaseType.Modified => target is CaseType.Processing or CaseType.Cancelled,
+                // الطلب جديد + الطلب المعدل يُعامل كجديد
+                CaseType.Submitted or CaseType.Modified =>
+                    target is CaseType.Processing,
 
-                // قيد المعالجة
-                CaseType.Processing => target is
-                    CaseType.ManagerReview      // يروح لمراجعة مدير
-                    or CaseType.ResourcesNeeded // الفني محتاج مساعدة/موارد
-                    or CaseType.Completed
-                    or CaseType.Cancelled,
+                // قيد المعالجة (ممنوع Completed حسب شرطك)
+                CaseType.Processing =>
+                    target is CaseType.ManagerReview
+                          or CaseType.ResourcesNeeded,
 
                 // تحت مراجعة مدير
-                CaseType.ManagerReview => target is
-                    CaseType.Processed
-                    or CaseType.ResourcesNeeded
-                    or CaseType.Completed
-                    or CaseType.Cancelled,
+                CaseType.ManagerReview =>
+                    target is CaseType.Processed
+                          or CaseType.ResourcesNeeded,
 
-                // يحتاج موارد
-                CaseType.ResourcesNeeded => target is
-                    CaseType.ManagerReview
-                    or CaseType.Completed
-                    or CaseType.Cancelled,
+                // يحتاج موارد + يسمح بالانتقال لـ Processed
+                CaseType.ResourcesNeeded =>
+                    target is CaseType.ManagerReview
+                          or CaseType.Processed,
 
                 // تمت المعالجة
-                CaseType.Processed => target is
-                CaseType.Reopened
-                or CaseType.Completed
-                    or CaseType.Cancelled,
+                CaseType.Processed =>
+                    target is CaseType.Reopened
+                          or CaseType.Completed,
 
-                // الطلب مغلق
-                CaseType.Completed => target is
-                    CaseType.Reopened,   // مسموح فقط إعادة فتحه
+                // الطلب مغلق/ملغي
+                CaseType.Completed => target is CaseType.Reopened,
+                CaseType.Cancelled => target is CaseType.Reopened,
 
-                CaseType.Cancelled => target is
-                    CaseType.Reopened,   // نفس الشي
-
-                // بعد إعادة الفتح، ما بنرجع لبداية الفlow، بنكمّل لقدّام
-                CaseType.Reopened => target is
-                    CaseType.Processing
-                    or CaseType.ManagerReview
-                    or CaseType.ResourcesNeeded
-                    or CaseType.Completed
-                    or CaseType.Modified
-                    or CaseType.Cancelled,
+                // بعد إعادة الفتح
+                CaseType.Reopened =>
+                    target is CaseType.ManagerReview
+                          or CaseType.ResourcesNeeded
+                          or CaseType.Processed
+                          or CaseType.Completed,
 
                 _ => false
             };
+        }
+        private static readonly CaseType[] ManagerAllowedTargets =
+        {
+            CaseType.ManagerReview,
+            CaseType.ResourcesNeeded,
+            CaseType.Processed,
+            CaseType.Completed,
+            CaseType.Reopened,
+            CaseType.Cancelled
+        };
+
+        public async Task<(IReadOnlyList<int> AllowedCases, string MessageKey)> GetManagerAllowedCasesAsync(
+            int requestId,
+            string userId,
+            string userRole,
+            CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var isAdmin = string.Equals(userRole, "Admin", StringComparison.OrdinalIgnoreCase);
+            var isManager = string.Equals(userRole, "MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+
+            if (!isAdmin && !isManager)
+                return (Array.Empty<int>(), "Forbidden");
+
+            var r = await _repository.GetForUpdateAsync(requestId, ct);
+            if (r is null)
+                return (Array.Empty<int>(), "Request_NotFound");
+
+            var current = r.CaseType;
+
+            // الحالات اللي المانجر مسموح يختارها + تمر من IsValidTransition
+            var allowed = ManagerAllowedTargets
+                .Where(target =>
+                    target != current &&           // ما نرجع الحالة نفسها
+                    IsValidTransition(current, target)) // نحترم مخطط الحالات اللي عملناه
+                .Select(t => (int)t)              // ترجيع كـ أرقام
+                .ToList()
+                .AsReadOnly();
+
+            return (allowed, "Ok");
         }
 
 
@@ -2132,8 +2230,5 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
 
 }
-
-
-
 
 

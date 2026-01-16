@@ -51,9 +51,10 @@ namespace Fixtroller.BLL.Services.NotificationServices
                 Severity = model.Severity,
                 Channels = model.Channels,
 
-                IsRead = false,
+                // 👇 نخزن اللغة المستخدمة في بناء الرسالة
+                Language = string.IsNullOrWhiteSpace(model.Language) ? "ar" : model.Language,
 
-                // ✅ ثبّت الوقت
+                IsRead = false,
                 CreatedAtUtc = now,
                 CreatedAt = now
             };
@@ -61,27 +62,11 @@ namespace Fixtroller.BLL.Services.NotificationServices
             await _notificationRepo.AddAsync(entity, ct);
             await _uow.SaveChangesAsync(ct);
 
-            // ✅ ابنِ نص مترجم للإيميل/البوش
+            // ✅ نبني النص للبوش فقط (لو مفعّل)
             var (title, body) = _msgBuilder.Build(
                 model.TitleKey, model.TitleArgs,
                 model.BodyKey, model.BodyArgs,
                 model.Language);
-
-            if (model.Channels.HasFlag(NotificationChannel.Email))
-            {
-                var user = await _userRepo.GetByIdAsync(model.UserId, ct);
-                if (user != null && !string.IsNullOrWhiteSpace(user.Email))
-                {
-                    var sent = await _emailSender.SendAsync(user.Email, title, body, ct);
-
-                    if (sent)
-                    {
-                        entity.EmailSent = true;
-                        await _notificationRepo.UpdateAsync(entity, ct);
-                        await _uow.SaveChangesAsync(ct);
-                    }
-                }
-            }
 
             if (model.Channels.HasFlag(NotificationChannel.MobilePush))
             {
@@ -90,6 +75,7 @@ namespace Fixtroller.BLL.Services.NotificationServices
 
             return entity.Id;
         }
+
 
         public async Task<IReadOnlyList<NotificationListItemDTO>> GetForUserAsync(
           string userId, bool onlyUnread, string language = "ar", CancellationToken ct = default)

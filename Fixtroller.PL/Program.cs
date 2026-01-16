@@ -1,9 +1,12 @@
-﻿using Fixtroller.DAL.Data;
+﻿using Fixtroller.BLL.Services.NotificationServices;
+using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Utils;
 using Fixtroller.PL.GlobalException;
+using Fixtroller.PL.Services.Notifications;
 using Fixtroller.PL.Services.Notifications.Email;
 using Microsoft.AspNetCore.Authentication.JwtBearer;
+using Microsoft.AspNetCore.Http.Features;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Localization;
 using Microsoft.EntityFrameworkCore;
@@ -73,7 +76,12 @@ namespace Fixtroller.PL
                 });
             });
 
-            var connectionStringName = builder.Environment.IsDevelopment()
+                builder.Services.Configure<FormOptions>(options =>
+                {
+                    options.MultipartBodyLengthLimit = 100 * 1024 * 1024; 
+                });
+
+                var connectionStringName = builder.Environment.IsDevelopment()
                                     ? "DevConnection"
                                     : "DefaultConnection";
             builder.Services.AddDbContext<ApplicationDbContext>(options =>
@@ -83,9 +91,12 @@ namespace Fixtroller.PL
                     .AddDefaultTokenProviders();
 
             builder.Services.AddConfig();
+                builder.Services.Configure<NotificationEmailWorkerOptions>(
+                    builder.Configuration.GetSection("NotificationEmailWorker"));
 
+                builder.Services.AddHostedService<NotificationEmailBackgroundService>();
 
-            const string defaultCulture = "ar";
+                const string defaultCulture = "ar";
             var supportedCultures = new[]
             {
                   new CultureInfo(defaultCulture),
@@ -100,7 +111,13 @@ namespace Fixtroller.PL
             builder.Services.AddLocalization(options => options.ResourcesPath = "Resources");
 
             builder.Services.Configure<EmailSettings>(builder.Configuration.GetSection("Email"));
-            QuestPDF.Settings.License = LicenseType.Community;
+
+                builder.Services.PostConfigure<EmailSettings>(s =>
+                {
+                    Console.WriteLine($"[EmailSettings] Host={s.SmtpHost} Port={s.SmtpPort} User={s.UserName} From={s.From} PassLen={(s.Password ?? "").Replace(" ", "").Length}");
+                });
+                QuestPDF.Settings.License = LicenseType.Community;
+
 
 
                 var jwtSecret = builder.Configuration["jwtOptions:SecretKey"];

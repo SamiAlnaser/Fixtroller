@@ -879,4 +879,85 @@
   <data name="UncategorizedCategory" xml:space="preserve">
     <value>غير مصنف</value>
   </data>
+	<data name="Report.PeriodRequests.Header.Title" xml:space="preserve">
+  <value>تقرير الطلبات لفترة زمنية</value>
+</data>
+	<data name="Report.Common.FromLabel" xml:space="preserve">
+  <value>من</value>
+</data>
+	<data name="Report.Common.ToLabel" xml:space="preserve">
+  <value>إلى</value>
+</data>
+	<data name="Report.PeriodRequests.Header.ProblemTypeFilterLabel" xml:space="preserve">
+  <value>نوع المشكلة</value>
+</data>
+	<data name="Report.PeriodRequests.Footer.Text" xml:space="preserve">
+  <value>تم إنشاء التقرير بواسطة نظام Fixtroller بتاريخ</value>
+</data>
+	<data name="Report.Common.PageLabel" xml:space="preserve">
+  <value>صفحة</value>
+</data>
+
+	<data name="Report.PeriodRequests.Summary.Title" xml:space="preserve">
+  <value>الأرقام العامة</value>
+</data>
+	<data name="Report.PeriodRequests.Summary.TotalRequests" xml:space="preserve">
+  <value>إجمالي الطلبات</value>
+</data>
+	<data name="Report.PeriodRequests.Summary.CompletedCount" xml:space="preserve">
+  <value>عدد المكتملة</value>
+</data>
+	<data name="Report.PeriodRequests.Summary.OpenCount" xml:space="preserve">
+  <value>عدد المفتوحة</value>
+</data>
+	<data name="Report.PeriodRequests.Summary.CancelledCount" xml:space="preserve">
+  <value>عدد الملغاة</value>
+</data>
+	<data name="Report.PeriodRequests.Summary.OverdueCount" xml:space="preserve">
+  <value>عدد المتأخرة (SLA)</value>
+</data>
+
+	<data name="Report.PeriodRequests.Items.Empty" xml:space="preserve">
+  <value>لا توجد طلبات ضمن هذه الفترة.</value>
+</data>
+	<data name="Report.PeriodRequests.Items.Title" xml:space="preserve">
+  <value>قائمة الطلبات</value>
+</data>
+	<data name="Report.PeriodRequests.Items.Header.RequestId" xml:space="preserve">
+  <value>رقم</value>
+</data>
+	<data name="Report.PeriodRequests.Items.Header.Date" xml:space="preserve">
+  <value>تاريخ</value>
+</data>
+	<data name="Report.PeriodRequests.Items.Header.ProblemType" xml:space="preserve">
+  <value>نوع المشكلة</value>
+</data>
+	<data name="Report.PeriodRequests.Items.Header.Status" xml:space="preserve">
+  <value>الحالة</value>
+</data>
+	<data name="Report.PeriodRequests.Items.Header.MainTechnician" xml:space="preserve">
+  <value>الفني الرئيسي</value>
+</data>
+	<data name="Report.PeriodRequests.Items.Header.ClosedAt" xml:space="preserve">
+  <value>إغلاق</value>
+</data>
+	<data name="Report.PeriodRequests.Items.Header.Sla" xml:space="preserve">
+  <value>SLA</value>
+</data>
+
+	<data name="Report.PeriodRequests.SlaStatus.Within" xml:space="preserve">
+  <value>ضمن</value>
+</data>
+	<data name="Report.PeriodRequests.SlaStatus.Late" xml:space="preserve">
+  <value>متأخر</value>
+</data>
+	<data name="Report.DurationByProblemType.Buckets.Value.LessThan12Hours" xml:space="preserve">
+  <value>أقل من 12 ساعة</value>
+</data>
+	<data name="Report.DurationByProblemType.Buckets.Value.From12HoursTo3Days" xml:space="preserve">
+  <value>من 12 ساعة إلى 3 أيام</value>
+</data>
+	<data name="Report.DurationByProblemType.Buckets.Value.MoreThan3Days" xml:space="preserve">
+  <value>أكثر من 3 أيام</value>
+</data>
 </root>

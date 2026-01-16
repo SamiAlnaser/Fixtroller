@@ -1,7 +1,9 @@
 ﻿using Fixtroller.BLL.Services.NotificationServices;
+using MailKit.Security;
 using Microsoft.Extensions.Options;
-using System.Net;
-using System.Net.Mail;
+using MimeKit;
+using MailKit.Net.Smtp;
+
 
 namespace Fixtroller.PL.Services.Notifications.Email
 {
@@ -25,39 +27,34 @@ namespace Fixtroller.PL.Services.Notifications.Email
             _settings = options.Value;
         }
 
-        public async Task<bool> SendAsync(
-            string to,
-            string subject,
-            string body,
-            CancellationToken ct = default)
+        public async Task<bool> SendAsync(string to, string subject, string body, CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
-            // ✅ لو الإعدادات ناقصة أو البريد فاضي: ما نرسل، ونرجّع false
             if (string.IsNullOrWhiteSpace(to) ||
                 string.IsNullOrWhiteSpace(_settings.From) ||
-                string.IsNullOrWhiteSpace(_settings.SmtpHost))
-            {
+                string.IsNullOrWhiteSpace(_settings.SmtpHost) ||
+                _settings.SmtpPort <= 0)
                 return false;
-            }
 
-            using var client = new SmtpClient(_settings.SmtpHost, _settings.SmtpPort)
-            {
-                EnableSsl = _settings.UseSsl,
-                Credentials = new NetworkCredential(_settings.UserName, _settings.Password)
-            };
+            var message = new MimeMessage();
+            message.From.Add(new MailboxAddress(_settings.DisplayName ?? "Fixtroller", _settings.From));
+            message.To.Add(MailboxAddress.Parse(to));
+            message.Subject = subject;
+            message.Body = new BodyBuilder { HtmlBody = body }.ToMessageBody();
 
-            using var mail = new MailMessage
-            {
-                From = new MailAddress(_settings.From, _settings.DisplayName),
-                Subject = subject,
-                Body = body,
-                IsBodyHtml = true
-            };
+            using var client = new SmtpClient();
+            client.Timeout = 20000;
 
-            mail.To.Add(to);
+            var secure =
+              _settings.SmtpPort == 465 ? SecureSocketOptions.SslOnConnect :
+              SecureSocketOptions.StartTlsWhenAvailable;
 
-            await client.SendMailAsync(mail);
+            await client.ConnectAsync(_settings.SmtpHost, _settings.SmtpPort, secure, ct);
+            await client.AuthenticateAsync(_settings.UserName, _settings.Password, ct);
+            await client.SendAsync(message, ct);
+            await client.DisconnectAsync(true, ct);
+
             return true;
         }
     }

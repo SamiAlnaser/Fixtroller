@@ -45,7 +45,7 @@ namespace Fixtroller.DAL.Entities
         public string BodyKey { get; set; } = default!;
         public string? TitleArgsJson { get; set; }
         public string? BodyArgsJson { get; set; }
-
+        public string Language { get; set; } = "ar";
         public int? MaintenanceRequestId { get; set; }
         public NotificationType Type { get; set; }
         public NotificationSeverity Severity { get; set; }

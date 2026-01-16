@@ -14,6 +14,10 @@ namespace Fixtroller.DAL.Data.DTOs.Authentication.Requests
         public string Email { get; set; }
 
         [Required]
+        [MinLength(6, ErrorMessage = "Password must be at least 6 characters long")]
+        public string Password { get; set; }
+
+        [Required]
         [MinLength(3)]
         [MaxLength(20)]
         public string UserName { get; set; }

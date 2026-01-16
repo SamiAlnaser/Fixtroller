@@ -5,16 +5,29 @@ using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
 
-namespace Fixtroller.BLL.Reports
+namespace Fixtroller.BLL.Reports.ReportsTypes
 {
     public class PeriodRequestsReportDocument : IDocument
     {
         private readonly PeriodRequestsReportDTO _model;
+        private readonly IReportsTextBuilder _text;
+        private readonly string _language;
 
-        public PeriodRequestsReportDocument(PeriodRequestsReportDTO model)
+        public PeriodRequestsReportDocument(
+            PeriodRequestsReportDTO model,
+            IReportsTextBuilder text,
+            string language)
         {
             _model = model;
+            _text = text;
+            _language = language;
         }
+
+        private string T(string key, params object[] args)
+            => _text.Get(key, _language, args);
+
+        private bool IsRtl =>
+            string.Equals(_language, "ar", StringComparison.OrdinalIgnoreCase);
 
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
@@ -26,12 +39,12 @@ namespace Fixtroller.BLL.Reports
 
                 page.Header().Column(col =>
                 {
-                    // العنوان الرئيسي
+                    // العنوان
                     col.Item()
                         .AlignCenter()
                         .Text(t =>
                         {
-                            t.Span("تقرير الطلبات لفترة زمنية")
+                            t.Span(T("Report.PeriodRequests.Header.Title"))
                              .FontSize(20)
                              .SemiBold();
                         });
@@ -41,13 +54,14 @@ namespace Fixtroller.BLL.Reports
                         .AlignCenter()
                         .Text(text =>
                         {
-                            text.Span("من: ").SemiBold();
+                            text.Span(T("Report.Common.FromLabel") + ": ").SemiBold();
                             text.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            text.Span("   إلى: ").SemiBold();
+                            text.Span("   ");
+                            text.Span(T("Report.Common.ToLabel") + ": ").SemiBold();
                             text.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
                         });
 
-                    // نوع المشكلة (إن وجد)
+                    // نوع المشكلة لو في فلتر
                     if (_model.ProblemTypeId is not null &&
                         !string.IsNullOrWhiteSpace(_model.ProblemTypeName))
                     {
@@ -55,25 +69,37 @@ namespace Fixtroller.BLL.Reports
                            .AlignCenter()
                            .Text(text =>
                            {
-                               text.Span("نوع المشكلة المفلتر: ").SemiBold();
+                               text.Span(T("Report.PeriodRequests.Header.ProblemTypeFilterLabel") + ": ")
+                                   .SemiBold();
                                text.Span(_model.ProblemTypeName!);
                            });
                     }
                 });
 
-                page.Content().Column(col =>
+                // ✅ اتجاه المحتوى حسب اللغة
+                page.Content().Element(content =>
                 {
-                    col.Spacing(10);
+                    var dirContainer = IsRtl
+                        ? content.ContentFromRightToLeft()
+                        : content.ContentFromLeftToRight();
 
-                    col.Item().Element(SummarySection);
-                    col.Item().Element(ItemsSection);
+                    dirContainer.Column(col =>
+                    {
+                        col.Spacing(10);
+
+                        col.Item().Element(SummarySection);
+                        col.Item().Element(ItemsSection);
+                    });
                 });
 
                 page.Footer().AlignCenter().Text(txt =>
                 {
-                    txt.Span("Fixtroller - Period Requests Report  ");
+                    txt.Span(T("Report.PeriodRequests.Footer.Text"));
+                    txt.Span("  ");
                     txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                    txt.Span("  |  صفحة ");
+                    txt.Span("  |  ");
+                    txt.Span(T("Report.Common.PageLabel"));
+                    txt.Span(" ");
                     txt.CurrentPageNumber();
                     txt.Span(" / ");
                     txt.TotalPages();
@@ -92,38 +118,38 @@ namespace Fixtroller.BLL.Reports
 
                     col.Item().Text(t =>
                     {
-                        t.Span("الأرقام العامة")
+                        t.Span(T("Report.PeriodRequests.Summary.Title"))
                          .FontSize(14)
                          .SemiBold();
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("إجمالي الطلبات: ").SemiBold();
+                        text.Span(T("Report.PeriodRequests.Summary.TotalRequests") + ": ").SemiBold();
                         text.Span(_model.Summary.TotalRequests.ToString());
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("عدد المكتملة: ").SemiBold();
+                        text.Span(T("Report.PeriodRequests.Summary.CompletedCount") + ": ").SemiBold();
                         text.Span(_model.Summary.CompletedCount.ToString());
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("عدد المفتوحة: ").SemiBold();
+                        text.Span(T("Report.PeriodRequests.Summary.OpenCount") + ": ").SemiBold();
                         text.Span(_model.Summary.OpenCount.ToString());
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("عدد الملغاة: ").SemiBold();
+                        text.Span(T("Report.PeriodRequests.Summary.CancelledCount") + ": ").SemiBold();
                         text.Span(_model.Summary.CancelledCount.ToString());
                     });
 
                     col.Item().Text(text =>
                     {
-                        text.Span("عدد المتأخرة (SLA): ").SemiBold();
+                        text.Span(T("Report.PeriodRequests.Summary.OverdueCount") + ": ").SemiBold();
                         text.Span(_model.Summary.OverdueCount.ToString());
                     });
                 });
@@ -135,7 +161,7 @@ namespace Fixtroller.BLL.Reports
             {
                 container.Text(t =>
                 {
-                    t.Span("لا توجد طلبات ضمن الفترة المحددة.")
+                    t.Span(T("Report.PeriodRequests.Items.Empty"))
                      .Italic();
                 });
 
@@ -148,7 +174,7 @@ namespace Fixtroller.BLL.Reports
 
                 col.Item().Text(t =>
                 {
-                    t.Span("قائمة الطلبات")
+                    t.Span(T("Report.PeriodRequests.Items.Title"))
                      .FontSize(14)
                      .SemiBold();
                 });
@@ -163,19 +189,19 @@ namespace Fixtroller.BLL.Reports
                         columns.ConstantColumn(80);  // الحالة
                         columns.ConstantColumn(110); // الفني الرئيسي
                         columns.ConstantColumn(80);  // تاريخ الإغلاق
-                        columns.ConstantColumn(70);  // داخل SLA؟
+                        columns.ConstantColumn(70);  // SLA
                     });
 
                     // العناوين
                     table.Header(header =>
                     {
-                        header.Cell().Text(t => t.Span("رقم").SemiBold());
-                        header.Cell().Text(t => t.Span("تاريخ").SemiBold());
-                        header.Cell().Text(t => t.Span("نوع المشكلة").SemiBold());
-                        header.Cell().Text(t => t.Span("الحالة").SemiBold());
-                        header.Cell().Text(t => t.Span("الفني الرئيسي").SemiBold());
-                        header.Cell().Text(t => t.Span("إغلاق").SemiBold());
-                        header.Cell().Text(t => t.Span("SLA").SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.PeriodRequests.Items.Header.RequestId")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.PeriodRequests.Items.Header.Date")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.PeriodRequests.Items.Header.ProblemType")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.PeriodRequests.Items.Header.Status")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.PeriodRequests.Items.Header.MainTechnician")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.PeriodRequests.Items.Header.ClosedAt")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.PeriodRequests.Items.Header.Sla")).SemiBold());
                     });
 
                     // الصفوف
@@ -195,9 +221,15 @@ namespace Fixtroller.BLL.Reports
 
                         string slaText;
                         if (item.IsWithinSla is null)
+                        {
                             slaText = "-";
+                        }
                         else
-                            slaText = item.IsWithinSla.Value ? "داخل" : "متأخر";
+                        {
+                            slaText = item.IsWithinSla.Value
+                                ? T("Report.PeriodRequests.SlaStatus.Within")
+                                : T("Report.PeriodRequests.SlaStatus.Late");
+                        }
 
                         table.Cell().Text(slaText);
                     }

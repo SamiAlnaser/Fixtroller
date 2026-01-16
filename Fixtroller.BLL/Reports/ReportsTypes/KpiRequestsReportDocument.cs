@@ -22,6 +22,9 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         private string T(string key, params object[] args)
             => _text.Get(key, _language, args);
 
+        private bool IsRtl =>
+            string.Equals(_language, "ar", StringComparison.OrdinalIgnoreCase);
+
         public DocumentMetadata GetMetadata() => DocumentMetadata.Default;
 
         public void Compose(IDocumentContainer container)
@@ -69,13 +72,21 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     }
                 });
 
-                page.Content().Column(col =>
+                // ✅ اتجاه المحتوى حسب اللغة
+                page.Content().Element(content =>
                 {
-                    col.Spacing(10);
+                    var dirContainer = IsRtl
+                        ? content.ContentFromRightToLeft()
+                        : content.ContentFromLeftToRight();
 
-                    col.Item().Element(SummarySection);
-                    col.Item().Element(TopProblemTypesSection);
-                    col.Item().Element(TopDepartmentsSection);
+                    dirContainer.Column(col =>
+                    {
+                        col.Spacing(10);
+
+                        col.Item().Element(SummarySection);
+                        col.Item().Element(TopProblemTypesSection);
+                        col.Item().Element(TopDepartmentsSection);
+                    });
                 });
 
                 page.Footer().AlignCenter().Text(txt =>
@@ -307,5 +318,4 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             });
         }
     }
-
 }

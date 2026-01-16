@@ -65,6 +65,7 @@ namespace Fixtroller.PL
             services.AddScoped<IPushNotificationSender, NoopPushNotificationSender>();
             services.AddScoped<INotificationRepository, NotificationRepository>();
             services.AddScoped<INotificationService, NotificationService>();
+
             services.AddScoped<INotificationMessageBuilder, LocalizerNotificationMessageBuilder>();
 
 

@@ -75,6 +75,35 @@ namespace Fixtroller.PL.Areas.Admin
                 });
         }
 
+        [HttpGet("{id:int}/AllowedCases")]
+        public async Task<IActionResult> GetAllowedCases(int id, CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("Id")?.Value
+                         ?? string.Empty;
+
+            var role = User.FindFirst("role")?.Value ?? "MaintenanceManager";
+
+            var (allowed, key) = await _maintenanceRequestService
+                .GetManagerAllowedCasesAsync(id, userId, role, ct);
+
+            if (key == "Forbidden")
+                return Forbid();
+
+            if (key == "Request_NotFound")
+                return NotFound(new { message = _localizer[key].Value });
+
+            // ترجع بس ليست أرقام للفرونت
+            return Ok(new
+            {
+                cases = allowed
+            });
+        }
+
+
         [HttpGet("{id:int}", Name = "MaintenanceRequest_GetById")]
         public async Task<IActionResult> GetById(int id, CancellationToken ct = default)
         {
