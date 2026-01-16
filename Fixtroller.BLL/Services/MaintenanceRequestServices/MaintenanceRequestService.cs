@@ -705,6 +705,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var request = await _repository.GetForAssignmentAsync(requestId, ct);
             if (request is null) return (null, "Request_NotFound");
 
+            if (request.CaseType == CaseType.Completed || request.CaseType == CaseType.Cancelled)
+                return (null, "Request_IsLocked");
+
             var list = (technicianUserIds ?? Enumerable.Empty<string>())
                        .Where(s => !string.IsNullOrWhiteSpace(s))
                        .Select(s => s.Trim())
@@ -748,10 +751,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 // مزامنة التعيينات بدون شطب السابقين
                 await _reqTechRepo.SetActiveListAsync(requestId, newActiveList, expectedDuration, ct);
 
-                if (request.CaseType != CaseType.Cancelled)
-                {
                     request.CaseType = CaseType.Processing;
-                }
+                
 
                 request.UpdatedAt = DateTime.UtcNow;
 
@@ -823,6 +824,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             var request = await _repository.GetForAssignmentAsync(requestId, ct);
             if (request is null) return (null, "Request_NotFound");
 
+            if (request.CaseType == CaseType.Completed || request.CaseType == CaseType.Cancelled)
+                return (null, "Request_IsLocked");
+
             var tech = await _techRepo.GetByIdAsync(technicianUserId, ct);
             if (tech is null) return (null, "Technician_NotFound");
 
@@ -852,10 +856,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             {
                 await _reqTechRepo.AddActiveAsync(requestId, technicianUserId, expectedDuration, ct);
 
-                if (request.CaseType != CaseType.Cancelled)
-                {
+
                     request.CaseType = CaseType.Processing;
-                }
+                
 
                 request.UpdatedAt = DateTime.UtcNow;
 
