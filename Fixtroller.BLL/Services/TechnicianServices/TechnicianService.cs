@@ -29,19 +29,22 @@ namespace Fixtroller.BLL.Services.TechnicianServices
         private readonly IFileService _fileService;
         private readonly IUnitOfWork _uow;
         private readonly IMetricsRepository _metricsrepo;
+        private readonly IWorkTimeRepository _workRepo;
 
         public TechnicianService(
             ITechnicianRepository repository,
             IMaintenanceRequestRepository reqRepo,
             IFileService fileService,
             IUnitOfWork uow,
-          IMetricsRepository metricsrepo)
+          IMetricsRepository metricsrepo,
+          IWorkTimeRepository workRepo)
         {
             _repository = repository;
             _reqRepo = reqRepo;
             _fileService = fileService;
             _uow = uow;
             _metricsrepo = metricsrepo;
+            _workRepo = workRepo;
         }
 
 
@@ -202,14 +205,14 @@ namespace Fixtroller.BLL.Services.TechnicianServices
         }
 
         public async Task<PagedResultDTO<TechnicianBoardDTO>> GetMyAssignedAsync(
-      string technicianUserId,
-      string language,
-      int pageNumber = 1,
-      int pageSize = 10,
-      DateTime? createdFrom = null,
-      DateTime? createdTo = null,
-      int? requestId = null,
-      CancellationToken ct = default)
+            string technicianUserId,
+            string language,
+            int pageNumber = 1,
+            int pageSize = 10,
+            DateTime? createdFrom = null,
+            DateTime? createdTo = null,
+            int? requestId = null,
+            CancellationToken ct = default)
         {
             language = string.IsNullOrWhiteSpace(language) ? "ar" : language;
 
@@ -280,35 +283,55 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                 })
                 .ToListAsync(ct);
 
-            // 4) تصنيف الأعمدة حسب حالة الطلب
-            static bool IsNew(CaseType c) =>
-                c == CaseType.Submitted || c == CaseType.ManagerReview;
+            // 4) نجيب حالة المؤقت (Timer) لكل طلب في الصفحة
+            var requestIds = rows
+                .Select(r => r.Light.Id)
+                .Distinct()
+                .ToList();
 
-            static bool IsInProgress(CaseType c) =>
-                c == CaseType.Processing
-                || c == CaseType.ResourcesNeeded
-                || c == CaseType.Modified
-                || c == CaseType.Reopened
-                || c == CaseType.Processed;
+            var activeTimerRequestIds = await _workRepo.Query()
+                .Where(w => requestIds.Contains(w.RequestId)
+                            && w.TechnicianUserId == technicianUserId
+                            && w.StoppedAt == null)   // المؤقت شغّال
+                .Select(w => w.RequestId)
+                .Distinct()
+                .ToListAsync(ct);
 
-            static bool IsCompleted(CaseType c) => c == CaseType.Completed;
+            bool HasActiveTimer(int requestId)
+                => activeTimerRequestIds.Contains(requestId);
 
+            // 5) تصنيف الأعمدة حسب حالة الطلب + حالة المؤقت
+
+            // New: Processing && المؤقت غير شغّال
             var newAll = rows
-                .Where(r => IsNew(r.Light.CaseType))
+                .Where(r =>
+                    r.Light.CaseType == CaseType.Processing &&
+                    !HasActiveTimer(r.Light.Id))
                 .OrderByDescending(r => r.Light.CreatedAt)
                 .ToList();
 
+            // InProgress:
+            // - Processing && المؤقت شغّال
+            // - أو يحتاج إلى موارد (ResourcesNeeded)
             var progressAll = rows
-                .Where(r => IsInProgress(r.Light.CaseType))
+                .Where(r =>
+                    (r.Light.CaseType == CaseType.Processing &&
+                     HasActiveTimer(r.Light.Id))
+                    || r.Light.CaseType == CaseType.ResourcesNeeded)
                 .OrderByDescending(r => r.Light.CreatedAt)
                 .ToList();
 
+            // Completed:
+            // - Processed
+            // - أو مراجعة المدير (ManagerReview)
             var completedAll = rows
-                .Where(r => IsCompleted(r.Light.CaseType))
+                .Where(r =>
+                    r.Light.CaseType == CaseType.Processed
+                    || r.Light.CaseType == CaseType.ManagerReview)
                 .OrderByDescending(r => r.Light.CreatedAt)
                 .ToList();
 
-            // 5) تجهيز البورد مع تمرير ProblemTypeName للمابر
+            // 6) تجهيز البورد مع تمرير ProblemTypeName للمابر
             var board = new TechnicianBoardDTO
             {
                 New = new TechnicianBoardColumnDTO
@@ -346,7 +369,7 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                 }
             };
 
-            // 6) إرجاع النتيجة في PagedResultDTO (Data فيها عنصر واحد: البورد)
+            // 7) إرجاع النتيجة في PagedResultDTO (Data فيها عنصر واحد: البورد)
             return new PagedResultDTO<TechnicianBoardDTO>
             {
                 TotalPages = totalPages,
@@ -356,6 +379,7 @@ namespace Fixtroller.BLL.Services.TechnicianServices
                 Data = new List<TechnicianBoardDTO> { board }
             };
         }
+
 
         public async Task<PagedResultDTO<TechnicianResponseDTO>> GetByCategoryAsync(
     int categoryId,
