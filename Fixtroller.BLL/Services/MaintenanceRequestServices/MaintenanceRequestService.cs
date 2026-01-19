@@ -1046,10 +1046,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             // - الفني: لازم يبدأ لنفسه (callerUserId == technicianUserId)
             // - المدير: يقدر يبدأ لأي فني مُعيَّن نشطًا
             var isManager = callerRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            var isAdmin = callerRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
             var isTech = callerRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
             var callerIsSameTech = string.Equals(callerUserId, technicianUserId, StringComparison.Ordinal);
 
-            if (!(isManager || (isTech && callerIsSameTech)))
+            if (!(isManager || isAdmin || (isTech && callerIsSameTech)))
                 return (false, "Forbidden");
 
             // 3) تأكد أن الفني المطلوب مُعيَّن نشطًا على الطلب
