@@ -3,6 +3,8 @@ using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
+using System.Text;              // ✅ جديد
+using Fixtroller.BLL.Reports;   // ✅ جديد
 
 namespace Fixtroller.BLL.Reports.ReportsTypes
 {
@@ -36,33 +38,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 page.Margin(30);
 
-                page.Header().Column(col =>
-                {
-                    // العنوان: "تقرير قسم الصيانة ككل"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(t =>
-                        {
-                            t.Span(T("Report.MaintenanceDepartment.Header.Title"))
-                             .FontSize(18)
-                             .SemiBold();
-                        });
-
-                    // الفترة: "الفترة: من {from} إلى {to}"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(t =>
-                        {
-                            t.Span(T("Report.MaintenanceDepartment.Header.PeriodLabel") + ": ")
-                             .SemiBold();
-
-                            t.Span(T("Report.Common.FromLabel") + " ");
-                            t.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            t.Span("  ");
-                            t.Span(T("Report.Common.ToLabel") + " ");
-                            t.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
-                        });
-                });
+                // ✅ هيدر موحّد: شعار + عنوان التقرير + الفترة
+                page.Header().Element(HeaderSection);
 
                 // ✅ اتجاه المحتوى حسب اللغة
                 page.Content().Element(content =>
@@ -82,24 +59,42 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     });
                 });
 
-                page.Footer()
-                    .AlignCenter()
-                    .Text(txt =>
-                    {
-                        // "Fixtroller - Maintenance Department Report"
-                        txt.Span(T("Report.MaintenanceDepartment.Footer.Text"));
-                        txt.Span("  ");
-                        txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                        txt.Span("  |  ");
-                        // "صفحة"
-                        txt.Span(T("Report.Common.PageLabel"));
-                        txt.Span(" ");
-                        txt.CurrentPageNumber();
-                        txt.Span(" / ");
-                        txt.TotalPages();
-                    });
+                page.Footer().Element(footer =>
+                {
+                    ReportBranding.RenderFooter(
+                        footer,
+                        T("Report.Common.PageLabel"), // "Page" / "صفحة"
+                        IsRtl);
+                });
             });
         }
+
+        // ================== الهيدر الموحّد ==================
+        private void HeaderSection(IContainer container)
+        {
+            // العنوان: "تقرير قسم الصيانة ككل"
+            var title = T("Report.MaintenanceDepartment.Header.Title");
+
+            // نبني السطر الفرعي بنفس الفكرة القديمة:
+            // "الفترة: من {from} إلى {to}"
+            var sb = new StringBuilder();
+
+            sb.Append(T("Report.MaintenanceDepartment.Header.PeriodLabel"))
+              .Append(": ")
+              .Append(T("Report.Common.FromLabel"))
+              .Append(" ")
+              .Append(_model.FromUtc.ToString("yyyy-MM-dd"))
+              .Append("  ")
+              .Append(T("Report.Common.ToLabel"))
+              .Append(" ")
+              .Append(_model.ToUtc.ToString("yyyy-MM-dd"));
+
+            var subtitle = sb.ToString();
+
+            // رسم الهيدر: الشعار + العنوان + السطر الفرعي
+            ReportBranding.RenderHeader(container, title, subtitle);
+        }
+        // =====================================================
 
         void SummarySection(IContainer container)
         {
@@ -112,7 +107,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 {
                     col.Spacing(4);
 
-                    // "الأرقام العامة للقسم"
                     col.Item().Text(t =>
                     {
                         t.Span(T("Report.MaintenanceDepartment.Summary.Title"))
@@ -122,7 +116,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(t =>
                     {
-                        // "إجمالي الطلبات في الفترة: "
                         t.Span(T("Report.MaintenanceDepartment.Summary.TotalRequests") + ": ")
                          .SemiBold();
                         t.Span(s.TotalRequests.ToString());
@@ -130,7 +123,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(t =>
                     {
-                        // "عدد الطلبات الجديدة: "
                         t.Span(T("Report.MaintenanceDepartment.Summary.NewRequests") + ": ")
                          .SemiBold();
                         t.Span(s.NewRequests.ToString());
@@ -138,7 +130,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(t =>
                     {
-                        // "عدد الطلبات المغلقة: "
                         t.Span(T("Report.MaintenanceDepartment.Summary.ClosedRequests") + ": ")
                          .SemiBold();
                         t.Span(s.ClosedRequests.ToString());
@@ -146,7 +137,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(t =>
                     {
-                        // "عدد الطلبات المتبقية (المفتوحة): "
                         t.Span(T("Report.MaintenanceDepartment.Summary.RemainingRequests") + ": ")
                          .SemiBold();
                         t.Span(s.RemainingRequests.ToString());
@@ -154,7 +144,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(t =>
                     {
-                        // "عدد الطلبات المتأخرة (حسب SLA): "
                         t.Span(T("Report.MaintenanceDepartment.Summary.OverdueRequests") + ": ")
                          .SemiBold();
                         t.Span(s.OverdueRequests.ToString());
@@ -164,7 +153,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(t =>
                         {
-                            // "نسبة الإنجاز: "
                             t.Span(T("Report.MaintenanceDepartment.Summary.CompletionRate") + ": ")
                              .SemiBold();
                             t.Span($"{s.CompletionRate.Value:0.##}%");
@@ -175,7 +163,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(t =>
                         {
-                            // "نسبة التأخير: "
                             t.Span(T("Report.MaintenanceDepartment.Summary.OverdueRate") + ": ")
                              .SemiBold();
                             t.Span($"{s.OverdueRate.Value:0.##}%");
@@ -186,7 +173,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(t =>
                         {
-                            // "نسبة الالتزام بالـ SLA (من الطلبات المغلقة ذات SLA): "
                             t.Span(T("Report.MaintenanceDepartment.Summary.SlaComplianceRate") + ": ")
                              .SemiBold();
                             t.Span($"{s.SlaComplianceRate.Value:0.##}%");
@@ -197,17 +183,15 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(t =>
                         {
-                            // "متوسط زمن الإغلاق: "
                             t.Span(T("Report.MaintenanceDepartment.Summary.AverageClosureHours") + ": ")
                              .SemiBold();
                             t.Span($"{s.AverageClosureHours.Value:0.##} " +
-                                   T("Report.Common.HoursSuffix")); // "ساعة"
+                                   T("Report.Common.HoursSuffix"));
                         });
                     }
 
                     col.Item().Text(t =>
                     {
-                        // "عدد الفنيين الكلي: "
                         t.Span(T("Report.MaintenanceDepartment.Summary.TotalTechnicians") + ": ")
                          .SemiBold();
                         t.Span(_model.TotalTechnicians.ToString());
@@ -219,7 +203,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.Categories == null || _model.Categories.Count == 0)
             {
-                // "لا توجد بيانات للفنيين أو الفئات ضمن هذه الفترة."
                 container.Text(t =>
                 {
                     t.Span(T("Report.MaintenanceDepartment.Categories.NoData"))
@@ -232,7 +215,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 col.Spacing(4);
 
-                // "توزيع الفنيين والطلبات على الفئات (Categories)"
                 col.Item().Text(t =>
                 {
                     t.Span(T("Report.MaintenanceDepartment.Categories.Title"))
@@ -244,10 +226,10 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 {
                     table.ColumnsDefinition(columns =>
                     {
-                        columns.ConstantColumn(40);  // #
-                        columns.RelativeColumn();    // الفئة
-                        columns.ConstantColumn(100); // عدد الفنيين
-                        columns.ConstantColumn(100); // عدد الطلبات
+                        columns.ConstantColumn(40);
+                        columns.RelativeColumn();
+                        columns.ConstantColumn(100);
+                        columns.ConstantColumn(100);
                     });
 
                     table.Header(header =>
@@ -275,7 +257,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.TopProblemTypes == null || _model.TopProblemTypes.Count == 0)
             {
-                // "لا توجد بيانات كافية عن أكثر أنواع المشاكل تكرارًا."
                 container.Text(t =>
                 {
                     t.Span(T("Report.MaintenanceDepartment.TopProblemTypes.NoData"))
@@ -288,7 +269,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 col.Spacing(4);
 
-                // "أكثر أنواع المشاكل تكرارًا (Top 3)"
                 col.Item().Text(t =>
                 {
                     t.Span(T("Report.MaintenanceDepartment.TopProblemTypes.Title"))
@@ -300,9 +280,9 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 {
                     table.ColumnsDefinition(columns =>
                     {
-                        columns.ConstantColumn(40);  // #
-                        columns.RelativeColumn();    // نوع المشكلة
-                        columns.ConstantColumn(80);  // عدد الطلبات
+                        columns.ConstantColumn(40);
+                        columns.RelativeColumn();
+                        columns.ConstantColumn(80);
                     });
 
                     table.Header(header =>
@@ -328,7 +308,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.TopCategoriesByRequests == null || _model.TopCategoriesByRequests.Count == 0)
             {
-                // "لا توجد بيانات كافية عن أكثر الفئات (Categories) من حيث عدد الطلبات."
                 container.Text(t =>
                 {
                     t.Span(T("Report.MaintenanceDepartment.TopCategories.NoData"))
@@ -341,7 +320,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 col.Spacing(4);
 
-                // "أكثر الفئات (Categories) من حيث عدد الطلبات (Top 3)"
                 col.Item().Text(t =>
                 {
                     t.Span(T("Report.MaintenanceDepartment.TopCategories.Title"))
@@ -353,9 +331,9 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 {
                     table.ColumnsDefinition(columns =>
                     {
-                        columns.ConstantColumn(40);  // #
-                        columns.RelativeColumn();    // الفئة
-                        columns.ConstantColumn(100); // عدد الطلبات
+                        columns.ConstantColumn(40);
+                        columns.RelativeColumn();
+                        columns.ConstantColumn(100);
                     });
 
                     table.Header(header =>

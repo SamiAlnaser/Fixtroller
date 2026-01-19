@@ -4,6 +4,8 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
+using System.Text;
+
 
 namespace Fixtroller.BLL.Reports.ReportsTypes
 {
@@ -37,44 +39,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 page.Margin(30);
 
-                page.Header().Column(col =>
-                {
-                    // العنوان
-                    col.Item()
-                        .AlignCenter()
-                        .Text(t =>
-                        {
-                            t.Span(T("Report.PeriodRequests.Header.Title"))
-                             .FontSize(20)
-                             .SemiBold();
-                        });
-
-                    // الفترة
-                    col.Item()
-                        .AlignCenter()
-                        .Text(text =>
-                        {
-                            text.Span(T("Report.Common.FromLabel") + ": ").SemiBold();
-                            text.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            text.Span("   ");
-                            text.Span(T("Report.Common.ToLabel") + ": ").SemiBold();
-                            text.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
-                        });
-
-                    // نوع المشكلة لو في فلتر
-                    if (_model.ProblemTypeId is not null &&
-                        !string.IsNullOrWhiteSpace(_model.ProblemTypeName))
-                    {
-                        col.Item()
-                           .AlignCenter()
-                           .Text(text =>
-                           {
-                               text.Span(T("Report.PeriodRequests.Header.ProblemTypeFilterLabel") + ": ")
-                                   .SemiBold();
-                               text.Span(_model.ProblemTypeName!);
-                           });
-                    }
-                });
+                // ✅ الهيدر الجديد: شعار + عنوان التقرير + الفترة (+ نوع المشكلة لو موجود)
+                page.Header().Element(HeaderSection);
 
                 // ✅ اتجاه المحتوى حسب اللغة
                 page.Content().Element(content =>
@@ -92,20 +58,46 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     });
                 });
 
-                page.Footer().AlignCenter().Text(txt =>
+                page.Footer().Element(footer =>
                 {
-                    txt.Span(T("Report.PeriodRequests.Footer.Text"));
-                    txt.Span("  ");
-                    txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                    txt.Span("  |  ");
-                    txt.Span(T("Report.Common.PageLabel"));
-                    txt.Span(" ");
-                    txt.CurrentPageNumber();
-                    txt.Span(" / ");
-                    txt.TotalPages();
+                    ReportBranding.RenderFooter(
+                        footer,
+                        T("Report.Common.PageLabel"), // "Page" / "صفحة"
+                        IsRtl);
                 });
             });
         }
+
+        private void HeaderSection(IContainer container)
+        {
+            var title = T("Report.PeriodRequests.Header.Title");
+
+            var sb = new StringBuilder();
+
+            // الفترة
+            sb.Append(T("Report.Common.FromLabel"))
+              .Append(": ")
+              .Append(_model.FromUtc.ToString("yyyy-MM-dd"))
+              .Append("   ")
+              .Append(T("Report.Common.ToLabel"))
+              .Append(": ")
+              .Append(_model.ToUtc.ToString("yyyy-MM-dd"));
+
+            // نوع المشكلة لو في فلتر
+            if (_model.ProblemTypeId is not null &&
+                !string.IsNullOrWhiteSpace(_model.ProblemTypeName))
+            {
+                sb.AppendLine();
+                sb.Append(T("Report.PeriodRequests.Header.ProblemTypeFilterLabel"))
+                  .Append(": ")
+                  .Append(_model.ProblemTypeName!);
+            }
+
+            var subtitle = sb.ToString();
+
+            ReportBranding.RenderHeader(container, title, subtitle);
+        }
+
 
         void SummarySection(IContainer container)
         {

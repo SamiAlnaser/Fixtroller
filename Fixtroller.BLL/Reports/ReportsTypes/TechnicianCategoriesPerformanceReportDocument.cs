@@ -3,6 +3,8 @@ using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
+using System.Text;              // ✅ جديد
+using Fixtroller.BLL.Reports;   // ✅ جديد
 
 namespace Fixtroller.BLL.Reports.ReportsTypes
 {
@@ -36,33 +38,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 page.Margin(30);
 
-                page.Header().Column(col =>
-                {
-                    // العنوان: "تقرير الفنيين حسب الفئة (Category)"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(t =>
-                        {
-                            t.Span(T("Report.TechCategories.Header.Title"))
-                             .FontSize(18)
-                             .SemiBold();
-                        });
-
-                    // الفترة: "الفترة: من {from} إلى {to}"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(text =>
-                        {
-                            text.Span(T("Report.TechCategories.Header.PeriodLabel") + ": ")
-                                .SemiBold();
-
-                            text.Span(T("Report.Common.FromLabel") + " ");
-                            text.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            text.Span("  ");
-                            text.Span(T("Report.Common.ToLabel") + " ");
-                            text.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
-                        });
-                });
+                // ✅ هيدر موحّد: شعار + عنوان التقرير + الفترة
+                page.Header().Element(HeaderSection);
 
                 // ✅ اتجاه المحتوى حسب اللغة
                 page.Content().Element(content =>
@@ -93,24 +70,40 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     });
                 });
 
-                page.Footer()
-                    .AlignCenter()
-                    .Text(txt =>
-                    {
-                        // "Fixtroller - Technicians by Category Report"
-                        txt.Span(T("Report.TechCategories.Footer.Text"));
-                        txt.Span("  ");
-                        txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                        txt.Span("  |  ");
-                        // "صفحة"
-                        txt.Span(T("Report.Common.PageLabel"));
-                        txt.Span(" ");
-                        txt.CurrentPageNumber();
-                        txt.Span(" / ");
-                        txt.TotalPages();
-                    });
+                page.Footer().Element(footer =>
+                {
+                    ReportBranding.RenderFooter(
+                        footer,
+                        T("Report.Common.PageLabel"), // "Page" / "صفحة"
+                        IsRtl);
+                });
             });
         }
+
+        // ================== الهيدر الموحّد ==================
+        private void HeaderSection(IContainer container)
+        {
+            // العنوان: "تقرير الفنيين حسب الفئة (Category)"
+            var title = T("Report.TechCategories.Header.Title");
+
+            // السطر الفرعي: "الفترة: من {from} إلى {to}"
+            var sb = new StringBuilder();
+
+            sb.Append(T("Report.TechCategories.Header.PeriodLabel"))
+              .Append(": ")
+              .Append(T("Report.Common.FromLabel"))
+              .Append(" ")
+              .Append(_model.FromUtc.ToString("yyyy-MM-dd"))
+              .Append("  ")
+              .Append(T("Report.Common.ToLabel"))
+              .Append(" ")
+              .Append(_model.ToUtc.ToString("yyyy-MM-dd"));
+
+            var subtitle = sb.ToString();
+
+            ReportBranding.RenderHeader(container, title, subtitle);
+        }
+        // =====================================================
 
         void CategorySection(IContainer container, TechnicianCategoryPerformanceDTO cat)
         {
@@ -136,7 +129,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                         c2.Item().Text(t =>
                         {
-                            // "عدد الفنيين: "
                             t.Span(T("Report.TechCategories.Summary.TechniciansCount") + ": ")
                              .SemiBold();
                             t.Span(cat.TechniciansCount.ToString());
@@ -144,7 +136,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                         c2.Item().Text(t =>
                         {
-                            // "عدد الطلبات في الفترة: "
                             t.Span(T("Report.TechCategories.Summary.TotalAssigned") + ": ")
                              .SemiBold();
                             t.Span(cat.TotalAssigned.ToString());
@@ -152,7 +143,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                         c2.Item().Text(t =>
                         {
-                            // "عدد الطلبات المكتملة: "
                             t.Span(T("Report.TechCategories.Summary.TotalCompleted") + ": ")
                              .SemiBold();
                             t.Span(cat.TotalCompleted.ToString());
@@ -160,7 +150,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                         c2.Item().Text(t =>
                         {
-                            // "عدد الطلبات المتأخرة: "
                             t.Span(T("Report.TechCategories.Summary.TotalOverdue") + ": ")
                              .SemiBold();
                             t.Span(cat.TotalOverdue.ToString());
@@ -170,7 +159,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         {
                             c2.Item().Text(t =>
                             {
-                                // "نسبة الإنجاز: "
                                 t.Span(T("Report.TechCategories.Summary.CompletionRate") + ": ")
                                  .SemiBold();
                                 t.Span($"{cat.CompletionRate.Value:0.##}%");
@@ -181,7 +169,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         {
                             c2.Item().Text(t =>
                             {
-                                // "نسبة التأخير: "
                                 t.Span(T("Report.TechCategories.Summary.OverdueRate") + ": ")
                                  .SemiBold();
                                 t.Span($"{cat.OverdueRate.Value:0.##}%");
@@ -192,11 +179,10 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         {
                             c2.Item().Text(t =>
                             {
-                                // "متوسط زمن الإغلاق: "
                                 t.Span(T("Report.TechCategories.Summary.AverageClosureHours") + ": ")
                                  .SemiBold();
                                 t.Span($"{cat.AverageClosureHours.Value:0.##} " +
-                                       T("Report.Common.HoursSuffix")); // "ساعة"
+                                       T("Report.Common.HoursSuffix"));
                             });
                         }
 
@@ -204,7 +190,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         {
                             c2.Item().Text(t =>
                             {
-                                // "متوسط عدد الطلبات لكل فني: "
                                 t.Span(T("Report.TechCategories.Summary.AverageRequestsPerTechnician") + ": ")
                                  .SemiBold();
                                 t.Span($"{cat.AverageRequestsPerTechnician.Value:0.##}");
@@ -230,11 +215,11 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         table.Header(header =>
                         {
                             header.Cell().Text(t => t.Span("#").SemiBold());
-                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.Technician")).SemiBold());     // "الفني"
-                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.Assigned")).SemiBold());       // "الطلبات"
-                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.Completed")).SemiBold());      // "المكتملة"
-                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.Overdue")).SemiBold());        // "المتأخرة"
-                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.AvgClosureHours")).SemiBold()); // "متوسط زمن الإغلاق (س)"
+                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.Technician")).SemiBold());
+                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.Assigned")).SemiBold());
+                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.Completed")).SemiBold());
+                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.Overdue")).SemiBold());
+                            header.Cell().Text(t => t.Span(T("Report.TechCategories.Table.Header.AvgClosureHours")).SemiBold());
                         });
 
                         int index = 1;
@@ -255,7 +240,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 }
                 else
                 {
-                    // "لا يوجد فنيون ضمن هذه الفئة في الفترة المحددة."
                     col.Item().Text(t =>
                     {
                         t.Span(T("Report.TechCategories.Category.NoTechnicians"))

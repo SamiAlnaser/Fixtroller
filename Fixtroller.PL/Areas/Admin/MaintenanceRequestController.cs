@@ -262,6 +262,7 @@ namespace Fixtroller.PL.Areas.Admin
             return Ok(new { message = _localizer[key].Value });
         }
 
+
         [HttpPost("{id:int}/Notes")]
         public async Task<IActionResult> AddNote(int id, [FromBody] AddNoteRequestDTO dto, CancellationToken ct)
         {

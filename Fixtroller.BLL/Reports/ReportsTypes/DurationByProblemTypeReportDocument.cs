@@ -3,6 +3,8 @@ using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
+using System.Text;                // جديد
+using Fixtroller.BLL.Reports;     // جديد
 
 namespace Fixtroller.BLL.Reports.ReportsTypes
 {
@@ -36,42 +38,10 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 page.Margin(30);
 
-                page.Header().Column(col =>
-                {
-                    // العنوان: "تقرير التصنيفات حسب مدة الإغلاق ونوع المشكلة"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(t =>
-                        {
-                            t.Span(T("Report.DurationByProblemType.Header.Title"))
-                             .FontSize(18)
-                             .SemiBold();
-                        });
+                // ✅ الهيدر: شعار + عنوان التقرير + الفترة + إجمالي المكتملة
+                page.Header().Element(HeaderSection);
 
-                    // الفترة: "من: {0} إلى: {1}"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(text =>
-                        {
-                            text.Span(T("Report.Common.FromLabel") + ": ").SemiBold();
-                            text.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            text.Span("   ");
-                            text.Span(T("Report.Common.ToLabel") + ": ").SemiBold();
-                            text.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
-                        });
-
-                    // إجمالي المكتملة: "إجمالي الطلبات المكتملة في الفترة: {0}"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(text =>
-                        {
-                            text.Span(T("Report.DurationByProblemType.Header.TotalCompleted") + ": ")
-                                .SemiBold();
-                            text.Span(_model.TotalCompleted.ToString());
-                        });
-                });
-
-                // ✅ هنا أضفنا دعم RTL
+                // ✅ محتوى مع دعم RTL
                 page.Content().Element(content =>
                 {
                     var dirContainer = IsRtl
@@ -87,28 +57,51 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     });
                 });
 
-                page.Footer().AlignCenter().Text(txt =>
+                page.Footer().Element(footer =>
                 {
-                    // "Fixtroller - Duration by Problem Type Report"
-                    txt.Span(T("Report.DurationByProblemType.Footer.Text"));
-                    txt.Span("  ");
-                    txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                    txt.Span("  |  ");
-                    // "صفحة"
-                    txt.Span(T("Report.Common.PageLabel"));
-                    txt.Span(" ");
-                    txt.CurrentPageNumber();
-                    txt.Span(" / ");
-                    txt.TotalPages();
+                    ReportBranding.RenderFooter(
+                        footer,
+                        T("Report.Common.PageLabel"), // "Page" / "صفحة"
+                        IsRtl);
                 });
             });
         }
+
+        // ================== الهيدر الموحّد ==================
+        private void HeaderSection(IContainer container)
+        {
+            // العنوان الأساسي من الـ resources
+            var title = T("Report.DurationByProblemType.Header.Title");
+
+            // نبني السطر/السطور الفرعية (الفترة + إجمالي المكتملة)
+            var sb = new StringBuilder();
+
+            // الفترة: من .. إلى ..
+            sb.Append(T("Report.Common.FromLabel"))
+              .Append(": ")
+              .Append(_model.FromUtc.ToString("yyyy-MM-dd"))
+              .Append("   ")
+              .Append(T("Report.Common.ToLabel"))
+              .Append(": ")
+              .Append(_model.ToUtc.ToString("yyyy-MM-dd"));
+
+            // سطر جديد: إجمالي الطلبات المكتملة في الفترة
+            sb.AppendLine();
+            sb.Append(T("Report.DurationByProblemType.Header.TotalCompleted"))
+              .Append(": ")
+              .Append(_model.TotalCompleted);
+
+            var subtitle = sb.ToString();
+
+            // نرسم الهيدر عبر ReportBranding (الشعار + العنوان + السطر الفرعي)
+            ReportBranding.RenderHeader(container, title, subtitle);
+        }
+        // =====================================================
 
         void BucketsSection(IContainer container)
         {
             if (_model.Buckets == null || _model.Buckets.Count == 0)
             {
-                // "لا توجد طلبات مكتملة ضمن الفترة المحددة."
                 container.Text(t =>
                 {
                     t.Span(T("Report.DurationByProblemType.Buckets.NoData"))
@@ -121,7 +114,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 col.Spacing(4);
 
-                // عنوان القسم: "تقسيم الطلبات المكتملة حسب مدة الإغلاق"
                 col.Item().Text(t =>
                 {
                     t.Span(T("Report.DurationByProblemType.Buckets.Title"))
@@ -140,20 +132,19 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     table.Header(header =>
                     {
-                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Duration")).SemiBold());   // "مدة الإغلاق"
-                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Count")).SemiBold());      // "العدد"
-                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Percent")).SemiBold());    // "النسبة %"
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Duration")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Count")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.Buckets.Header.Percent")).SemiBold());
                     });
 
                     foreach (var b in _model.Buckets.OrderBy(b => b.BucketKey))
                     {
-                        // نحدد النص حسب الـ BucketKey
                         var durationLabel = b.BucketKey switch
                         {
                             "lt12h" => T("Report.DurationByProblemType.Buckets.Value.LessThan12Hours"),
                             "h12to72" => T("Report.DurationByProblemType.Buckets.Value.From12HoursTo3Days"),
                             "gt72h" => T("Report.DurationByProblemType.Buckets.Value.MoreThan3Days"),
-                            _ => b.BucketName    // fallback لو صار مفتاح جديد
+                            _ => b.BucketName
                         };
 
                         table.Cell().Text(durationLabel);
@@ -168,7 +159,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.ProblemTypes == null || _model.ProblemTypes.Count == 0)
             {
-                // "لا توجد بيانات لأنواع المشاكل ضمن الفترة المحددة."
                 container.Text(t =>
                 {
                     t.Span(T("Report.DurationByProblemType.ProblemTypes.NoData"))
@@ -181,7 +171,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 col.Spacing(4);
 
-                // عنوان القسم: "مؤشرات الأداء لكل نوع مشكلة"
                 col.Item().Text(t =>
                 {
                     t.Span(T("Report.DurationByProblemType.ProblemTypes.Title"))
@@ -203,10 +192,10 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.ProblemType")).SemiBold());  // "نوع المشكلة"
-                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.CompletedCount")).SemiBold()); // "عدد مكتملة"
-                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.AvgClosureHours")).SemiBold()); // "متوسط زمن الإغلاق (س)"
-                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.OverdueRate")).SemiBold());    // "نسبة المتأخرة %"
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.ProblemType")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.CompletedCount")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.AvgClosureHours")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.DurationByProblemType.ProblemTypes.Header.OverdueRate")).SemiBold());
                     });
 
                     int index = 1;

@@ -4,6 +4,7 @@ using QuestPDF.Helpers;
 using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
+using Fixtroller.BLL.Reports;   // ✅ جديد
 
 namespace Fixtroller.BLL.Reports.ReportsTypes
 {
@@ -34,17 +35,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 page.Margin(30);
 
-                page.Header().Column(col =>
-                {
-                    // "تقرير طلب صيانة رقم {0}"
-                    col.Item().Text(T("Report.SingleRequest.Header.Title", _model.RequestId))
-                        .FontSize(20).SemiBold().AlignCenter();
-
-                    // عنوان الطلب نفسه (من الداتا)
-                    col.Item().Text(_model.Title)
-                        .FontSize(12)
-                        .AlignCenter();
-                });
+                // ✅ هيدر موحّد: شعار + "تقرير طلب صيانة رقم X" + عنوان الطلب
+                page.Header().Element(HeaderSection);
 
                 // ✅ اتجاه المحتوى حسب اللغة
                 page.Content().Element(content =>
@@ -65,22 +57,29 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     });
                 });
 
-                page.Footer().AlignCenter().Text(txt =>
+                page.Footer().Element(footer =>
                 {
-                    // "Fixtroller - Maintenance Report"
-                    txt.Span(T("Report.Common.Footer.AppLabel"));
-                    txt.Span("  ");
-                    txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                    txt.Span("  |  ");
-                    // "صفحة"
-                    txt.Span(T("Report.Common.PageLabel"));
-                    txt.Span(" ");
-                    txt.CurrentPageNumber();
-                    txt.Span(" / ");
-                    txt.TotalPages();
+                    ReportBranding.RenderFooter(
+                        footer,
+                        T("Report.Common.PageLabel"), // "Page" / "صفحة"
+                        IsRtl);
                 });
             });
         }
+
+        // ================== الهيدر الموحّد ==================
+        private void HeaderSection(IContainer container)
+        {
+            // "تقرير طلب صيانة رقم {0}"
+            var title = T("Report.SingleRequest.Header.Title", _model.RequestId);
+
+            // العنوان الفرعي = عنوان الطلب نفسه من الداتا
+            var subtitle = _model.Title;
+
+            // يرسم الشعار + العنوان + العنوان الفرعي + خط تحتهم
+            ReportBranding.RenderHeader(container, title, subtitle);
+        }
+        // =====================================================
 
         void SummarySection(IContainer container)
         {
@@ -189,8 +188,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     text.Span("  (");
 
                     var createdByText = _model.IsCreatedByOwner
-                        ? T("Report.SingleRequest.CreatedBy.SameAsOwner")       // "نفس صاحب الطلب"
-                        : T("Report.SingleRequest.CreatedBy.OtherUser");        // "مستخدم آخر (فني / مدير)"
+                        ? T("Report.SingleRequest.CreatedBy.SameAsOwner")
+                        : T("Report.SingleRequest.CreatedBy.OtherUser");
 
                     text.Span(createdByText);
                     text.Span(")");
@@ -252,7 +251,7 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 if (_model.ExpectedDurationHours is not null)
                 {
                     var value = T("Report.SingleRequest.Duration.Expected.Format",
-                        _model.ExpectedDurationHours.Value); // "{0:0.##} ساعة" مثلاً
+                        _model.ExpectedDurationHours.Value);
 
                     col.Item().Text(text =>
                     {
@@ -280,8 +279,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 if (_model.IsWithinSla is not null)
                 {
                     var statusKey = _model.IsWithinSla.Value
-                        ? "Report.SingleRequest.SlaStatus.Within"   // "داخل الـ SLA"
-                        : "Report.SingleRequest.SlaStatus.Late";    // "متأخر عن الـ SLA"
+                        ? "Report.SingleRequest.SlaStatus.Within"
+                        : "Report.SingleRequest.SlaStatus.Late";
 
                     var status = T(statusKey);
 
@@ -300,7 +299,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.Technicians == null || _model.Technicians.Count == 0)
             {
-                // "لا يوجد فنيون مُعينون على هذا الطلب."
                 container.Text(T("Report.SingleRequest.Message.NoTechnicians"))
                          .Italic();
                 return;
@@ -327,16 +325,15 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         columns.ConstantColumn(50);  // SLA (س)
                     });
 
-                    // Header
                     table.Header(header =>
                     {
-                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.Name")).SemiBold();          // "الفني"
-                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.Category")).SemiBold();      // "الفئة"
-                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.AssignedAt")).SemiBold();    // "تعيين"
-                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.StartAt")).SemiBold();       // "بدء"
-                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.EndAt")).SemiBold();         // "انتهاء"
-                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.WorkHours")).SemiBold();     // "ساعات عمل"
-                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.SlaHours")).SemiBold();      // "SLA (س)"
+                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.Name")).SemiBold();
+                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.Category")).SemiBold();
+                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.AssignedAt")).SemiBold();
+                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.StartAt")).SemiBold();
+                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.EndAt")).SemiBold();
+                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.WorkHours")).SemiBold();
+                        header.Cell().Text(T("Report.SingleRequest.Technicians.Header.SlaHours")).SemiBold();
                     });
 
                     foreach (var t in _model.Technicians.OrderBy(x => x.AssignedAtUtc))
@@ -365,7 +362,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.Notes == null || _model.Notes.Count == 0)
             {
-                // "لا توجد ملاحظات على هذا الطلب."
                 container.Text(T("Report.SingleRequest.Message.NoNotes"))
                          .Italic();
                 return;
@@ -383,7 +379,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 {
                     col.Item().Border(1).Padding(5).Column(c2 =>
                     {
-                        // "{0:yyyy-MM-dd HH:mm} - {1}"
                         var header = T("Report.SingleRequest.Notes.HeaderFormat",
                             n.CreatedAt, n.CreatedByName);
 

@@ -3,6 +3,8 @@ using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
+using System.Text;              // ✅ جديد
+using Fixtroller.BLL.Reports;   // ✅ جديد
 
 namespace Fixtroller.BLL.Reports.ReportsTypes
 {
@@ -36,50 +38,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 page.Margin(30);
 
-                page.Header().Column(col =>
-                {
-                    // العنوان: "تقرير أداء الفني"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(t =>
-                        {
-                            t.Span(T("Report.TechPerformance.Header.Title"))
-                             .FontSize(18)
-                             .SemiBold();
-                        });
-
-                    // "الفني: {الاسم} (الفئة)"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(text =>
-                        {
-                            text.Span(T("Report.TechPerformance.Header.TechnicianLabel") + ": ")
-                                .SemiBold();
-                            text.Span(_model.TechnicianName ?? string.Empty);
-
-                            if (!string.IsNullOrWhiteSpace(_model.TechnicianCategoryName))
-                            {
-                                text.Span(" (");
-                                text.Span(_model.TechnicianCategoryName!);
-                                text.Span(")");
-                            }
-                        });
-
-                    // الفترة: "الفترة: من ... إلى ..."
-                    col.Item()
-                        .AlignCenter()
-                        .Text(text =>
-                        {
-                            text.Span(T("Report.TechPerformance.Header.PeriodLabel") + ": ")
-                                .SemiBold();
-
-                            text.Span(T("Report.Common.FromLabel") + " ");
-                            text.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            text.Span("  ");
-                            text.Span(T("Report.Common.ToLabel") + " ");
-                            text.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
-                        });
-                });
+                // ✅ هيدر موحّد: شعار + عنوان التقرير + الفني + الفترة
+                page.Header().Element(HeaderSection);
 
                 // ✅ اتجاه المحتوى حسب اللغة
                 page.Content().Element(content =>
@@ -97,24 +57,56 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     });
                 });
 
-                page.Footer()
-                    .AlignCenter()
-                    .Text(txt =>
-                    {
-                        // "Fixtroller - Technician Performance Report"
-                        txt.Span(T("Report.TechPerformance.Footer.Text"));
-                        txt.Span("  ");
-                        txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                        txt.Span("  |  ");
-                        // "صفحة"
-                        txt.Span(T("Report.Common.PageLabel"));
-                        txt.Span(" ");
-                        txt.CurrentPageNumber();
-                        txt.Span(" / ");
-                        txt.TotalPages();
-                    });
+                page.Footer().Element(footer =>
+                {
+                    ReportBranding.RenderFooter(
+                        footer,
+                        T("Report.Common.PageLabel"), // "Page" / "صفحة"
+                        IsRtl);
+                });
             });
         }
+
+        // ================== الهيدر الموحّد ==================
+        private void HeaderSection(IContainer container)
+        {
+            // العنوان الرئيسي: "تقرير أداء الفني"
+            var title = T("Report.TechPerformance.Header.Title");
+
+            var sb = new StringBuilder();
+
+            // السطر الأول: "الفني: {الاسم} (الفئة)"
+            sb.Append(T("Report.TechPerformance.Header.TechnicianLabel"))
+              .Append(": ")
+              .Append(_model.TechnicianName ?? string.Empty);
+
+            if (!string.IsNullOrWhiteSpace(_model.TechnicianCategoryName))
+            {
+                sb.Append(" (")
+                  .Append(_model.TechnicianCategoryName)
+                  .Append(")");
+            }
+
+            // سطر جديد
+            sb.AppendLine();
+
+            // السطر الثاني: "الفترة: من ... إلى ..."
+            sb.Append(T("Report.TechPerformance.Header.PeriodLabel"))
+              .Append(": ")
+              .Append(T("Report.Common.FromLabel"))
+              .Append(" ")
+              .Append(_model.FromUtc.ToString("yyyy-MM-dd"))
+              .Append("  ")
+              .Append(T("Report.Common.ToLabel"))
+              .Append(" ")
+              .Append(_model.ToUtc.ToString("yyyy-MM-dd"));
+
+            var subtitle = sb.ToString();
+
+            // يرسم الشعار + العنوان + السطرين اللي فوق
+            ReportBranding.RenderHeader(container, title, subtitle);
+        }
+        // =====================================================
 
         void SummarySection(IContainer container)
         {
@@ -127,7 +119,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                 {
                     col.Spacing(4);
 
-                    // "الأرقام العامة للفني"
                     col.Item().Text(t =>
                     {
                         t.Span(T("Report.TechPerformance.Summary.Title"))
@@ -137,7 +128,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(t =>
                     {
-                        // "عدد الطلبات المعيّنة في الفترة: "
                         t.Span(T("Report.TechPerformance.Summary.AssignedCount") + ": ")
                          .SemiBold();
                         t.Span(s.AssignedCount.ToString());
@@ -145,7 +135,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(t =>
                     {
-                        // "عدد الطلبات التي أُغلقت: "
                         t.Span(T("Report.TechPerformance.Summary.CompletedCount") + ": ")
                          .SemiBold();
                         t.Span(s.CompletedCount.ToString());
@@ -153,7 +142,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(t =>
                     {
-                        // "عدد الطلبات المتأخرة (SLA): "
                         t.Span(T("Report.TechPerformance.Summary.OverdueCount") + ": ")
                          .SemiBold();
                         t.Span(s.OverdueCount.ToString());
@@ -163,7 +151,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(t =>
                         {
-                            // "نسبة الطلبات المتأخرة (من الطلبات ذات SLA): "
                             t.Span(T("Report.TechPerformance.Summary.OverdueRate") + ": ")
                              .SemiBold();
                             t.Span($"{s.OverdueRate.Value:0.##}%");
@@ -174,11 +161,10 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(t =>
                         {
-                            // "متوسط زمن الإغلاق: "
                             t.Span(T("Report.TechPerformance.Summary.AverageClosureHours") + ": ")
                              .SemiBold();
                             t.Span($"{s.AverageClosureHours.Value:0.##} " +
-                                   T("Report.Common.HoursSuffix")); // "ساعة"
+                                   T("Report.Common.HoursSuffix"));
                         });
                     }
 
@@ -186,7 +172,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(t =>
                         {
-                            // "متوسط زمن بدء العمل بعد التعيين: "
                             t.Span(T("Report.TechPerformance.Summary.AverageStartDelayHours") + ": ")
                              .SemiBold();
                             t.Span($"{s.AverageStartDelayHours.Value:0.##} " +
@@ -200,7 +185,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.Items == null || _model.Items.Count == 0)
             {
-                // "لا توجد طلبات لهذا الفني ضمن الفترة المحددة."
                 container.Text(t =>
                 {
                     t.Span(T("Report.TechPerformance.Items.NoData"))
@@ -213,7 +197,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 col.Spacing(4);
 
-                // "تفاصيل الطلبات"
                 col.Item().Text(t =>
                 {
                     t.Span(T("Report.TechPerformance.Items.Title"))
@@ -240,15 +223,15 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.RequestId")).SemiBold());       // "رقم"
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.CreatedAt")).SemiBold());      // "إنشاء"
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.ProblemType")).SemiBold());    // "نوع المشكلة"
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.CaseType")).SemiBold());       // "الحالة"
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.AssignedAt")).SemiBold());     // "تعيين"
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.StartedAt")).SemiBold());      // "بدء"
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.ClosedAt")).SemiBold());       // "إغلاق"
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.SlaHours")).SemiBold());       // "SLA"
-                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.IsOverdue")).SemiBold());      // "متأخر"
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.RequestId")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.CreatedAt")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.ProblemType")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.CaseType")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.AssignedAt")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.StartedAt")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.ClosedAt")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.SlaHours")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.TechPerformance.Items.Header.IsOverdue")).SemiBold());
                     });
 
                     int index = 1;
@@ -271,8 +254,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                         if (item.IsOverdue.HasValue)
                         {
                             overdueText = item.IsOverdue.Value
-                                ? T("Report.Common.Yes")   // "نعم"
-                                : T("Report.Common.No");   // "لا"
+                                ? T("Report.Common.Yes")
+                                : T("Report.Common.No");
                         }
 
                         table.Cell().Text(overdueText);

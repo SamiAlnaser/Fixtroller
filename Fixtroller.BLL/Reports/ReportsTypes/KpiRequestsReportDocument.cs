@@ -3,6 +3,8 @@ using QuestPDF.Fluent;
 using QuestPDF.Infrastructure;
 using System;
 using System.Linq;
+using System.Text;              // ✅ جديد
+using Fixtroller.BLL.Reports;   // ✅ جديد
 
 namespace Fixtroller.BLL.Reports.ReportsTypes
 {
@@ -33,44 +35,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 page.Margin(30);
 
-                page.Header().Column(col =>
-                {
-                    // العنوان: "تقرير الأرقام العامة (KPI)"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(t =>
-                        {
-                            t.Span(T("Report.KpiRequests.Header.Title"))
-                             .FontSize(20)
-                             .SemiBold();
-                        });
-
-                    // الفترة: "من: {0}   إلى: {1}"
-                    col.Item()
-                        .AlignCenter()
-                        .Text(text =>
-                        {
-                            text.Span(T("Report.Common.FromLabel") + ": ").SemiBold();
-                            text.Span(_model.FromUtc.ToString("yyyy-MM-dd"));
-                            text.Span("   ");
-                            text.Span(T("Report.Common.ToLabel") + ": ").SemiBold();
-                            text.Span(_model.ToUtc.ToString("yyyy-MM-dd"));
-                        });
-
-                    // نوع المشكلة لو فيه فلتر
-                    if (_model.ProblemTypeId is not null &&
-                        !string.IsNullOrWhiteSpace(_model.ProblemTypeName))
-                    {
-                        col.Item()
-                           .AlignCenter()
-                           .Text(text =>
-                           {
-                               text.Span(T("Report.KpiRequests.Header.ProblemTypeFilterLabel") + ": ")
-                                   .SemiBold();
-                               text.Span(_model.ProblemTypeName!);
-                           });
-                    }
-                });
+                // ✅ هيدر موحّد: شعار + عنوان التقرير + الفترة + (نوع مشكلة لو فيه فلتر)
+                page.Header().Element(HeaderSection);
 
                 // ✅ اتجاه المحتوى حسب اللغة
                 page.Content().Element(content =>
@@ -89,22 +55,50 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     });
                 });
 
-                page.Footer().AlignCenter().Text(txt =>
+                page.Footer().Element(footer =>
                 {
-                    // "Fixtroller - KPI Report"
-                    txt.Span(T("Report.KpiRequests.Footer.Text"));
-                    txt.Span("  ");
-                    txt.Span(DateTime.UtcNow.ToString("yyyy-MM-dd HH:mm"));
-                    txt.Span("  |  ");
-                    // "صفحة"
-                    txt.Span(T("Report.Common.PageLabel"));
-                    txt.Span(" ");
-                    txt.CurrentPageNumber();
-                    txt.Span(" / ");
-                    txt.TotalPages();
+                    ReportBranding.RenderFooter(
+                        footer,
+                        T("Report.Common.PageLabel"), // "Page" / "صفحة"
+                        IsRtl);
                 });
             });
         }
+
+        // ================== الهيدر الموحّد ==================
+        private void HeaderSection(IContainer container)
+        {
+            // العنوان الرئيسي
+            var title = T("Report.KpiRequests.Header.Title");
+
+            // نبني السطر/السطور الفرعية (الفترة + نوع المشكلة لو فيه)
+            var sb = new StringBuilder();
+
+            // الفترة: "من: {0}   إلى: {1}"
+            sb.Append(T("Report.Common.FromLabel"))
+              .Append(": ")
+              .Append(_model.FromUtc.ToString("yyyy-MM-dd"))
+              .Append("   ")
+              .Append(T("Report.Common.ToLabel"))
+              .Append(": ")
+              .Append(_model.ToUtc.ToString("yyyy-MM-dd"));
+
+            // نوع المشكلة لو فيه فلتر
+            if (_model.ProblemTypeId is not null &&
+                !string.IsNullOrWhiteSpace(_model.ProblemTypeName))
+            {
+                sb.AppendLine();
+                sb.Append(T("Report.KpiRequests.Header.ProblemTypeFilterLabel"))
+                  .Append(": ")
+                  .Append(_model.ProblemTypeName!);
+            }
+
+            var subtitle = sb.ToString();
+
+            // رسم الهيدر بالشعار + العنوان + السطر الفرعي
+            ReportBranding.RenderHeader(container, title, subtitle);
+        }
+        // =====================================================
 
         void SummarySection(IContainer container)
         {
@@ -127,7 +121,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(text =>
                     {
-                        // "إجمالي الطلبات في الفترة: "
                         text.Span(T("Report.KpiRequests.Summary.TotalRequests") + ": ")
                             .SemiBold();
                         text.Span(s.TotalRequests.ToString());
@@ -135,7 +128,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(text =>
                     {
-                        // "عدد الطلبات الجديدة: "
                         text.Span(T("Report.KpiRequests.Summary.NewRequests") + ": ")
                             .SemiBold();
                         text.Span(s.NewRequests.ToString());
@@ -143,7 +135,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(text =>
                     {
-                        // "عدد الطلبات المغلقة: "
                         text.Span(T("Report.KpiRequests.Summary.ClosedRequests") + ": ")
                             .SemiBold();
                         text.Span(s.ClosedRequests.ToString());
@@ -151,7 +142,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(text =>
                     {
-                        // "عدد الطلبات المتبقية (المفتوحة): "
                         text.Span(T("Report.KpiRequests.Summary.RemainingRequests") + ": ")
                             .SemiBold();
                         text.Span(s.RemainingRequests.ToString());
@@ -159,7 +149,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
 
                     col.Item().Text(text =>
                     {
-                        // "عدد الطلبات المتأخرة (حسب SLA): "
                         text.Span(T("Report.KpiRequests.Summary.OverdueRequests") + ": ")
                             .SemiBold();
                         text.Span(s.OverdueRequests.ToString());
@@ -169,7 +158,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(text =>
                         {
-                            // "نسبة الإنجاز: "
                             text.Span(T("Report.KpiRequests.Summary.CompletionRate") + ": ")
                                 .SemiBold();
                             text.Span($"{s.CompletionRate.Value:0.##}%");
@@ -180,7 +168,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(text =>
                         {
-                            // "نسبة التأخير: "
                             text.Span(T("Report.KpiRequests.Summary.OverdueRate") + ": ")
                                 .SemiBold();
                             text.Span($"{s.OverdueRate.Value:0.##}%");
@@ -191,7 +178,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(text =>
                         {
-                            // "نسبة الالتزام بالـ SLA (من الطلبات المغلقة ذات SLA): "
                             text.Span(T("Report.KpiRequests.Summary.SlaComplianceRate") + ": ")
                                 .SemiBold();
                             text.Span($"{s.SlaComplianceRate.Value:0.##}%");
@@ -202,11 +188,10 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     {
                         col.Item().Text(text =>
                         {
-                            // "متوسط زمن الإغلاق: "
                             text.Span(T("Report.KpiRequests.Summary.AverageClosureHours") + ": ")
                                 .SemiBold();
                             text.Span($"{s.AverageClosureHours.Value:0.##} " +
-                                      T("Report.Common.HoursSuffix")); // "ساعة" مثلاً
+                                      T("Report.Common.HoursSuffix"));
                         });
                     }
                 });
@@ -216,7 +201,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.TopProblemTypes == null || _model.TopProblemTypes.Count == 0)
             {
-                // "لا توجد بيانات كافية لحساب أكثر أنواع المشاكل تكرارًا."
                 container.Text(t =>
                 {
                     t.Span(T("Report.KpiRequests.TopProblemTypes.NoData"))
@@ -229,7 +213,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 col.Spacing(4);
 
-                // "أكثر أنواع المشاكل تكرارًا"
                 col.Item().Text(t =>
                 {
                     t.Span(T("Report.KpiRequests.TopProblemTypes.Title"))
@@ -249,8 +232,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopProblemTypes.Header.ProblemType")).SemiBold()); // "نوع المشكلة"
-                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopProblemTypes.Header.Count")).SemiBold());      // "العدد"
+                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopProblemTypes.Header.ProblemType")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopProblemTypes.Header.Count")).SemiBold());
                     });
 
                     int index = 1;
@@ -269,7 +252,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
         {
             if (_model.TopDepartments == null || _model.TopDepartments.Count == 0)
             {
-                // "لا توجد بيانات كافية لحساب أكثر الأقسام تكرارًا."
                 container.Text(t =>
                 {
                     t.Span(T("Report.KpiRequests.TopDepartments.NoData"))
@@ -282,7 +264,6 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
             {
                 col.Spacing(4);
 
-                // "أكثر الأقسام تكرارًا"
                 col.Item().Text(t =>
                 {
                     t.Span(T("Report.KpiRequests.TopDepartments.Title"))
@@ -302,8 +283,8 @@ namespace Fixtroller.BLL.Reports.ReportsTypes
                     table.Header(header =>
                     {
                         header.Cell().Text(t => t.Span("#").SemiBold());
-                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopDepartments.Header.Department")).SemiBold()); // "القسم"
-                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopDepartments.Header.Count")).SemiBold());      // "العدد"
+                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopDepartments.Header.Department")).SemiBold());
+                        header.Cell().Text(t => t.Span(T("Report.KpiRequests.TopDepartments.Header.Count")).SemiBold());
                     });
 
                     int index = 1;
