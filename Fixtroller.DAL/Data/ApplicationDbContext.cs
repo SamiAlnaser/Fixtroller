@@ -1,9 +1,9 @@
 ﻿using Fixtroller.DAL.Entities;
+using Fixtroller.DAL.Entities.AIChat;
+using Fixtroller.DAL.Entities.Announcements;
 using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Fixtroller.DAL.Entities.ProblemTypeEntity;
 using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
-using Fixtroller.DAL.Entities.AIChat;
-
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -26,7 +26,8 @@ namespace Fixtroller.DAL.Data
         public DbSet<WorkTimeEntry> WorkTimeEntries { get; set; }
         public DbSet<MaintenanceRequestTechnician> MaintenanceRequestTechnicians { get; set; }
         public DbSet<AiEmployeeChatSettingsEntity> AiEmployeeChatSettings { get; set; } = null!;
-
+        public DbSet<Announcement> Announcements { get; set; }
+        public DbSet<AnnouncementImage> AnnouncementImages { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -77,7 +78,7 @@ namespace Fixtroller.DAL.Data
 
 
 
-builder.Entity<ApplicationUser>(u =>
+            builder.Entity<ApplicationUser>(u =>
             {
                 u.HasOne(x => x.TechnicianCategory)
                  .WithMany(c => c.Technicians)
@@ -156,6 +157,34 @@ builder.Entity<ApplicationUser>(u =>
     
 
             });
+
+            builder.Entity<Announcement>(b =>
+            {
+                b.HasOne(a => a.CreatedByUser)
+                 .WithMany()
+                 .HasForeignKey(a => a.CreatedByUserId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                b.Property(a => a.Title)
+                 .IsRequired()
+                 .HasMaxLength(200);
+
+                b.Property(a => a.Content)
+                 .IsRequired();
+            });
+
+            builder.Entity<AnnouncementImage>(b =>
+            {
+                b.HasOne(i => i.Announcement)
+                 .WithMany(a => a.Images)
+                 .HasForeignKey(i => i.AnnouncementId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.Property(i => i.FileName)
+                 .IsRequired()
+                 .HasMaxLength(255);
+            });
+
 
 
             // تغيير أسماء الجداول الافتراضية

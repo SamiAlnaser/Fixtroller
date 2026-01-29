@@ -1,5 +1,6 @@
 ﻿using Fixtroller.BLL.Reports;
 using Fixtroller.BLL.Services.AiServices;
+using Fixtroller.BLL.Services.AnnouncementServices;
 using Fixtroller.BLL.Services.AuthenticationServices;
 using Fixtroller.BLL.Services.FileService;
 using Fixtroller.BLL.Services.MaintenanceRequestServices;
@@ -13,6 +14,7 @@ using Fixtroller.BLL.Services.UserServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
 using Fixtroller.DAL.Repositories.AIChatRepositories;
+using Fixtroller.DAL.Repositories.AnnouncementRepositories;
 using Fixtroller.DAL.Repositories.MaintenanceRequestRepositories;
 using Fixtroller.DAL.Repositories.NotificationRepositories;
 using Fixtroller.DAL.Repositories.NumbersRepositories;
@@ -60,6 +62,8 @@ namespace Fixtroller.PL
             services.AddScoped<IMaintenanceReportsService, MaintenanceReportsService>();
             services.AddScoped<IUserservice, UserService>();
             services.AddScoped<IUserRepository, UserRepository>();
+            services.AddScoped<IAnnouncementRepository, AnnouncementRepository>();
+            services.AddScoped<IAnnouncementService, AnnouncementService>();
             // Email + Notifications
             services.AddScoped<IAppEmailSender, SmtpEmailSender>();
             services.AddScoped<IPushNotificationSender, NoopPushNotificationSender>();

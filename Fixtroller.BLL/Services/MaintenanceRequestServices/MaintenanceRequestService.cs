@@ -2163,6 +2163,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 // يحتاج موارد + يسمح بالانتقال لـ Processed
                 CaseType.ResourcesNeeded =>
                     target is CaseType.ManagerReview
+                          or CaseType.Processing
                           or CaseType.Processed,
 
                 // تمت المعالجة
@@ -2186,7 +2187,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
         }
         private static readonly CaseType[] ManagerAllowedTargets =
         {
-            CaseType.ManagerReview,
+            CaseType.Processing,
             CaseType.ResourcesNeeded,
             CaseType.Processed,
             CaseType.Completed,

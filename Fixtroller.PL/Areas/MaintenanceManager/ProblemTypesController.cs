@@ -38,6 +38,20 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             return Ok(result);
         }
 
+        [HttpGet("")]
+        public async Task<IActionResult> GetAll11(
+            [FromQuery] bool? isActive,   // فلتر من الرابط
+            CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language)) language = "ar";
+
+            var result = await _problemTypesService
+                .GetAllForUserAsync(language, isActive, ct);
+
+            return Ok(result);
+        }
+
         // GET: api/ProblemsTypes/active
         [HttpGet("Active")]
         public async Task<IActionResult> GetActiveProblemsTypes(CancellationToken ct)
