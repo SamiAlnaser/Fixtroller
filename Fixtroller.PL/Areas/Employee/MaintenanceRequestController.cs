@@ -66,6 +66,41 @@ namespace Fixtroller.PL.Areas.Employee
             }
         }
 
+
+
+        // GET: api/Employee/MaintenanceRequests/{id}/Technicians
+        [HttpGet("{id:int}/Technicians")]
+        public async Task<IActionResult> GetRequestTechnicians(int id, CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language))
+                language = "ar";
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("Id")?.Value
+                         ?? string.Empty;
+
+            // هنا بنمرّر الدور "Employee"
+            var dto = await _maintenanceRequestService.GetRequestTechniciansAsync(
+                id,
+                userId,
+                "Employee",
+                language,
+                ct);
+
+            if (dto is null)
+            {
+                // إما الطلب مش موجود أو المستخدم مش صاحبه
+                return NotFound(new
+                {
+                    message = _localizer["Request_NotFound"].Value
+                });
+            }
+
+            return Ok(dto);
+        }
+
+
         [HttpGet("Mine")]
         public async Task<IActionResult> GetMine(
                      DateTime? createdFrom = null,
@@ -102,6 +137,8 @@ namespace Fixtroller.PL.Areas.Employee
 
             return Ok(list);
         }
+
+
 
         [HttpPatch("{id:int}/CaseMine")]
         public async Task<IActionResult> ChangeCaseMine(int id, [FromBody] ChangeCaseTypeRequestDTO dto, CancellationToken ct)

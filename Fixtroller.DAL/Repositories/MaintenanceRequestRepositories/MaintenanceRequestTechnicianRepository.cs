@@ -41,7 +41,9 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestRepositories
                 TechnicianUserId = technicianUserId,
                 AssignedAtUtc = System.DateTime.UtcNow,
                 ExpectedDuration = expectedDuration,
-                UnassignedAtUtc = null
+                UnassignedAtUtc = null,
+                IsLead = false, // يتحدد لاحقاً
+                TechnicianStatus = TechnicianTaskStatus.Assigned
             });
         }
 
@@ -82,8 +84,95 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestRepositories
                     RequestId = requestId,
                     TechnicianUserId = toAdd,
                     AssignedAtUtc = now,
-                    ExpectedDuration = expectedDuration
+                    ExpectedDuration = expectedDuration,
+                    UnassignedAtUtc = null,
+                    IsLead = false,
+                    TechnicianStatus = TechnicianTaskStatus.Assigned
                 });
         }
+
+        public Task<bool> IsLeadAsync(int requestId, string technicianUserId, CancellationToken ct = default)
+        {
+            return _context.Set<MaintenanceRequestTechnician>()
+                .AnyAsync(t =>
+                    t.RequestId == requestId &&
+                    t.TechnicianUserId == technicianUserId &&
+                    t.UnassignedAtUtc == null &&
+                    t.IsLead,
+                    ct);
+        }
+
+        public Task<List<MaintenanceRequestTechnician>> GetActiveTechniciansWithStatusAsync(
+            int requestId,
+            CancellationToken ct = default)
+        {
+            return _context.Set<MaintenanceRequestTechnician>()
+                .Where(t => t.RequestId == requestId && t.UnassignedAtUtc == null)
+                .ToListAsync(ct);
+        }
+
+        public async Task UpdateTechnicianStatusAsync(
+            int requestId,
+            string technicianUserId,
+            TechnicianTaskStatus status,
+            CancellationToken ct = default)
+        {
+            var tech = await _context.Set<MaintenanceRequestTechnician>()
+                .FirstOrDefaultAsync(t =>
+                    t.RequestId == requestId &&
+                    t.TechnicianUserId == technicianUserId &&
+                    t.UnassignedAtUtc == null,
+                    ct);
+
+            if (tech is null) return;
+
+            tech.TechnicianStatus = status;
+        }
+
+        public async Task SetLeadAsync(
+            int requestId,
+            string technicianUserId,
+            CancellationToken ct = default)
+        {
+            var techs = await _context.Set<MaintenanceRequestTechnician>()
+                .Where(t => t.RequestId == requestId && t.UnassignedAtUtc == null)
+                .ToListAsync(ct);
+
+            foreach (var t in techs)
+                t.IsLead = string.Equals(t.TechnicianUserId, technicianUserId, StringComparison.Ordinal);
+        }
+
+
+        public async Task SetTaskGroupAsync(
+    int requestId,
+    IEnumerable<string> technicianUserIds,
+    string taskGroupKey,
+    string? leadTechnicianUserId,
+    CancellationToken ct = default)
+        {
+            var techIds = technicianUserIds
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Select(id => id.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (!techIds.Any())
+                return;
+
+            var techs = await _context.Set<MaintenanceRequestTechnician>()
+                .Where(t =>
+                    t.RequestId == requestId &&
+                    t.UnassignedAtUtc == null &&
+                    techIds.Contains(t.TechnicianUserId))
+                .ToListAsync(ct);
+
+            foreach (var t in techs)
+            {
+                t.TaskGroupKey = taskGroupKey;
+                t.IsLead = leadTechnicianUserId != null &&
+                           string.Equals(t.TechnicianUserId, leadTechnicianUserId, StringComparison.Ordinal);
+            }
+        }
+
     }
 }

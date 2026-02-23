@@ -106,6 +106,41 @@ namespace Fixtroller.PL.Areas.Technician
             }
         }
 
+
+        // GET: api/Technician/MaintenanceRequests/{id}/Technicians
+        [HttpGet("{id:int}/Technicians")]
+        public async Task<IActionResult> GetRequestTechnicians(int id, CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language))
+                language = "ar";
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("Id")?.Value
+                         ?? string.Empty;
+
+            // هنا الدور "Technician"
+            var dto = await _maintenanceRequestService.GetRequestTechniciansAsync(
+                id,
+                userId,
+                "Technician",
+                language,
+                ct);
+
+            if (dto is null)
+            {
+                // إما الطلب مش موجود أو الفني مش مسموح يشوفه
+                return NotFound(new
+                {
+                    message = _localizer["Request_NotFound"].Value
+                });
+            }
+
+            return Ok(dto);
+        }
+
+
+
         [HttpGet("Mine")]
         public async Task<IActionResult> GetMine(
                      DateTime? createdFrom = null,

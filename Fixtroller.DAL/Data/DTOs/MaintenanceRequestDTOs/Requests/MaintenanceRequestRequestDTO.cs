@@ -17,9 +17,8 @@ namespace Fixtroller.DAL.Data.DTOs.MaintenanceRequestDTOs.Requests
         [StringLength(150)]
         public string Title { get; set; }
 
-        [Required]
         [StringLength(1000)]
-        public string Description { get; set; }
+        public string? Description { get; set; }
 
         public List<IFormFile>? Images { get; set; }
 

@@ -4,6 +4,7 @@ using Fixtroller.DAL.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 #nullable disable
@@ -11,9 +12,11 @@ using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 namespace Fixtroller.DAL.Data.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260220001335_MakeMaintenanceRequestDescriptionNullable")]
+    partial class MakeMaintenanceRequestDescriptionNullable
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -289,9 +292,6 @@ namespace Fixtroller.DAL.Data.Migrations
                     b.Property<int>("Status")
                         .HasColumnType("int");
 
-                    b.Property<int>("TechnicianAssignmentMode")
-                        .HasColumnType("int");
-
                     b.Property<string>("Title")
                         .IsRequired()
                         .HasMaxLength(200)
@@ -363,19 +363,10 @@ namespace Fixtroller.DAL.Data.Migrations
                     b.Property<int?>("ExpectedDuration")
                         .HasColumnType("int");
 
-                    b.Property<bool>("IsLead")
-                        .HasColumnType("bit");
-
                     b.Property<int>("RequestId")
                         .HasColumnType("int");
 
                     b.Property<int>("Status")
-                        .HasColumnType("int");
-
-                    b.Property<string>("TaskGroupKey")
-                        .HasColumnType("nvarchar(max)");
-
-                    b.Property<int>("TechnicianStatus")
                         .HasColumnType("int");
 
                     b.Property<string>("TechnicianUserId")

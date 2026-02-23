@@ -66,13 +66,21 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             int requestId,
             IEnumerable<string> technicianUserIds,
             int? expectedDuration,
+            string? leadTechnicianUserId,
             string language = "ar",
             CancellationToken ct = default);
 
-        // NEW: إزالة فني واحد من الطلب (+ سيُوقف مؤقّته النشط لهذا الطلب)
-        Task<(bool ok, string messageKey)> RemoveTechnicianAsync(
+        Task<(int? RequestId, string MessageKey)> AssignTechniciansIndependentAsync(
+            int requestId,
+            IEnumerable<string> technicianUserIds,
+            int? expectedDuration,
+            string language = "ar",
+            CancellationToken ct = default);
+
+        Task<(int? RequestId, string MessageKey)> RemoveTechnicianAsync(
             int requestId,
             string technicianUserId,
+            string? newLeadTechnicianUserId,
             string language = "ar",
             CancellationToken ct = default);
 
@@ -132,6 +140,22 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
     string userId,
     string userRole,
     CancellationToken ct = default);
+
+
+        Task<(int? RequestId, string MessageKey)> GroupTechniciansAsSharedTaskAsync(
+    int requestId,
+    IEnumerable<string> technicianUserIds,
+    string leadTechnicianUserId,
+    CancellationToken ct = default);
+
+
+        Task<RequestTechniciansViewDTO?> GetRequestTechniciansAsync(
+    int requestId,
+    string userId,
+    string userRole,
+    string language = "ar",
+    CancellationToken ct = default);
+
 
     }
 

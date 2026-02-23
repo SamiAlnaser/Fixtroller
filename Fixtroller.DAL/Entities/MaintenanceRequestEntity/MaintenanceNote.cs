@@ -11,6 +11,8 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         General = 1,        // ملاحظة عادية
         ReopenReason = 2,   // سبب إعادة الفتح (إلزامي بحالة Reopened)
         HelpRequest = 3,    // عند طلب المساعدة (إلزامي بحالة ResourcesNeeded)
+        ManagerReviewReason = 4, // سبب تحويل الطلب لمراجعة المدير
+        NotProcessedReason = 5    // سبب عدم معالجة الطلب (إلزامي لحالة NotProcessed)
     }
 
     public enum NoteAuthor

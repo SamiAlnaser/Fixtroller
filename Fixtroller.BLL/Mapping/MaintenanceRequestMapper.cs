@@ -203,6 +203,7 @@ namespace Fixtroller.BLL.Mapping
                     CaseType.Reopened => "أعيد فتحه",
                     CaseType.Completed => "مكتمل",
                     CaseType.Cancelled => "ملغي",
+                    CaseType.NotProcessed => "لم تتم معالجته",   
                     _ => c.ToString()
                 };
             }
@@ -219,6 +220,7 @@ namespace Fixtroller.BLL.Mapping
                 CaseType.Reopened => "Reopened",
                 CaseType.Completed => "Completed",
                 CaseType.Cancelled => "Cancelled",
+                CaseType.NotProcessed => "Not processed",       
                 _ => c.ToString()
             };
         }
@@ -292,18 +294,21 @@ namespace Fixtroller.BLL.Mapping
 
         private static string GetNoteTypeName(NoteType type, string language = "ar")
         {
-            // لو حاب تحوّلها إلى Resource لاحقًا، سهّلها هنا
             return language.Equals("ar", StringComparison.OrdinalIgnoreCase) ? type switch
             {
                 NoteType.General => "ملاحظة",
                 NoteType.ReopenReason => "سبب إعادة الفتح",
                 NoteType.HelpRequest => "طلب مساعدة",
+                NoteType.ManagerReviewReason => "سبب مراجعة المدير",
+                NoteType.NotProcessedReason => "سبب عدم المعالجة", 
                 _ => "ملاحظة"
             } : type switch
             {
                 NoteType.General => "Note",
                 NoteType.ReopenReason => "Reopen reason",
                 NoteType.HelpRequest => "Help request",
+                NoteType.ManagerReviewReason => "Manager review reason",
+                NoteType.NotProcessedReason => "Not processed reason", 
                 _ => "Note"
             };
         }

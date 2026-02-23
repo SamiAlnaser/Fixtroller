@@ -7,15 +7,13 @@ using System.Threading.Tasks;
 
 namespace Fixtroller.DAL.Data.DTOs.TechnicianDTOs.Requests
 {
-    public class AssignTechniciansRequestDTO
+    public class GroupTechniciansSharedTaskRequestDTO
     {
         [Required]
-        [MinLength(1)]
+        [MinLength(2, ErrorMessage = "Group_TwoTechniciansRequired")]
         public List<string> TechnicianUserIds { get; set; } = new();
 
-        [Range(1, int.MaxValue)]
-        public int? ExpectedDuration { get; set; }
-        public string? LeadTechnicianUserId { get; set; }
-        public bool IndependentTasks { get; set; } = false;
+        [Required]
+        public string LeadTechnicianUserId { get; set; } = default!;
     }
 }

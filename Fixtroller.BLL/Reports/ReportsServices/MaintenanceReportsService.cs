@@ -385,8 +385,10 @@ namespace Fixtroller.BLL.Services.ReportsServices
                 TotalRequests = items.Count,
                 CompletedCount = entities.Count(r => r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed),
                 CancelledCount = entities.Count(r => r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled),
-                OpenCount = entities.Count(r => r.CaseType != DAL.Entities.MaintenanceRequestEntity.CaseType.Completed &&
-                                                r.CaseType != DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled),
+                OpenCount = entities.Count(r =>
+                    r.CaseType != DAL.Entities.MaintenanceRequestEntity.CaseType.Completed &&
+                    r.CaseType != DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled &&
+                    r.CaseType != DAL.Entities.MaintenanceRequestEntity.CaseType.NotProcessed),
                 OverdueCount = items.Count(i => i.IsOverdue)
             };
 
@@ -491,7 +493,9 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             var closedEntities = entities.Where(r =>
                 r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
-                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled).ToList();
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled ||
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.NotProcessed)
+                .ToList();
 
             var openEntities = entities.Except(closedEntities).ToList();
 
@@ -685,7 +689,8 @@ namespace Fixtroller.BLL.Services.ReportsServices
                     r.Status == DAL.Entities.Status.Active &&
                     (
                         r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
-                        r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled
+                        r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled ||
+                        r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.NotProcessed
                     ));
 
             // صلاحيات
@@ -933,7 +938,8 @@ namespace Fixtroller.BLL.Services.ReportsServices
             int assignedCount = requests.Count;
             int completedCount = requests.Count(r =>
                 r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
-                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled);
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled ||
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.NotProcessed);
 
             int overdueCount = 0;
             int slaRequestsCount = 0;
@@ -1131,8 +1137,10 @@ namespace Fixtroller.BLL.Services.ReportsServices
 
             foreach (var r in requests)
             {
-                var isCompleted = r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
-                                  r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled;
+                var isCompleted =
+                    r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
+                    r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled ||
+                    r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.NotProcessed;
 
                 double? closureHours = null;
                 if (r.ClosedAtUtc.HasValue)
@@ -1357,7 +1365,9 @@ namespace Fixtroller.BLL.Services.ReportsServices
             // مغلقة / مفتوحة
             var closedEntities = entities.Where(r =>
                 r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Completed ||
-                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled).ToList();
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.Cancelled ||
+                r.CaseType == DAL.Entities.MaintenanceRequestEntity.CaseType.NotProcessed)
+                .ToList();
 
             var openEntities = entities.Except(closedEntities).ToList();
 

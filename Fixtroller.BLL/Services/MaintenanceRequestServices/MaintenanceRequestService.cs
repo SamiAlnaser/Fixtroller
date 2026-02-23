@@ -231,7 +231,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 newCase == CaseType.Processing ||
                 newCase == CaseType.ResourcesNeeded ||
                 newCase == CaseType.Processed ||
-                newCase == CaseType.Completed;
+                newCase == CaseType.Completed ||
+                newCase == CaseType.NotProcessed;
 
             if (isTech && !techAllowed)
             {
@@ -253,7 +254,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             entity.CaseType = newCase;
 
             // في الحالات النهائية، نحدّث UpdatedAt
-            if (entity.CaseType == CaseType.Processed || entity.CaseType == CaseType.Completed)
+            if (entity.CaseType == CaseType.Processed || entity.CaseType == CaseType.Completed || entity.CaseType == CaseType.NotProcessed)
             {
                 entity.UpdatedAt = DateTime.UtcNow;
                 entity.ClosedAtUtc = DateTime.UtcNow;
@@ -670,35 +671,52 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             var dto = MaintenanceRequestMapper.ToResponse(e, role, _fileService.GetPublicUrl, language, isOwner, includeOwnerDetails: isAdmin || isManager || isTechnician);
 
-            // لو المستخدم الحالي فني: نبحث عن مؤقّت عمل نشط له على هذا الطلب
+
             if (isTechnician)
             {
-                var activeEntry = await _workRepo.Query(asTracking: false)
+                var entries = await _workRepo.Query(asTracking: false)
                     .Where(w => w.RequestId == e.Id &&
-                                w.TechnicianUserId == userId &&
-                                w.StoppedAt == null)
-                    .OrderByDescending(w => w.StartedAt)
-                    .FirstOrDefaultAsync(ct);
+                                w.TechnicianUserId == userId)
+                    .OrderBy(w => w.StartedAt)
+                    .ToListAsync(ct);
 
-                if (activeEntry is not null)
+                if (entries.Count > 0)
                 {
-                    var now = DateTimeOffset.UtcNow;
-                    var seconds = (int)Math.Max(0, (now - activeEntry.StartedAt).TotalSeconds);
+                    // آخر جلسة للفني على هذا الطلب (ممكن تكون شغّالة أو مسكّرة)
+                    var lastEntry = entries[^1];
+                    var isActive = !lastEntry.StoppedAt.HasValue;
+                    dto.IsCurrentTechnicianSessionActive = isActive;
 
-                    dto.CurrentTechnicianActiveSeconds = seconds;
+                    var now = DateTimeOffset.UtcNow;
+
+                    // مجموع كل الوقت: كل الجلسات + الجلسة الحالية لو شغّالة
+                    var totalSeconds = entries.Sum(w =>
+                    {
+                        var endTime = w.StoppedAt ?? now;
+                        var span = endTime - w.StartedAt;
+                        return (int)Math.Max(0, span.TotalSeconds);
+                    });
+
+                    dto.CurrentTechnicianActiveSeconds = totalSeconds;
                 }
             }
             await EnrichAssignedTechniciansNamesAsync(dto, language, ct);
+
+            if (isAdmin || isManager)
+            {
+                await EnrichAssignedTechniciansActiveWorkAsync(dto, ct);
+            }
 
             return dto;
         }
 
         public async Task<(int? RequestId, string MessageKey)> AssignTechniciansAsync(
-        int requestId,
-        IEnumerable<string> technicianUserIds,
-        int? expectedDuration,
-        string language = "ar",
-        CancellationToken ct = default)
+            int requestId,
+            IEnumerable<string> technicianUserIds,
+            int? expectedDuration,
+            string? leadTechnicianUserId,   // 👈 الباراميتر الجديد
+            string language = "ar",
+            CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -708,6 +726,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (request.CaseType == CaseType.Completed || request.CaseType == CaseType.Cancelled)
                 return (null, "Request_IsLocked");
 
+            // قائمة الفنيين الجدد (اللي جايين من الـ API)
             var list = (technicianUserIds ?? Enumerable.Empty<string>())
                        .Where(s => !string.IsNullOrWhiteSpace(s))
                        .Select(s => s.Trim())
@@ -717,7 +736,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (list.Count == 0)
                 return (null, "Technician_ListEmpty");
 
-            // تحقق من صحة كل معرّف ودوره
+            // تحقق من صحة كل فني جديد (اللي في list)
             foreach (var tid in list)
             {
                 var tech = await _techRepo.GetByIdAsync(tid, ct);
@@ -733,27 +752,90 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 }
             }
 
+            // الفنيين الحاليين النشطين على الطلب
+            var current = await _reqTechRepo.GetActiveTechniciansWithStatusAsync(requestId, ct); // نحتاج IsLead
+            var currentIds = current
+                .Select(t => t.TechnicianUserId)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            // المسؤول القديم (لو موجود)
+            var existingLeadId = current
+                .FirstOrDefault(t => t.IsLead)?
+                .TechnicianUserId;
+
+            // الفنيين الجدد فقط (مش موجودين أصلاً)
+            var added = list.Except(currentIds, StringComparer.Ordinal).ToList();
+
+            // اتحاد القديم + الجدد = كل الفنيين بعد العملية
+            var newActiveList = currentIds
+                .Concat(added)
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            // تنظيف الـ Lead القادم من الـ DTO
+            leadTechnicianUserId = leadTechnicianUserId?.Trim();
+
+            string? finalLeadId = null;
+
+            // =========================
+            //  تحديد المسؤول النهائي
+            // =========================
+
+            if (!string.IsNullOrWhiteSpace(leadTechnicianUserId))
+            {
+                // المسؤول الجديد لازم يكون معيَّن (قديم أو من الجدد)
+                if (!newActiveList.Contains(leadTechnicianUserId, StringComparer.Ordinal))
+                    return (null, "Technician_LeadMustBeAssigned"); // اضف لها ترجمة
+
+                finalLeadId = leadTechnicianUserId;
+            }
+            else
+            {
+                // ما في مسؤول جديد مبعوت
+
+                if (!string.IsNullOrWhiteSpace(existingLeadId) &&
+                    newActiveList.Contains(existingLeadId, StringComparer.Ordinal))
+                {
+                    // نحتفظ بالمسؤول القديم لو لسه ضمن الفريق
+                    finalLeadId = existingLeadId;
+                }
+                else
+                {
+                    // لو ما في Lead قديم، و list فيها عنصر واحد فقط → نعتبره هو المسؤول
+                    if (newActiveList.Count == 1)
+                    {
+                        finalLeadId = newActiveList[0];
+                    }
+                    else
+                    {
+                        // أكثر من فني وما في Lead قديم ولا جديد → رجّع Error
+                        return (null, "Technician_LeadRequired"); // اضف لها ترجمة
+                    }
+                }
+            }
+
             await _uow.BeginTransactionAsync(ct);
             try
             {
-                // الفنيين الحاليين
-                var current = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
-
-                // الفنيين الجدد فقط (اللي مش موجودين أصلاً)
-                var added = list.Except(current, StringComparer.Ordinal).ToList();
-
-                // نعمل اتحاد للقوائم: الحالي + الجدد
-                var newActiveList = current
-                    .Concat(added)
-                    .Distinct(StringComparer.Ordinal)
-                    .ToList();
-
-                // مزامنة التعيينات بدون شطب السابقين
+                // مزامنة التعيينات: نخلي كل newActiveList نشطين
+                // (ما بنشطب الفنيين القدامى، لأننا عاملين current ∪ list)
                 await _reqTechRepo.SetActiveListAsync(requestId, newActiveList, expectedDuration, ct);
 
-                    request.CaseType = CaseType.Processing;
-                
+                // تحديد المود حسب عدد الفنيين
+                if (newActiveList.Count == 1)
+                {
+                    request.TechnicianAssignmentMode = TechnicianAssignmentMode.Single;
+                }
+                else if (newActiveList.Count > 1)
+                {
+                    request.TechnicianAssignmentMode = TechnicianAssignmentMode.TeamShared;
+                }
 
+                // ضبط المسؤول النهائي
+                await _reqTechRepo.SetLeadAsync(requestId, finalLeadId!, ct);
+
+                request.CaseType = CaseType.Processing;
                 request.UpdatedAt = DateTime.UtcNow;
 
                 await _uow.SaveAndCommitAsync(ct);
@@ -763,7 +845,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 var reqId = request.Id;
                 var notifLanguage = language;
 
-                // إشعارات للفنيين الجدد فقط (في الخلفية - non-blocking)
+                // إشعارات للفنيين الجدد فقط
                 try
                 {
                     foreach (var tid in addedLocal)
@@ -776,18 +858,17 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                             Severity = NotificationSeverity.Info,
                             Language = notifLanguage,
 
-                            // ✅ localization
                             TitleKey = "NOTIF_ASSIGNED_TITLE",
                             BodyKey = "NOTIF_ASSIGNED_BODY",
                             BodyArgs = new object[] { reqId },
 
                             Channels = NotificationChannel.InApp | NotificationChannel.Email
-                        }, ct); // استخدم ct بدل CancellationToken.None
+                        }, ct);
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    // الريكوست اتكنسل، عادي ما نعمل إشي
+                    // الريكوست اتكنسل، عادي
                 }
                 catch (Exception ex)
                 {
@@ -796,7 +877,6 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         "Notifications failed for AssignTechniciansAsync. RequestId={RequestId}",
                         reqId);
                 }
-
 
                 return (request.Id, "Technicians_Assigned");
             }
@@ -856,8 +936,14 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             {
                 await _reqTechRepo.AddActiveAsync(requestId, technicianUserId, expectedDuration, ct);
 
+                if (request.Technicians == null || !request.Technicians.Any(t => t.UnassignedAtUtc == null))
+                {
+                    request.TechnicianAssignmentMode = TechnicianAssignmentMode.Single;
+                }
 
-                    request.CaseType = CaseType.Processing;
+                await _reqTechRepo.SetLeadAsync(requestId, technicianUserId, ct);
+
+                request.CaseType = CaseType.Processing;
                 
 
                 request.UpdatedAt = DateTime.UtcNow;
@@ -921,111 +1007,463 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             }
         }
 
-
-        public async Task<(bool ok, string messageKey)> RemoveTechnicianAsync(
-     int requestId,
-     string technicianUserId,
-     string language = "ar",
-     CancellationToken ct = default)
+        public async Task<(int? RequestId, string MessageKey)> AssignTechniciansIndependentAsync(
+            int requestId,
+            IEnumerable<string> technicianUserIds,
+            int? expectedDuration,
+            string language = "ar",
+            CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
-            // 1) تأكد الطلب موجود
-            var r = await _repository.GetForUpdateAsync(requestId, ct);
-            if (r is null) return (false, "Request_NotFound");
+            var request = await _repository.GetForAssignmentAsync(requestId, ct);
+            if (request is null) return (null, "Request_NotFound");
 
-            // 2) تأكد أن الفني مُعيَّن نشطًا أصلًا
-            var isActive = await _reqTechRepo.IsActiveAssignedAsync(requestId, technicianUserId, ct);
-            if (!isActive) return (false, "Technician_NotActiveOnRequest");
+            if (request.CaseType == CaseType.Completed || request.CaseType == CaseType.Cancelled)
+                return (null, "Request_IsLocked");
+
+            var list = (technicianUserIds ?? Enumerable.Empty<string>())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (list.Count == 0)
+                return (null, "Technician_ListEmpty");
+
+            // تحقق من صلاحية كل فني (نفس اللي كان عندك)
+            foreach (var tid in list)
+            {
+                var tech = await _techRepo.GetByIdAsync(tid, ct);
+                if (tech is null) return (null, "Technician_NotFound");
+
+                var isTechnician = await _techRepo.IsInRoleAsync(tid, "Technician", ct);
+                if (!isTechnician) return (null, "User_NotTechnician");
+
+                var nowUtc = DateTimeOffset.UtcNow;
+                if (tech.LockoutEnd.HasValue && tech.LockoutEnd > nowUtc)
+                {
+                    return (null, "Technician_IsOnVacation");
+                }
+            }
 
             await _uow.BeginTransactionAsync(ct);
             try
             {
-                // 3) شطب التعيين النشط
-                await _reqTechRepo.RemoveActiveAsync(requestId, technicianUserId, ct);
+                // الفنيين الحاليين قبل التعديل (userIds)
+                var current = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
 
-                // 4) إيقاف أي مؤقت نشط لهذا الفني على هذا الطلب
-                await _workRepo.StopActiveForRequestAndTechAsync(requestId, technicianUserId, ct);
+                // للفروق (لأجل الإشعارات)
+                var added = list.Except(current, StringComparer.Ordinal).ToList();
 
-                // 5) تحديث طابع الوقت
-                r.UpdatedAt = DateTime.UtcNow;
+                // نحفظ المود القديم قبل التحويل
+                var previousMode = request.TechnicianAssignmentMode;
 
-                // 6) حفظ + Commit
+                // نثبت القائمة الرسمية الجديدة
+                await _reqTechRepo.SetActiveListAsync(requestId, list, expectedDuration, ct);
+
+                // نجيب كل الفنيين النشطين بعد التعديل مع الحالة والجروب
+                var activeTechs = await _reqTechRepo.GetActiveTechniciansWithStatusAsync(requestId, ct);
+
+                var currentSet = new HashSet<string>(current, StringComparer.Ordinal);
+
+                var existingTechs = activeTechs
+                    .Where(t => currentSet.Contains(t.TechnicianUserId))
+                    .ToList();
+
+                var newTechs = activeTechs
+                    .Where(t => !currentSet.Contains(t.TechnicianUserId))
+                    .ToList();
+
+                // نضبط المود على السيناريو الثالث دائماً
+                request.TechnicianAssignmentMode = TechnicianAssignmentMode.ParallelIndependent;
+
+                if (previousMode == TechnicianAssignmentMode.ParallelIndependent)
+                {
+                    // ✅ الطلب كان أصلاً في السيناريو الثالث:
+                    // ما نلمس الجروبات أو الـ Lead أو الـ Status للقديمين
+                    // نهيّئ فقط الجدد كمهمات مستقلة
+                    foreach (var t in newTechs)
+                    {
+                        t.TaskGroupKey = null;
+                        t.IsLead = false;
+                        t.TechnicianStatus = TechnicianTaskStatus.Assigned;
+                    }
+
+                    // نعيد حساب حالة الطلب بناءً على حالات الفنيين
+                    await RecalculateRequestCaseTypeForParallelIndependentAsync(request, ct);
+                }
+                else
+                {
+                    // ✅ تحويل من Single أو TeamShared إلى ParallelIndependent
+
+                    // 1) نكوّن جروب واحد من الفنيين القدامى (لو في حدا)
+                    if (existingTechs.Count > 0)
+                    {
+                        var groupKey = Guid.NewGuid().ToString("N");
+
+                        // نحافظ على نفس الـ Lead القديم إن وجد، وإلا أول واحد
+                        var oldLeadId = existingTechs.FirstOrDefault(t => t.IsLead)?.TechnicianUserId
+                                        ?? existingTechs[0].TechnicianUserId;
+
+                        foreach (var t in existingTechs)
+                        {
+                            t.TaskGroupKey = groupKey;
+                            t.IsLead = string.Equals(t.TechnicianUserId, oldLeadId, StringComparison.Ordinal);
+                            // نبدأ مهامهم كـ Assigned في المود الثالث
+                            t.TechnicianStatus = TechnicianTaskStatus.Assigned;
+                        }
+                    }
+
+                    // 2) الفنيين الجدد → مهام مستقلة
+                    foreach (var t in newTechs)
+                    {
+                        t.TaskGroupKey = null;
+                        t.IsLead = false;
+                        t.TechnicianStatus = TechnicianTaskStatus.Assigned;
+                    }
+
+                    // أول دخول للسيناريو الثالث → نبدأ الطلب كـ Processing
+                    request.CaseType = CaseType.Processing;
+                }
+
+                request.UpdatedAt = DateTime.UtcNow;
+
                 await _uow.SaveAndCommitAsync(ct);
 
-                // نحضّر قيم الإشعارات للخلفية
-                var reqId = r.Id;
-                var techIdLocal = technicianUserId;
+                // إشعارات للفنيين الجدد (نفس اللي كان عندك بالضبط)
+                var addedLocal = added.ToList();
+                var reqId = request.Id;
                 var notifLanguage = language;
 
-                // 🔔 الإشعارات في الخلفية (non-blocking)
                 try
                 {
-                    // إشعار للفني الذي تمّت إزالته
-                    await _notificationService.CreateAsync(new NotificationCreateModel
-                    {
-                        UserId = techIdLocal,
-                        MaintenanceRequestId = reqId,
-                        Type = NotificationType.RequestStatusChanged,
-                        Severity = NotificationSeverity.Info,
-                        Language = notifLanguage,
-
-                        // ✅ localization
-                        TitleKey = "NOTIF_REMOVED_FROM_REQUEST_TITLE",
-                        BodyKey = "NOTIF_REMOVED_FROM_REQUEST_BODY",
-                        BodyArgs = new object[] { reqId },
-
-                        Channels = NotificationChannel.InApp | NotificationChannel.Email
-                    }, ct); // بدل CancellationToken.None
-
-                    // إشعارات لمدراء الصيانة
-                    var recipients = new HashSet<string>(StringComparer.Ordinal);
-
-                    await AddRoleRecipientsAsync(recipients, "MaintenanceManager", null, ct);
-                    await AddRoleRecipientsAsync(recipients, "Admin", null, ct);
-
-                    foreach (var uid in recipients)
+                    foreach (var tid in addedLocal)
                     {
                         await _notificationService.CreateAsync(new NotificationCreateModel
                         {
-                            UserId = uid,
+                            UserId = tid,
                             MaintenanceRequestId = reqId,
-                            Type = NotificationType.RequestStatusChanged,
+                            Type = NotificationType.RequestAssigned,
                             Severity = NotificationSeverity.Info,
                             Language = notifLanguage,
-                            TitleKey = "NOTIF_TECH_REMOVED_TITLE",
-                            BodyKey = "NOTIF_TECH_REMOVED_BODY",
+                            TitleKey = "NOTIF_ASSIGNED_TITLE",
+                            BodyKey = "NOTIF_ASSIGNED_BODY",
                             BodyArgs = new object[] { reqId },
-                            Channels = NotificationChannel.InApp | NotificationChannel.Email
-                        }, ct);
+                        });
                     }
                 }
                 catch (OperationCanceledException)
                 {
-                    // الريكوست اتكنسل، ما في داعي نعمل إشي
+                    // تم إلغاء الريكوست، نتجاهل الإشعارات
                 }
                 catch (Exception ex)
                 {
                     _logger.LogError(
                         ex,
-                        "Notifications failed for RemoveTechnicianAsync. RequestId={RequestId}, TechnicianUserId={TechnicianUserId}",
-                        reqId,
-                        techIdLocal);
+                        "Notifications failed for AssignTechniciansIndependentAsync. RequestId={RequestId}",
+                        requestId);
                 }
 
-
-                return (true, "Technician_Removed");
+                return (request.Id, "Technicians_Assigned");
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex,
-                    "Error while removing technician from request. RequestId={RequestId}, TechnicianUserId={TechnicianUserId}",
-                    requestId,
-                    technicianUserId);
+                _logger.LogError(
+                    ex,
+                    "Error while assigning technicians in ParallelIndependent mode. RequestId={RequestId}",
+                    requestId);
 
                 await _uow.RollbackAsync(ct);
                 throw;
             }
+        }
+
+
+
+        public async Task<(int? RequestId, string MessageKey)> GroupTechniciansAsSharedTaskAsync(
+    int requestId,
+    IEnumerable<string> technicianUserIds,
+    string leadTechnicianUserId,
+    CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var request = await _repository.GetByIdAsync(requestId, ct: ct);
+            if (request is null)
+                return (null, "Request_NotFound");
+
+            // لازم يكون في السيناريو الثالث
+            if (request.TechnicianAssignmentMode != TechnicianAssignmentMode.ParallelIndependent)
+                return (null, "Request_NotInParallelMode");
+
+            var list = (technicianUserIds ?? Enumerable.Empty<string>())
+                .Where(s => !string.IsNullOrWhiteSpace(s))
+                .Select(s => s.Trim())
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (!list.Any())
+                return (null, "Technician_ListEmpty");
+
+            if (!list.Contains(leadTechnicianUserId))
+                return (null, "Group_LeadMustBeInList");
+
+            // تأكد أنهم فعلياً معينين على الطلب
+            var activeTechs = await _reqTechRepo.GetActiveTechniciansWithStatusAsync(requestId, ct);
+            var activeIds = activeTechs
+                .Select(t => t.TechnicianUserId)
+                .ToHashSet(StringComparer.Ordinal);
+
+            if (!list.All(id => activeIds.Contains(id)))
+                return (null, "Technician_NotAssigned");
+
+            // مفتاح للمجموعة الجديدة (مهمة مشتركة)
+            var taskGroupKey = Guid.NewGuid().ToString("N");
+
+            await _reqTechRepo.SetTaskGroupAsync(requestId, list, taskGroupKey, leadTechnicianUserId, ct);
+
+            await _uow.SaveAndCommitAsync(ct);
+
+            return (request.Id, "Group_Created");
+        }
+
+
+
+
+        public async Task<(int? RequestId, string MessageKey)> RemoveTechnicianAsync(
+      int requestId,
+      string technicianUserId,
+      string? newLeadTechnicianUserId,
+      string language = "ar",
+      CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            // نجيب الطلب مع الفنيين للتعديل
+            var r = await _repository.GetForUpdateAsync(requestId, ct);
+            if (r is null)
+                return (null, "Request_NotFound");
+
+            var activeTechs = await _reqTechRepo.GetActiveTechniciansWithStatusAsync(requestId, ct);
+            var currentTech = activeTechs.FirstOrDefault(t => t.TechnicianUserId == technicianUserId);
+
+            if (currentTech is null)
+                return (null, "Technician_NotAssigned");
+
+            var mode = r.TechnicianAssignmentMode;
+
+            await _uow.BeginTransactionAsync(ct);
+            try
+            {
+                // نوقف عداد هذا الفني فقط
+                await _workRepo.StopActiveForRequestAndTechAsync(requestId, technicianUserId, ct);
+
+                var activeBefore = activeTechs.ToList();
+
+                if (mode == TechnicianAssignmentMode.Single)
+                {
+                    // حذف الفني الوحيد أو المسؤول في سيناريو Single
+                    await _reqTechRepo.RemoveActiveAsync(requestId, technicianUserId, ct);
+                }
+                else if (mode == TechnicianAssignmentMode.TeamShared)
+                {
+                    // نحذف الفني من الفريق
+                    await _reqTechRepo.RemoveActiveAsync(requestId, technicianUserId, ct);
+
+                    // الفنيين الباقيين بعد الحذف
+                    var remaining = activeBefore
+                        .Where(t => t.TechnicianUserId != technicianUserId)
+                        .ToList();
+
+                    if (remaining.Count > 0 && currentTech.IsLead)
+                    {
+                        // هنا الشرط اللي طلبته:
+                        // لو بنحذف الـ Lead في TeamShared
+                        // لازم نحدد Lead جديد من نفس الفريق
+
+                        if (string.IsNullOrWhiteSpace(newLeadTechnicianUserId))
+                        {
+                            await _uow.RollbackAsync(ct);
+                            return (null, "Technician_NewLeadRequired");
+                        }
+
+                        var inTeam = remaining
+                            .Any(t => t.TechnicianUserId == newLeadTechnicianUserId);
+
+                        if (!inTeam)
+                        {
+                            await _uow.RollbackAsync(ct);
+                            return (null, "Technician_NewLeadMustBeFromTeam");
+                        }
+
+                        await _reqTechRepo.SetLeadAsync(requestId, newLeadTechnicianUserId, ct);
+                    }
+                    else
+                    {
+                        // لو مو Lead أو ما ظل حدا، ما في حاجة لـ newLead
+                    }
+                }
+                else if (mode == TechnicianAssignmentMode.ParallelIndependent)
+                {
+                    // سيناريو ٣: مهام مستقلة / جروبات فرعية
+                    string groupKey = string.IsNullOrWhiteSpace(currentTech.TaskGroupKey)
+                        ? currentTech.TechnicianUserId
+                        : currentTech.TaskGroupKey!;
+
+                    var group = activeBefore
+                        .Where(t =>
+                            (string.IsNullOrWhiteSpace(t.TaskGroupKey)
+                                ? t.TechnicianUserId
+                                : t.TaskGroupKey!) == groupKey)
+                        .ToList();
+
+                    bool hasRealGroup = group.Count > 1;
+                    bool isGroupLead = hasRealGroup && currentTech.IsLead;
+
+                    if (isGroupLead)
+                    {
+                        // نفس منطق TeamShared بس على مستوى الجروب الفرعي:
+                        // لازم يكون في Lead جديد من نفس الجروب
+                        if (string.IsNullOrWhiteSpace(newLeadTechnicianUserId))
+                        {
+                            await _uow.RollbackAsync(ct);
+                            return (null, "Technician_NewLeadRequired");
+                        }
+
+                        // newLead لازم يكون من نفس الجروب، وغير الفني اللي بنحذفه
+                        var newLeadInGroup = group.Any(t =>
+                            t.TechnicianUserId == newLeadTechnicianUserId &&
+                            t.TechnicianUserId != technicianUserId);
+
+                        if (!newLeadInGroup)
+                        {
+                            await _uow.RollbackAsync(ct);
+                            return (null, "Technician_NewLeadMustBeFromTeam");
+                        }
+                    }
+
+                    // نحذف الفني من الطلب
+                    await _reqTechRepo.RemoveActiveAsync(requestId, technicianUserId, ct);
+
+                    // لو الجروب حقيقي ولسا فيه أعضاء بعد الحذف وكان المحذوف هو الـ Lead
+                    if (isGroupLead)
+                    {
+                        var remainingGroupMembers = group
+                            .Where(t => t.TechnicianUserId != technicianUserId)
+                            .ToList();
+
+                        if (remainingGroupMembers.Count > 0)
+                        {
+                            // نضبط IsLead داخل هذا الجروب فقط:
+                            foreach (var member in remainingGroupMembers)
+                                member.IsLead = member.TechnicianUserId == newLeadTechnicianUserId;
+                        }
+                    }
+
+                    // إعادة حساب حالة الطلب بناءً على الجروبات المتبقية
+                    await RecalculateRequestCaseTypeForParallelIndependentAsync(r, ct);
+                }
+
+                r.UpdatedAt = DateTime.UtcNow;
+
+                await _uow.SaveAndCommitAsync(ct);
+
+                return (r.Id, "Technician_Removed");
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(
+                    ex,
+                    "Error while removing technician {TechId} from request {RequestId}",
+                    technicianUserId,
+                    requestId);
+
+                await _uow.RollbackAsync(ct);
+                throw;
+            }
+        }
+
+
+        public async Task<RequestTechniciansViewDTO?> GetRequestTechniciansAsync(
+         int requestId,
+         string userId,
+         string userRole,
+         string language = "ar",
+         CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var request = await _repository.GetForAssignmentAsync(requestId, ct);
+            if (request is null)
+                return null; // Request_NotFound
+
+            bool isAdmin = userRole.Equals("Admin", StringComparison.OrdinalIgnoreCase);
+            bool isManager = userRole.Equals("MaintenanceManager", StringComparison.OrdinalIgnoreCase);
+            bool isTechnician = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+            bool isEmployee = userRole.Equals("Employee", StringComparison.OrdinalIgnoreCase);
+
+            // 🔒 صلاحيات الـ Employee (صاحب الطلب)
+            if (isEmployee)
+            {
+                var isOwnerOrCreator =
+                    string.Equals(request.OwnerUserId, userId, StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(request.CreatedByUserId, userId, StringComparison.OrdinalIgnoreCase);
+
+                if (!isOwnerOrCreator)
+                {
+                    return null;
+                }
+            }
+
+             
+             if (isTechnician)
+            {
+                var isAssigned = (request.Technicians ?? Enumerable.Empty<MaintenanceRequestTechnician>())
+                    .Any(t => t.UnassignedAtUtc == null &&
+                              t.TechnicianUserId == userId);
+
+                if (!isAssigned)
+                    return null;
+            }
+
+            var mode = request.TechnicianAssignmentMode;
+
+            var technicians = (request.Technicians ?? Enumerable.Empty<MaintenanceRequestTechnician>())
+                .Where(t => t.UnassignedAtUtc == null)
+                .OrderByDescending(t => t.AssignedAtUtc)
+                .Select(t => new RequestTechnicianItemDTO
+                {
+                    UserId = t.TechnicianUserId,
+                    AssignedAtUtc = t.AssignedAtUtc.Kind == DateTimeKind.Utc
+                        ? t.AssignedAtUtc
+                        : DateTime.SpecifyKind(t.AssignedAtUtc, DateTimeKind.Utc),
+                    ExpectedDuration = t.ExpectedDuration,
+                    IsLead = t.IsLead,
+                    TaskGroupKey = t.TaskGroupKey,
+                    // 👉 الـ TechnicianStatus يرجع فقط في السيناريو الثالث
+                    TechnicianStatus = mode == TechnicianAssignmentMode.ParallelIndependent
+                        ? t.TechnicianStatus
+                        : (TechnicianTaskStatus?)null
+                })
+                .ToList();
+
+            var dto = new RequestTechniciansViewDTO
+            {
+                RequestId = request.Id,
+                TechnicianAssignmentMode = mode,
+                Technicians = technicians
+            };
+
+            await EnrichRequestTechniciansNamesAsync(dto.Technicians, language, ct);
+
+            // Admin / Manager بس هم اللي يشوفوا HasActiveWork (لو حاب)
+            if (isAdmin || isManager)
+            {
+                await EnrichRequestTechniciansActiveWorkAsync(dto.RequestId, dto.Technicians, ct);
+            }
+
+            return dto;
         }
 
         public async Task<(bool ok, string messageKey)> StartWorkAsync(
@@ -1128,13 +1566,13 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
 
         public async Task<(MaintenanceRequestResponseDTO? Response, string MessageKey)> ChangeCaseAsync(
-         int requestId,
-         ChangeCaseTypeRequestDTO dto,
-         string userId,
-         string userRole,
-         bool preferOwnerPath,
-         string language = "ar",
-         CancellationToken ct = default)
+    int requestId,
+    ChangeCaseTypeRequestDTO dto,
+    string userId,
+    string userRole,
+    bool preferOwnerPath,
+    string language = "ar",
+    CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
@@ -1175,7 +1613,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             if (newCase is CaseType.Submitted or CaseType.Modified)
                 return (null, "Case_AutoManaged");
 
-            bool needNote = newCase is CaseType.Reopened or CaseType.ResourcesNeeded;
+            bool needNote =
+                newCase is CaseType.Reopened
+                       or CaseType.ResourcesNeeded
+                       or CaseType.ManagerReview
+                       or CaseType.NotProcessed;
+
             if (needNote && string.IsNullOrWhiteSpace(dto.NoteText))
                 return (null, "Note_Required_For_This_Case");
 
@@ -1186,6 +1629,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             {
                 CaseType.Reopened => NoteType.ReopenReason,
                 CaseType.ResourcesNeeded => NoteType.HelpRequest,
+                CaseType.ManagerReview => NoteType.ManagerReviewReason,
+                CaseType.NotProcessed => NoteType.NotProcessedReason,
                 _ => dto.NoteType ?? NoteType.General
             };
 
@@ -1205,7 +1650,12 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         r.Priority = dto.Priority.Value;
 
                     if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
-                        r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
+                        r.Notes.Add(MaintenanceRequestMapper.ToNote(
+                            dto.NoteText!,
+                            inferredType,
+                            author,
+                            userId,
+                            r.Id));
 
                     if (newCase == CaseType.Reopened)
                     {
@@ -1243,11 +1693,11 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                             r,
                             newCaseOwner,
                             langOwner,
-                            ct); // بدل CancellationToken.None
+                            ct);
                     }
                     catch (OperationCanceledException)
                     {
-                        // الريكوست اتكنسل، مافي داعي نكبّرها
+                        // الريكوست اتكنسل
                     }
                     catch (Exception ex)
                     {
@@ -1258,9 +1708,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                             newCaseOwner);
                     }
 
-
-                    var fresh2 = await GetByIdAsync(requestId, userId, userRole, language, ct);
-                    return (fresh2, "Case_Changed");
+                    var freshOwner = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                    return (freshOwner, "Case_Changed");
                 }
 
                 // ===================== مسار الفني =====================
@@ -1274,61 +1723,235 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     if (!allowedTech.Contains(newCase))
                         return (null, "Case_NotAllowedForTechnician");
 
-                    r.CaseType = newCase;
-                    if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
-                        r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
+                    var mode = r.TechnicianAssignmentMode;
 
-                    r.UpdatedAt = DateTime.UtcNow;
-
-                    // الفني لما يغيّر الحالة نوقف أي مؤقت شغال
-                    await _workRepo.StopActiveForRequestAsync(requestId, ct);
-
-                    await _uow.SaveAndCommitAsync(ct);
-
-                    // إشعار تغيير الحالة في الخلفية (مسار الفني)
-                    var reqIdTech = r.Id;
-                    var newCaseTech = newCase;
-                    var langTech = language;
-
-                    try
+                    // Single / TeamShared → فقط الـ Lead يقدر يغيّر الحالة
+                    if (mode == TechnicianAssignmentMode.Single || mode == TechnicianAssignmentMode.TeamShared)
                     {
-                        await SendStatusChangeNotificationAsync(
-                            r,
-                            newCaseTech,
-                            langTech,
-                            ct); // بدل CancellationToken.None
-                    }
-                    catch (OperationCanceledException)
-                    {
-                        // الريكوست اتكنسل، خلاص ما بنكمل إشعارات
-                    }
-                    catch (Exception ex)
-                    {
-                        _logger.LogError(
-                            ex,
-                            "Status change notification failed (technician path). RequestId={RequestId}, NewCase={NewCase}",
-                            reqIdTech,
-                            newCaseTech);
+                        var isLeadTech = await _reqTechRepo.IsLeadAsync(requestId, userId, ct);
+                        if (!isLeadTech)
+                            return (null, "Technician_OnlyLeaderCanChangeCase");
+
+                        r.CaseType = newCase;
+
+                        if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
+                            r.Notes.Add(MaintenanceRequestMapper.ToNote(
+                                dto.NoteText!,
+                                inferredType,
+                                author,
+                                userId,
+                                r.Id));
+
+                        r.UpdatedAt = DateTime.UtcNow;
+
+                        // في السيناريوهات المشتركة نوقف كل المؤقتات
+                        await _workRepo.StopActiveForRequestAsync(requestId, ct);
+
+                        await _uow.SaveAndCommitAsync(ct);
+
+                        var reqIdTech = r.Id;
+                        var newCaseTech = newCase;
+                        var langTech = language;
+
+                        try
+                        {
+                            await SendStatusChangeNotificationAsync(
+                                r,
+                                newCaseTech,
+                                langTech,
+                                ct);
+                        }
+                        catch (OperationCanceledException)
+                        {
+                        }
+                        catch (Exception ex)
+                        {
+                            _logger.LogError(
+                                ex,
+                                "Status change notification failed (technician path, shared). RequestId={RequestId}, NewCase={NewCase}",
+                                reqIdTech,
+                                newCaseTech);
+                        }
+
+                        var freshTechShared = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                        return (freshTechShared, "Case_Changed");
                     }
 
+                    // ParallelIndependent → كل فني / مجموعة لها حالتها الخاصة
+                    if (mode == TechnicianAssignmentMode.ParallelIndependent)
+                    {
+                        var newTechStatus = newCase switch
+                        {
+                            CaseType.ResourcesNeeded => TechnicianTaskStatus.ResourcesNeeded,
+                            CaseType.ManagerReview => TechnicianTaskStatus.WaitingManagerReview,
+                            _ => TechnicianTaskStatus.Assigned
+                        };
 
-                    var fresh1 = await GetByIdAsync(requestId, userId, userRole, language, ct);
-                    return (fresh1, "Case_Changed");
+                        // نجيب كل الفنيين النشطين على الطلب
+                        var activeTechs = await _reqTechRepo.GetActiveTechniciansWithStatusAsync(requestId, ct);
+
+                        var currentTech = activeTechs
+                            .FirstOrDefault(t => t.TechnicianUserId == userId);
+
+                        if (currentTech is null)
+                            return (null, "Technician_NotAssigned");
+
+                        // نحدد مفتاح المجموعة لهذا الفني
+                        string groupKey = string.IsNullOrWhiteSpace(currentTech.TaskGroupKey)
+                            ? currentTech.TechnicianUserId          // فني شغال لوحده
+                            : currentTech.TaskGroupKey!;            // مجموعة مشتركة
+
+                        // نجيب كل أعضاء المجموعة
+                        var group = activeTechs
+                            .Where(t =>
+                                (string.IsNullOrWhiteSpace(t.TaskGroupKey)
+                                    ? t.TechnicianUserId
+                                    : t.TaskGroupKey!) == groupKey)
+                            .ToList();
+
+                        bool hasRealGroup = group.Count > 1;
+
+                        if (hasRealGroup)
+                        {
+                            // عندنا فريق لنفس المهمة (السيناريو الثاني جوّا الثالث)
+                            var groupLead = group.FirstOrDefault(t => t.IsLead);
+                            if (groupLead != null &&
+                                !groupLead.TechnicianUserId.Equals(userId, StringComparison.Ordinal))
+                            {
+                                // فقط المسؤول عن الفريق يقدر يغيّر حالة المهمة
+                                return (null, "Technician_OnlyGroupLeadCanChangeTaskStatus");
+                            }
+
+                            // نغير الحالة لكل الفريق
+                            foreach (var t in group)
+                                t.TechnicianStatus = newTechStatus;
+
+                            if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
+                                r.Notes.Add(MaintenanceRequestMapper.ToNote(
+                                    dto.NoteText!,
+                                    inferredType,
+                                    author,
+                                    userId,
+                                    r.Id));
+
+                            var oldRequestCaseGroup = r.CaseType;
+
+                            // نعيد حساب حالة الطلب بناء على المجموعات
+                            await RecalculateRequestCaseTypeForParallelIndependentAsync(r, ct);
+
+                            r.UpdatedAt = DateTime.UtcNow;
+
+                            // نوقف العداد فقط لأعضاء هذا الفريق
+                            foreach (var member in group)
+                            {
+                                await _workRepo.StopActiveForRequestAndTechAsync(requestId, member.TechnicianUserId, ct);
+                            }
+
+                            await _uow.SaveAndCommitAsync(ct);
+
+                            if (r.CaseType != oldRequestCaseGroup)
+                            {
+                                try
+                                {
+                                    await SendStatusChangeNotificationAsync(
+                                        r,
+                                        r.CaseType,
+                                        language,
+                                        ct);
+                                }
+                                catch (OperationCanceledException) { }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(
+                                        ex,
+                                        "Status change notification failed (parallel group). RequestId={RequestId}, NewCase={NewCase}",
+                                        r.Id,
+                                        r.CaseType);
+                                }
+                            }
+
+                            var freshGroup = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                            return (freshGroup, "Case_Changed");
+                        }
+                        else
+                        {
+                            // فني لوحده (المهمة المستقلة العادية في السيناريو الثالث)
+                            currentTech.TechnicianStatus = newTechStatus;
+
+                            if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
+                                r.Notes.Add(MaintenanceRequestMapper.ToNote(
+                                    dto.NoteText!,
+                                    inferredType,
+                                    author,
+                                    userId,
+                                    r.Id));
+
+                            var oldRequestCaseSingle = r.CaseType;
+
+                            await RecalculateRequestCaseTypeForParallelIndependentAsync(r, ct);
+
+                            r.UpdatedAt = DateTime.UtcNow;
+
+                            // نوقف العداد لهذا الفني فقط
+                            await _workRepo.StopActiveForRequestAndTechAsync(requestId, userId, ct);
+
+                            await _uow.SaveAndCommitAsync(ct);
+
+                            if (r.CaseType != oldRequestCaseSingle)
+                            {
+                                try
+                                {
+                                    await SendStatusChangeNotificationAsync(
+                                        r,
+                                        r.CaseType,
+                                        language,
+                                        ct);
+                                }
+                                catch (OperationCanceledException) { }
+                                catch (Exception ex)
+                                {
+                                    _logger.LogError(
+                                        ex,
+                                        "Status change notification failed (parallel single). RequestId={RequestId}, NewCase={NewCase}",
+                                        r.Id,
+                                        r.CaseType);
+                                }
+                            }
+
+                            var freshSingle = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                            return (freshSingle, "Case_Changed");
+                        }
+                    }
+
+                    // لو فني لكن المود مش معروف
+                    await _uow.RollbackAsync(ct);
+                    return (null, "Case_Invalid_For_Technician");
                 }
 
                 // ===================== مسار المدير / الآدمن =====================
                 if (!(isManager || isAdmin))
+                {
+                    await _uow.RollbackAsync(ct);
                     return (null, "Forbidden");
+                }
 
                 r.CaseType = newCase;
+
                 if (needNote || !string.IsNullOrWhiteSpace(dto.NoteText))
-                    r.Notes.Add(MaintenanceRequestMapper.ToNote(dto.NoteText!, inferredType, author, userId, r.Id));
+                    r.Notes.Add(MaintenanceRequestMapper.ToNote(
+                        dto.NoteText!,
+                        inferredType,
+                        author,
+                        userId,
+                        r.Id));
 
                 if (newCase == CaseType.Reopened)
                 {
                     r.ClosedAtUtc = null;
                 }
-                else if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
+                else if (newCase == CaseType.Completed
+                         || newCase == CaseType.Cancelled
+                         || newCase == CaseType.NotProcessed)
                 {
                     r.ClosedAtUtc = DateTime.UtcNow;
                 }
@@ -1352,9 +1975,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     // وفي حالة الإكمال / الإلغاء نشطب الربط مع الفنيين الفعّالين
                     if (newCase == CaseType.Completed || newCase == CaseType.Cancelled)
                     {
-                        var activeTechs = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
-
-                        foreach (var tid in activeTechs)
+                        var activeTechsForRemove = await _reqTechRepo.GetActiveTechniciansAsync(requestId, ct);
+                        foreach (var tid in activeTechsForRemove)
                             await _reqTechRepo.RemoveActiveAsync(requestId, tid, ct);
                     }
                     // ملاحظة: حالة Processed تدخل هنا → نوقف المؤقتات فقط بدون شطب الفنيين
@@ -1373,11 +1995,10 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         r,
                         newCaseMgr,
                         langMgr,
-                        ct); // استخدم ct بدل CancellationToken.None
+                        ct);
                 }
                 catch (OperationCanceledException)
                 {
-                    // الريكوست اتكنسل، ما في داعي نكمل إشعارات
                 }
                 catch (Exception ex)
                 {
@@ -1388,8 +2009,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                         newCaseMgr);
                 }
 
-
-                var fresh = await GetByIdAsync(requestId, userId, userRole, language, ct);
+                var freshMgr = await GetByIdAsync(requestId, userId, userRole, language, ct);
 
                 _logger.LogInformation(
                     "Request {RequestId} case changed from {OldCase} to {NewCase}",
@@ -1397,7 +2017,7 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                     oldCase,
                     r.CaseType);
 
-                return (fresh, "Case_Changed");
+                return (freshMgr, "Case_Changed");
             }
             catch (Exception ex)
             {
@@ -2148,7 +2768,9 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             {
                 // الطلب جديد + الطلب المعدل يُعامل كجديد
                 CaseType.Submitted or CaseType.Modified =>
-                    target is CaseType.Processing,
+                    target is CaseType.Processing
+                          or CaseType.Processed
+                          or CaseType.NotProcessed,
 
                 // قيد المعالجة (ممنوع Completed حسب شرطك)
                 CaseType.Processing =>
@@ -2158,33 +2780,79 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
                 // تحت مراجعة مدير
                 CaseType.ManagerReview =>
                     target is CaseType.Processed
-                          or CaseType.ResourcesNeeded,
+                          or CaseType.ResourcesNeeded
+                          or CaseType.NotProcessed,
 
                 // يحتاج موارد + يسمح بالانتقال لـ Processed
                 CaseType.ResourcesNeeded =>
                     target is CaseType.ManagerReview
                           or CaseType.Processing
-                          or CaseType.Processed,
+                          or CaseType.NotProcessed,
 
                 // تمت المعالجة
                 CaseType.Processed =>
                     target is CaseType.Reopened
-                          or CaseType.Completed,
+                    or CaseType.NotProcessed
+                    or CaseType.Completed,
 
                 // الطلب مغلق/ملغي
                 CaseType.Completed => target is CaseType.Reopened,
                 CaseType.Cancelled => target is CaseType.Reopened,
+                CaseType.NotProcessed => target is CaseType.Reopened,
 
                 // بعد إعادة الفتح
                 CaseType.Reopened =>
                     target is CaseType.ManagerReview
                           or CaseType.ResourcesNeeded
                           or CaseType.Processed
+                          or CaseType.NotProcessed
                           or CaseType.Completed,
 
                 _ => false
             };
         }
+
+
+        private async Task EnrichAssignedTechniciansActiveWorkAsync(
+       MaintenanceRequestResponseDTO dto,
+       CancellationToken ct = default)
+        {
+            if (dto?.AssignedTechnicians == null || dto.AssignedTechnicians.Count == 0)
+                return;
+
+            var technicianIds = dto.AssignedTechnicians
+                .Select(t => t.UserId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (technicianIds.Count == 0)
+                return;
+
+            var activeTechnicianIds = await _workRepo.Query(asTracking: false)
+                .Where(w => w.RequestId == dto.Id &&
+                            w.StoppedAt == null &&
+                            technicianIds.Contains(w.TechnicianUserId))
+                .Select(w => w.TechnicianUserId)
+                .Distinct()
+                .ToListAsync(ct);
+
+            if (activeTechnicianIds.Count == 0)
+                return;
+
+            var activeSet = new HashSet<string>(activeTechnicianIds, StringComparer.Ordinal);
+
+            foreach (var tech in dto.AssignedTechnicians)
+            {
+                if (!string.IsNullOrWhiteSpace(tech.UserId))
+                {
+                    tech.HasActiveWork = activeSet.Contains(tech.UserId);
+                }
+            }
+        }
+
+
+
         private static readonly CaseType[] ManagerAllowedTargets =
         {
             CaseType.Processing,
@@ -2192,7 +2860,8 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
             CaseType.Processed,
             CaseType.Completed,
             CaseType.Reopened,
-            CaseType.Cancelled
+            CaseType.Cancelled,
+            CaseType.NotProcessed
         };
 
         public async Task<(IReadOnlyList<int> AllowedCases, string MessageKey)> GetManagerAllowedCasesAsync(
@@ -2226,6 +2895,151 @@ namespace Fixtroller.BLL.Services.MaintenanceRequestServices
 
             return (allowed, "Ok");
         }
+
+        private async Task RecalculateRequestCaseTypeForParallelIndependentAsync(
+    MaintenanceRequest request,
+    CancellationToken ct)
+        {
+            var activeTechs = await _reqTechRepo.GetActiveTechniciansWithStatusAsync(request.Id, ct);
+
+            if (activeTechs.Count == 0)
+            {
+                request.CaseType = CaseType.Processing;
+                return;
+            }
+
+            // نعمل grouping حسب مفتاح المهمة:
+            // - لو TaskGroupKey موجود ⇒ نستعمله
+            // - غير هيك ⇒ كل فني هو مجموعة لحاله (نستخدم TechnicianUserId كمفتاح)
+            var groups = activeTechs
+                .GroupBy(t => string.IsNullOrWhiteSpace(t.TaskGroupKey)
+                    ? t.TechnicianUserId
+                    : t.TaskGroupKey!)
+                .Select(g =>
+                {
+                    var members = g.ToList();
+                    var lead = members.FirstOrDefault(t => t.IsLead);
+
+                    TechnicianTaskStatus status;
+
+                    if (lead != null)
+                    {
+                        // لو فيه Lead للمجموعة → حالتها من حالته
+                        status = lead.TechnicianStatus;
+                    }
+                    else
+                    {
+                        // بدون Lead: نطبق منطق بسيط حسب أعضاء المجموعة
+                        if (members.Any(t => t.TechnicianStatus == TechnicianTaskStatus.ResourcesNeeded))
+                            status = TechnicianTaskStatus.ResourcesNeeded;
+                        else if (members.All(t =>
+                            t.TechnicianStatus == TechnicianTaskStatus.WaitingManagerReview ||
+                            t.TechnicianStatus == TechnicianTaskStatus.Completed))
+                            status = TechnicianTaskStatus.WaitingManagerReview;
+                        else
+                            status = TechnicianTaskStatus.Processing;
+                    }
+
+                    return new
+                    {
+                        GroupKey = g.Key,
+                        Status = status
+                    };
+                })
+                .ToList();
+
+            var anyResourcesNeeded = groups
+                .Any(g => g.Status == TechnicianTaskStatus.ResourcesNeeded);
+
+            var allWaitingOrCompleted = groups.All(g =>
+                g.Status == TechnicianTaskStatus.WaitingManagerReview ||
+                g.Status == TechnicianTaskStatus.Completed);
+
+            if (anyResourcesNeeded)
+            {
+                request.CaseType = CaseType.ResourcesNeeded;
+            }
+            else if (allWaitingOrCompleted)
+            {
+                request.CaseType = CaseType.ManagerReview;
+            }
+            else
+            {
+                request.CaseType = CaseType.Processing;
+            }
+        }
+
+
+        private async Task EnrichRequestTechniciansNamesAsync(
+    IList<RequestTechnicianItemDTO> technicians,
+    string language,
+    CancellationToken ct = default)
+        {
+            if (technicians == null || technicians.Count == 0)
+                return;
+
+            var ids = technicians
+                .Select(t => t.UserId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (ids.Count == 0)
+                return;
+
+            var dict = new Dictionary<string, string>(StringComparer.Ordinal);
+
+            foreach (var id in ids)
+            {
+                var u = await _userRepo.GetByIdAsync(id, ct);
+                if (u != null)
+                {
+                    dict[id] = u.GetDisplayName(language);
+                }
+            }
+
+            foreach (var t in technicians)
+            {
+                if (dict.TryGetValue(t.UserId, out var name))
+                    t.FullName = name;
+                else
+                    t.FullName = t.UserId;
+            }
+        }
+
+        private async Task EnrichRequestTechniciansActiveWorkAsync(
+            int requestId,
+            IList<RequestTechnicianItemDTO> technicians,
+            CancellationToken ct = default)
+        {
+            if (technicians == null || technicians.Count == 0)
+                return;
+
+            var ids = technicians
+                .Select(t => t.UserId)
+                .Where(id => !string.IsNullOrWhiteSpace(id))
+                .Distinct(StringComparer.Ordinal)
+                .ToList();
+
+            if (ids.Count == 0)
+                return;
+
+            var activeTechIds = await _workRepo.Query(asTracking: false)
+                .Where(w => w.RequestId == requestId &&
+                            w.StoppedAt == null &&
+                            ids.Contains(w.TechnicianUserId))
+                .Select(w => w.TechnicianUserId)
+                .Distinct()
+                .ToListAsync(ct);
+
+            var activeSet = new HashSet<string>(activeTechIds, StringComparer.Ordinal);
+
+            foreach (var t in technicians)
+            {
+                t.HasActiveWork = activeSet.Contains(t.UserId);
+            }
+        }
+
 
 
     }

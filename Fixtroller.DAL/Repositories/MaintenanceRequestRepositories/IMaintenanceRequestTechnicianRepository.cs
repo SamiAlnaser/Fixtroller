@@ -17,5 +17,30 @@ namespace Fixtroller.DAL.Repositories.MaintenanceRequestRepositories
         Task AddActiveAsync(int requestId, string technicianUserId, int? expectedDuration, CancellationToken ct = default);
         Task RemoveActiveAsync(int requestId, string technicianUserId, CancellationToken ct = default);
         Task SetActiveListAsync(int requestId, IEnumerable<string> technicianUserIds, int? expectedDuration, CancellationToken ct = default);
+        Task<bool> IsLeadAsync(int requestId, string technicianUserId, CancellationToken ct = default);
+
+        Task<List<MaintenanceRequestTechnician>> GetActiveTechniciansWithStatusAsync(
+            int requestId,
+            CancellationToken ct = default);
+
+        Task UpdateTechnicianStatusAsync(
+            int requestId,
+            string technicianUserId,
+            TechnicianTaskStatus status,
+            CancellationToken ct = default);
+
+        Task SetLeadAsync(
+            int requestId,
+            string technicianUserId,
+            CancellationToken ct = default);
+
+        Task SetTaskGroupAsync(
+    int requestId,
+    IEnumerable<string> technicianUserIds,
+    string taskGroupKey,
+    string? leadTechnicianUserId,
+    CancellationToken ct = default);
+
+
     }
 }

@@ -951,4 +951,46 @@
   <data name="Request_IsLocked" xml:space="preserve">
     <value>This request is locked and cannot be modified</value>
   </data>
+	<data name="Announcement_NotFound" xml:space="preserve">
+    <value>Announcement not found.</value>
+  </data>
+
+	<data name="CaseType_Invalid" xml:space="preserve">
+    <value>Invalid case type.</value>
+  </data>
+
+	<data name="Case_Invalid_For_Technician" xml:space="preserve">
+    <value>The current request state is not valid for technician actions.</value>
+  </data>
+
+	<data name="Group_Created" xml:space="preserve">
+    <value>Technician group created successfully.</value>
+  </data>
+
+	<data name="Group_LeadMustBeInList" xml:space="preserve">
+    <value>The lead technician must be one of the selected team members.</value>
+  </data>
+
+	<data name="Request_NotInParallelMode" xml:space="preserve">
+    <value>This operation is only allowed when the request is in Parallel Independent mode.</value>
+  </data>
+
+	<data name="Technician_NewLeadMustBeFromTeam" xml:space="preserve">
+    <value>The new lead technician must be from the same current team.</value>
+  </data>
+
+	<data name="Technician_NewLeadRequired" xml:space="preserve">
+    <value>You must select a new lead technician before removing the current lead.</value>
+  </data>
+
+	<data name="Technician_OnlyGroupLeadCanChangeTaskStatus" xml:space="preserve">
+    <value>Only the group lead can change the status of this task.</value>
+  </data>
+
+	<data name="Technician_OnlyLeaderCanChangeCase" xml:space="preserve">
+    <value>Only the lead technician can change the request status.</value>
+  </data>
+	<data name="Group_TwoTechniciansRequired" xml:space="preserve">
+  <value>You must select at least two technicians.</value>
+</data>
 </root>

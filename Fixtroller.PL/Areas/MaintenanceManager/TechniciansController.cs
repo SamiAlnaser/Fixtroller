@@ -116,8 +116,9 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
 
-            var (newId, key) = await _requestService
-                .AssignTechniciansAsync(id, dto.TechnicianUserIds, dto.ExpectedDuration, language, ct);
+            var (newId, key) = dto.IndependentTasks
+                ? await _requestService.AssignTechniciansIndependentAsync(id, dto.TechnicianUserIds, dto.ExpectedDuration, language, ct)
+                : await _requestService.AssignTechniciansAsync(id,dto.TechnicianUserIds,dto.ExpectedDuration,dto.LeadTechnicianUserId,language,ct);
 
             if (newId is null) return BadRequest(new { message = _localizer[key].Value });
 
@@ -140,17 +141,115 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
                 });
         }
 
-        [HttpDelete("{id:int}/Technicians/{techId}")]
-        public async Task<IActionResult> RemoveTechnician(int id, string techId, CancellationToken ct)
+        [HttpPost("{id:int}/Group-SharedTask")]
+        public async Task<IActionResult> GroupSharedTask(
+            int id,
+            [FromBody] GroupTechniciansSharedTaskRequestDTO dto,
+            CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language))
+                language = "ar";
+
+            var (requestId, key) = await _requestService.GroupTechniciansAsSharedTaskAsync(
+                id,
+                dto.TechnicianUserIds,
+                dto.LeadTechnicianUserId,
+                ct);
+
+            if (requestId is null)
+                return BadRequest(new
+                {
+                    message = _localizer[key].Value
+                });
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("Id")?.Value
+                         ?? string.Empty;
+
+            var role = User.FindFirst("role")?.Value
+                       ?? "MaintenanceManager";
+
+            var details = await _requestService.GetByIdAsync(id, userId, role, language, ct);
+
+            return Ok(new
+            {
+                message = _localizer[key].Value,
+                data = details
+            });
+        }
+
+
+
+        [HttpDelete("{id:int}/Technicians/{technicianUserId}")]
+        public async Task<IActionResult> RemoveTechnician(
+            int id,
+            string technicianUserId,
+            [FromBody] RemoveTechnicianRequestDTO? dto,
+            CancellationToken ct)
+        {
+            var language = Request.Headers["Accept-Language"].ToString();
+            if (string.IsNullOrWhiteSpace(language))
+                language = "ar";
+
+            var (requestId, key) = await _requestService.RemoveTechnicianAsync(
+                id,
+                technicianUserId,
+                dto?.NewLeadTechnicianUserId,
+                language,
+                ct);
+
+            if (requestId is null)
+                return BadRequest(new
+                {
+                    message = _localizer[key].Value
+                });
+
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("Id")?.Value
+                         ?? string.Empty;
+
+            var role = User.FindFirst("role")?.Value
+                       ?? "MaintenanceManager";
+
+            var details = await _requestService.GetByIdAsync(id, userId, role, language, ct);
+
+            return Ok(new
+            {
+                message = _localizer[key].Value,
+                data = details
+            });
+        }
+
+        [HttpGet("{id:int}/Request-Technicians")]
+        public async Task<IActionResult> GetRequestTechnicians(int id, CancellationToken ct)
         {
             var language = Request.Headers["Accept-Language"].ToString();
             if (string.IsNullOrWhiteSpace(language)) language = "ar";
-            var (ok, key) = await _requestService
-                .RemoveTechnicianAsync(id, techId, language, ct);
 
-            if (!ok) return BadRequest(new { message = _localizer[key].Value });
-            return Ok(new { message = _localizer[key].Value });
+            var userId = User.FindFirstValue(ClaimTypes.NameIdentifier)
+                         ?? User.FindFirst("Id")?.Value
+                         ?? string.Empty;
+
+            var role = User.FindFirst("role")?.Value
+                     ?? "MaintenanceManager";
+
+            var dto = await _requestService.GetRequestTechniciansAsync(
+                id,
+                userId,
+                role,
+                language,
+                ct);
+
+            if (dto is null)
+                return NotFound(new
+                {
+                    message = _localizer["Request_NotFound"].Value
+                });
+
+            return Ok(dto);
         }
+
         // Patch: Api/MaintenanceManager/Technicians/Category
         [HttpPatch("Category")]
         public async Task<IActionResult> UpdateCategory(

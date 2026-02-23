@@ -17,7 +17,14 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         ResourcesNeeded = 6, // يحتاج الى موارد او فني اخر
         Cancelled = 7,  // ملغى
         Reopened = 8, // تم اعادة فتح الطلب
-        Modified = 9  // معدل
+        Modified = 9,  // معدل
+        NotProcessed = 10 // لم تتم معالجته (قرار من قسم الصيانة/الإدارة)
+    }
+    public enum TechnicianAssignmentMode
+    {
+        Single = 1,             // فني واحد مسؤول
+        TeamShared = 2,         // فريق يشترك في نفس المهمة (Lead واحد فقط يغيّر الحالة)
+        ParallelIndependent = 3 // فريق، كل فني له مهمة مستقلة وحالته الخاصة
     }
     public enum Priority
     {
@@ -28,7 +35,7 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
     public class MaintenanceRequest : BaseModel
     {
         public string Title {  get; set; }
-        public string Description { get; set; }
+        public string? Description { get; set; }
         public CaseType CaseType { get; set; } = CaseType.Submitted;
         public ICollection<MaintenanceRequestImage> Images { get; set; } = new List<MaintenanceRequestImage>();
         public ICollection<MaintenanceNote> Notes { get; set; } = new List<MaintenanceNote>();
@@ -52,7 +59,10 @@ namespace Fixtroller.DAL.Entities.MaintenanceRequestEntity
         public DateTime? ClosedAtUtc { get; set; }
         public int ProblemTypeId { get; set; }
         public ProblemType ProblemType { get; set; }
+        public TechnicianAssignmentMode TechnicianAssignmentMode { get; set; }
+            = TechnicianAssignmentMode.Single;
 
-        public ICollection<MaintenanceRequestTechnician> Technicians { get; set; } = new List<MaintenanceRequestTechnician>();
+        public ICollection<MaintenanceRequestTechnician> Technicians { get; set; }
+            = new List<MaintenanceRequestTechnician>();
     }
 }
