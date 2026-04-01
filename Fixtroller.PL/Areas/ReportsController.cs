@@ -10,7 +10,7 @@ using System.Threading;
 using System.Threading.Tasks;
 
 namespace Fixtroller.PL.Areas
-{
+{//
     [Route("Api/[controller]")]
     [ApiController]
     [Authorize(Roles = "Admin,MaintenanceManager,Employee,Technician")]
@@ -27,7 +27,6 @@ namespace Fixtroller.PL.Areas
             _localizer = localizer;
         }
 
-        // تقرير الطلب الواحد (زي ما عملناه قبل)
         [HttpGet("Requests/{id:int}")]
         public async Task<IActionResult> GetSingleRequestReport(
             int id,
@@ -72,7 +71,6 @@ namespace Fixtroller.PL.Areas
         // تقرير الطلبات لفترة زمنية
         // GET: api/MaintenanceManager/Reports/requests-period?from=2025-01-01&to=2025-01-31&problemTypeId=1
         // GET: api/MaintenanceManager/Reports/requests-period?from=2025-01-01&to=2025-01-31&format=pdf
-        [Authorize(Roles = "Admin,MaintenanceManager")]
         [HttpGet("Requests-Period")]
         public async Task<IActionResult> GetRequestsPeriodReport(
             [FromQuery] DateTime? from,
