@@ -71,6 +71,7 @@ namespace Fixtroller.PL
             services.AddScoped<INotificationService, NotificationService>();
 
             services.AddScoped<INotificationMessageBuilder, LocalizerNotificationMessageBuilder>();
+            services.AddScoped<IAnnouncementReadRepository, AnnouncementReadRepository>();
 
 
 

@@ -28,6 +28,7 @@ namespace Fixtroller.DAL.Data
         public DbSet<AiEmployeeChatSettingsEntity> AiEmployeeChatSettings { get; set; } = null!;
         public DbSet<Announcement> Announcements { get; set; }
         public DbSet<AnnouncementImage> AnnouncementImages { get; set; }
+        public DbSet<AnnouncementRead> AnnouncementReads { get; set; }
         public DbSet<Notification> Notifications { get; set; }
         public ApplicationDbContext(DbContextOptions<ApplicationDbContext> options)
             : base(options)
@@ -183,6 +184,24 @@ namespace Fixtroller.DAL.Data
                 b.Property(i => i.FileName)
                  .IsRequired()
                  .HasMaxLength(255);
+            });
+            builder.Entity<AnnouncementRead>(b =>
+            {
+                b.HasOne(r => r.Announcement)
+                 .WithMany(a => a.Reads)
+                 .HasForeignKey(r => r.AnnouncementId)
+                 .OnDelete(DeleteBehavior.Cascade);
+
+                b.HasOne(r => r.User)
+                 .WithMany(u => u.AnnouncementReads)
+                 .HasForeignKey(r => r.UserId)
+                 .OnDelete(DeleteBehavior.Restrict);
+
+                b.HasIndex(r => new { r.AnnouncementId, r.UserId })
+                 .IsUnique();
+
+                b.Property(r => r.ReadAt)
+                 .IsRequired();
             });
 
 

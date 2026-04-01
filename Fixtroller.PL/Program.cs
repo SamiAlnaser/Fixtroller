@@ -1,6 +1,7 @@
 ﻿using Fixtroller.BLL.Services.NotificationServices;
 using Fixtroller.DAL.Data;
 using Fixtroller.DAL.Entities;
+using Fixtroller.DAL.Repositories.AnnouncementRepositories;
 using Fixtroller.DAL.Utils;
 using Fixtroller.PL.GlobalException;
 using Fixtroller.PL.Services.Notifications;
@@ -28,6 +29,7 @@ namespace Fixtroller.PL
         public static async Task Main(string[] args)
         {
             var env = Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT");
+
 
             Log.Logger = new LoggerConfiguration()
                 // أقل مستوى عالميًا
@@ -61,6 +63,7 @@ namespace Fixtroller.PL
 
                 builder.Host.UseSerilog();
 
+               
 
                 builder.Services.AddControllers();
             builder.Services.AddEndpointsApiExplorer();

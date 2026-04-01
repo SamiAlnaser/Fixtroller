@@ -43,18 +43,20 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
         }
 
         [HttpGet]
+        [HttpGet]
         public async Task<IActionResult> GetAll(
-            string? search = null,
-            int pageNumber = 1,
-            int pageSize = 10,
-            CancellationToken ct = default)
+    string? search = null,
+    bool unreadOnly = false,
+    int pageNumber = 1,
+    int pageSize = 10,
+    CancellationToken ct = default)
         {
             var ctx = GetContext();
             if (ctx is null) return Unauthorized();
             var (userId, role, language) = ctx.Value;
 
             var result = await _service.GetForUserAsync(
-                userId, role, language, search, pageNumber, pageSize, ct);
+    userId, role, language, search, unreadOnly, pageNumber, pageSize, ct);
 
             return Ok(result);
         }
@@ -116,6 +118,35 @@ namespace Fixtroller.PL.Areas.MaintenanceManager
             if (!ok) return NotFound(new { message = "Announcement_NotFound" });
 
             return Ok(new { message = _localizer["Success"].Value });
+        }
+        [HttpPost("{id:int}/mark-as-read")]
+        public async Task<IActionResult> MarkAsRead(int id, CancellationToken ct)
+        {
+            var ctx = GetContext();
+            if (ctx is null) return Unauthorized();
+
+            var (userId, role, _) = ctx.Value;
+
+            var ok = await _service.MarkAsReadAsync(id, userId, role, ct);
+            if (!ok) return NotFound(new { message = "Announcement_NotFound" });
+
+            return Ok(new { message = "Success" });
+        }
+        [HttpPost("mark-all-as-read")]
+        public async Task<IActionResult> MarkAllAsRead(CancellationToken ct)
+        {
+            var ctx = GetContext();
+            if (ctx is null) return Unauthorized();
+
+            var (userId, role, _) = ctx.Value;
+
+            var count = await _service.MarkAllAsReadAsync(userId, role, ct);
+
+            return Ok(new
+            {
+                message = "Success",
+                markedCount = count
+            });
         }
     }
 }

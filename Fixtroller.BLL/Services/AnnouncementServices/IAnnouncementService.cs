@@ -11,6 +11,7 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
 {
     public interface IAnnouncementService
     {
+
         Task<int> CreateAsync(
             AnnouncementCreateRequestDTO dto,
             string creatorUserId,
@@ -37,6 +38,7 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
             string userRole,
             string language,
             string? search,
+            bool unreadOnly,
             int pageNumber,
             int pageSize,
             CancellationToken ct = default);
@@ -46,6 +48,17 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
             string userId,
             string userRole,
             string language,
+            CancellationToken ct = default);
+
+        Task<bool> MarkAsReadAsync(
+            int announcementId,
+            string userId,
+            string userRole,
+            CancellationToken ct = default);
+
+        Task<int> MarkAllAsReadAsync(
+            string userId,
+            string userRole,
             CancellationToken ct = default);
     }
 }

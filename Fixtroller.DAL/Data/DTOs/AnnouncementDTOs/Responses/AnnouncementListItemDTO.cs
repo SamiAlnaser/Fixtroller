@@ -20,6 +20,7 @@ namespace Fixtroller.DAL.Data.DTOs.AnnouncementDTOs.Responses
         public DateTime CreatedAt { get; set; }
 
         public string CreatedByName { get; set; } = string.Empty;
+        public bool IsRead { get; set; }
 
     }
 }

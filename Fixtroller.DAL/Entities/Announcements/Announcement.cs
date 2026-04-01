@@ -34,6 +34,7 @@ namespace Fixtroller.DAL.Entities.Announcements
 
         public ICollection<AnnouncementImage> Images { get; set; }
             = new List<AnnouncementImage>();
+        public ICollection<AnnouncementRead> Reads { get; set; } = new List<AnnouncementRead>();
     }
 
 }

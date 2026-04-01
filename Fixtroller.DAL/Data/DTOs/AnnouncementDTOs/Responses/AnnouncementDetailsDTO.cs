@@ -28,5 +28,6 @@ namespace Fixtroller.DAL.Data.DTOs.AnnouncementDTOs.Responses
         public string CreatedByName { get; set; } = string.Empty;
 
         public List<AnnouncementImageDTO> Images { get; set; } = new();
+        public bool IsRead { get; set; }
     }
 }

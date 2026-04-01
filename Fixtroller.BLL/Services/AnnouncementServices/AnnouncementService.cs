@@ -25,15 +25,18 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
         private readonly IFileService _fileService;
         private readonly INotificationService _notificationService;
         private readonly IUnitOfWork _uow;
+        private readonly IAnnouncementReadRepository _announcementReadRepo;
 
         public AnnouncementService(
-            IAnnouncementRepository repo,
-            IUserRepository userRepo,
-            IFileService fileService,
-            INotificationService notificationService,
-            IUnitOfWork uow)
+     IAnnouncementRepository repo,
+     IAnnouncementReadRepository announcementReadRepo,
+     IUserRepository userRepo,
+     IFileService fileService,
+     INotificationService notificationService,
+     IUnitOfWork uow)
         {
             _repo = repo;
+            _announcementReadRepo = announcementReadRepo;
             _userRepo = userRepo;
             _fileService = fileService;
             _notificationService = notificationService;
@@ -89,6 +92,7 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
                 await _uow.SaveAndCommitAsync(ct);
             }
 
+
             // لو مخصص للفنيين → إشعار
             if (entity.Audience == AnnouncementAudience.TechniciansOnly)
             {
@@ -117,6 +121,129 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
             return entity.Id;
         }
 
+        private static bool CanViewAnnouncement(Announcement announcement, string userRole)
+        {
+            if (CanManage(userRole))
+                return true;
+
+            bool isTechnician = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+            bool isEmployee = userRole.Equals("Employee", StringComparison.OrdinalIgnoreCase);
+
+            if (isTechnician)
+            {
+                return announcement.Audience == AnnouncementAudience.TechniciansOnly
+                    || announcement.Audience == AnnouncementAudience.EmployeesAndTechnicians;
+            }
+
+            if (isEmployee)
+            {
+                return announcement.Audience == AnnouncementAudience.EmployeesAndTechnicians;
+            }
+
+            return false;
+        }
+        public async Task<bool> MarkAsReadAsync(
+       int announcementId,
+       string userId,
+       string userRole,
+       CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            var announcement = await _repo.Query(
+                asTracking: false,
+                predicate: a => a.Id == announcementId)
+                .FirstOrDefaultAsync(ct);
+
+            if (announcement is null)
+                return false;
+
+            if (!CanViewAnnouncement(announcement, userRole))
+                throw new UnauthorizedAccessException("Forbidden");
+
+            var exists = await _announcementReadRepo.Query(
+                asTracking: false,
+                predicate: x => x.AnnouncementId == announcementId && x.UserId == userId)
+                .AnyAsync(ct);
+
+            if (exists)
+                return true;
+
+            await _announcementReadRepo.AddAsync(new AnnouncementRead
+            {
+                AnnouncementId = announcementId,
+                UserId = userId,
+                ReadAt = DateTime.UtcNow
+            }, ct);
+
+            await _uow.SaveAndCommitAsync(ct);
+
+            return true;
+        }
+        public async Task<int> MarkAllAsReadAsync(
+     string userId,
+     string userRole,
+     CancellationToken ct = default)
+        {
+            ct.ThrowIfCancellationRequested();
+
+            bool isAdminOrManager = CanManage(userRole);
+            bool isTechnician = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
+            bool isEmployee = userRole.Equals("Employee", StringComparison.OrdinalIgnoreCase);
+
+            var announcementsQuery = _repo.Query(asTracking: false);
+
+            if (!isAdminOrManager)
+            {
+                if (isTechnician)
+                {
+                    announcementsQuery = announcementsQuery.Where(a =>
+                        a.Audience == AnnouncementAudience.TechniciansOnly ||
+                        a.Audience == AnnouncementAudience.EmployeesAndTechnicians);
+                }
+                else if (isEmployee)
+                {
+                    announcementsQuery = announcementsQuery.Where(a =>
+                        a.Audience == AnnouncementAudience.EmployeesAndTechnicians);
+                }
+                else
+                {
+                    return 0;
+                }
+            }
+
+            var visibleIds = await announcementsQuery
+                .Select(a => a.Id)
+                .ToListAsync(ct);
+
+            if (!visibleIds.Any())
+                return 0;
+
+            var readIds = await _announcementReadRepo.Query(
+                asTracking: false,
+                predicate: x => x.UserId == userId && visibleIds.Contains(x.AnnouncementId))
+                .Select(x => x.AnnouncementId)
+                .ToListAsync(ct);
+
+            var unreadIds = visibleIds.Except(readIds).ToList();
+
+            if (!unreadIds.Any())
+                return 0;
+
+            foreach (var id in unreadIds)
+            {
+                await _announcementReadRepo.AddAsync(new AnnouncementRead
+                {
+                    AnnouncementId = id,
+                    UserId = userId,
+                    ReadAt = DateTime.UtcNow
+                }, ct);
+            }
+
+            await _uow.SaveAndCommitAsync(ct);
+
+            return unreadIds.Count;
+        }
         public async Task<int> UpdateAsync(
      int id,
      AnnouncementUpdateRequestDTO dto,
@@ -207,20 +334,20 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
         }
 
         public async Task<PagedResultDTO<AnnouncementListItemDTO>> GetForUserAsync(
-            string userId,
-            string userRole,
-            string language,
-            string? search,
-            int pageNumber,
-            int pageSize,
-            CancellationToken ct = default)
+      string userId,
+      string userRole,
+      string language,
+      string? search,
+      bool unreadOnly,
+      int pageNumber,
+      int pageSize,
+      CancellationToken ct = default)
         {
             ct.ThrowIfCancellationRequested();
 
             if (pageNumber < 1) pageNumber = 1;
             if (pageSize <= 0) pageSize = 10;
 
-            // فلترة حسب الدور
             bool isAdminOrManager = CanManage(userRole);
             bool isTechnician = userRole.Equals("Technician", StringComparison.OrdinalIgnoreCase);
             bool isEmployee = userRole.Equals("Employee", StringComparison.OrdinalIgnoreCase);
@@ -229,7 +356,8 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
                 asTracking: false,
                 include: a => a
                     .Include(x => x.Images)
-                    .Include(x => x.CreatedByUser));
+                    .Include(x => x.CreatedByUser)
+                    .Include(x => x.Reads));
 
             if (!isAdminOrManager)
             {
@@ -246,7 +374,6 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
                 }
                 else
                 {
-                    // دور غير معروف → لا شيء
                     q = q.Where(a => false);
                 }
             }
@@ -257,6 +384,11 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
                 q = q.Where(a =>
                     a.Title.Contains(search) ||
                     a.Content.Contains(search));
+            }
+
+            if (unreadOnly)
+            {
+                q = q.Where(a => !a.Reads.Any(r => r.UserId == userId));
             }
 
             q = q.OrderByDescending(a => a.CreatedAt);
@@ -277,7 +409,9 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
                         ? a.CreatedByUser.FullNameAr ?? a.CreatedByUser.UserName
                         : a.CreatedByUser.FullNameEn ?? a.CreatedByUser.UserName;
 
-                    return AnnouncementMapper.ToListItem(a, creatorName, urlBuilder);
+                    var dto = AnnouncementMapper.ToListItem(a, creatorName, urlBuilder);
+                    dto.IsRead = a.Reads.Any(r => r.UserId == userId);
+                    return dto;
                 })
                 .ToList();
 
@@ -303,11 +437,12 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
             ct.ThrowIfCancellationRequested();
 
             var q = _repo.Query(
-                asTracking: false,
-                include: a => a
-                    .Include(x => x.Images)
-                    .Include(x => x.CreatedByUser),
-                predicate: a => a.Id == id);
+     asTracking: false,
+     include: a => a
+         .Include(x => x.Images)
+         .Include(x => x.CreatedByUser)
+         .Include(x => x.Reads),
+     predicate: a => a.Id == id);
 
             var entity = await q.FirstOrDefaultAsync(ct);
             if (entity is null) return null;
@@ -342,7 +477,10 @@ namespace Fixtroller.BLL.Services.AnnouncementServices
 
             Func<string, string> urlBuilder = fn => _fileService.GetPublicUrl(fn);
 
-            return AnnouncementMapper.ToDetails(entity, creatorName, urlBuilder);
+            var dto = AnnouncementMapper.ToDetails(entity, creatorName, urlBuilder);
+            dto.IsRead = entity.Reads.Any(r => r.UserId == userId);
+
+            return dto;
         }
     }
 }

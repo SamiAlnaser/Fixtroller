@@ -1,4 +1,5 @@
-﻿using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
+﻿using Fixtroller.DAL.Entities.Announcements;
+using Fixtroller.DAL.Entities.MaintenanceRequestEntity;
 using Fixtroller.DAL.Entities.TechnicianCategoryEntity;
 using Microsoft.AspNetCore.Identity;
 using System;
@@ -27,6 +28,8 @@ namespace Fixtroller.DAL.Entities
         public ICollection<MaintenanceRequest> OwnedRequests { get; set; } = new List<MaintenanceRequest>();
 
         public ICollection<MaintenanceRequest> SubmittedRequests { get; set; } = new List<MaintenanceRequest>();
+        public ICollection<AnnouncementRead> AnnouncementReads { get; set; }
+    = new List<AnnouncementRead>();
     }
 
 }
